@@ -221,5 +221,5 @@ footer {
 .overdue-badge {
     margin-left: 0.5rem;
     font-weight: 600;
-    color: #dc2626;
+    color: var(--color-text);
 }
