@@ -1,4 +1,3 @@
-import { VibeKanbanWebCompanion } from 'vibe-kanban-web-companion';
 import { format, compareAsc, isPast } from 'date-fns';
 
 // Todos array (Feature 1)
@@ -29,7 +28,6 @@ function loadTodos() {
 
 document.addEventListener('DOMContentLoaded', () => {
     init();
-    initVibeKanban();
 });
 
 function init() {
@@ -55,11 +53,6 @@ function init() {
     // Load todos from localStorage
     loadTodos();
     renderTodos();
-}
-
-function initVibeKanban() {
-    const companion = new VibeKanbanWebCompanion();
-    companion.render(document.body);
 }
 
 // Feature 1: Add, toggle, delete todos
