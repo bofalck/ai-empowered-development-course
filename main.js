@@ -26,6 +26,98 @@ let searchQuery = '';
 
 // ===== HELPER FUNCTIONS =====
 
+// Create recording unicorn SVG with mic
+function createRecordingUnicornSvg() {
+    return `
+        <svg width="120" height="140" viewBox="0 0 120 140" style="margin: 1rem auto;">
+            <!-- Body -->
+            <circle cx="60" cy="80" r="35" fill="#FFB6E8"/>
+            <!-- Head -->
+            <circle cx="60" cy="40" r="28" fill="#FFB6E8"/>
+            <!-- Horn -->
+            <polygon points="60,8 56,25 64,25" fill="#FFD700"/>
+            <!-- Horn shine -->
+            <line x1="60" y1="12" x2="60" y2="23" stroke="#FFFF99" stroke-width="2"/>
+            <!-- Ears -->
+            <ellipse cx="42" cy="20" rx="8" ry="12" fill="#FFB6E8"/>
+            <ellipse cx="78" cy="20" rx="8" ry="12" fill="#FFB6E8"/>
+            <ellipse cx="42" cy="22" rx="4" ry="6" fill="#FFE4F5"/>
+            <ellipse cx="78" cy="22" rx="4" ry="6" fill="#FFE4F5"/>
+            <!-- Eyes -->
+            <circle cx="50" cy="35" r="3" fill="#333"/>
+            <circle cx="70" cy="35" r="3" fill="#333"/>
+            <!-- Eye shine -->
+            <circle cx="51" cy="34" r="1.5" fill="#FFF"/>
+            <circle cx="71" cy="34" r="1.5" fill="#FFF"/>
+            <!-- Smile -->
+            <path d="M 55 42 Q 60 45 65 42" stroke="#333" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+            <!-- Mane -->
+            <path d="M 45 22 Q 40 28 42 35" stroke="#FF69B4" stroke-width="3" fill="none" stroke-linecap="round"/>
+            <path d="M 75 22 Q 80 28 78 35" stroke="#FF69B4" stroke-width="3" fill="none" stroke-linecap="round"/>
+            <!-- Legs -->
+            <rect x="45" y="105" width="6" height="20" fill="#FFB6E8" rx="3"/>
+            <rect x="69" y="105" width="6" height="20" fill="#FFB6E8" rx="3"/>
+            <!-- Hooves -->
+            <rect x="45" y="123" width="6" height="4" fill="#FF69B4" rx="1"/>
+            <rect x="69" y="123" width="6" height="4" fill="#FF69B4" rx="1"/>
+            <!-- Mic stand -->
+            <rect x="83" y="50" width="3" height="40" fill="#666" rx="1.5"/>
+            <!-- Microphone -->
+            <circle cx="85" cy="45" r="8" fill="#E74C3C"/>
+            <rect x="83" y="53" width="4" height="8" fill="#999" rx="1"/>
+        </svg>
+    `;
+}
+
+// Create scholarly unicorn SVG with glasses
+function createScholarlyUnicornSvg() {
+    return `
+        <svg width="120" height="140" viewBox="0 0 120 140" style="margin: 1rem auto;">
+            <!-- Body -->
+            <circle cx="60" cy="80" r="35" fill="#A8E6CF"/>
+            <!-- Head -->
+            <circle cx="60" cy="40" r="28" fill="#A8E6CF"/>
+            <!-- Horn -->
+            <polygon points="60,8 56,25 64,25" fill="#FFD700"/>
+            <!-- Horn shine -->
+            <line x1="60" y1="12" x2="60" y2="23" stroke="#FFFF99" stroke-width="2"/>
+            <!-- Ears -->
+            <ellipse cx="42" cy="20" rx="8" ry="12" fill="#A8E6CF"/>
+            <ellipse cx="78" cy="20" rx="8" ry="12" fill="#A8E6CF"/>
+            <ellipse cx="42" cy="22" rx="4" ry="6" fill="#D5F5E8"/>
+            <ellipse cx="78" cy="22" rx="4" ry="6" fill="#D5F5E8"/>
+            <!-- Glasses left -->
+            <circle cx="46" cy="35" r="6" fill="none" stroke="#333" stroke-width="1.5"/>
+            <!-- Glasses right -->
+            <circle cx="74" cy="35" r="6" fill="none" stroke="#333" stroke-width="1.5"/>
+            <!-- Glasses bridge -->
+            <line x1="52" y1="35" x2="68" y2="35" stroke="#333" stroke-width="1.5"/>
+            <!-- Eyes behind glasses -->
+            <circle cx="46" cy="35" r="2.5" fill="#333"/>
+            <circle cx="74" cy="35" r="2.5" fill="#333"/>
+            <!-- Eye shine -->
+            <circle cx="47" cy="34" r="1" fill="#FFF"/>
+            <circle cx="75" cy="34" r="1" fill="#FFF"/>
+            <!-- Smile -->
+            <path d="M 55 43 Q 60 46 65 43" stroke="#333" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+            <!-- Mane -->
+            <path d="M 45 22 Q 40 28 42 35" stroke="#5DADE2" stroke-width="3" fill="none" stroke-linecap="round"/>
+            <path d="M 75 22 Q 80 28 78 35" stroke="#5DADE2" stroke-width="3" fill="none" stroke-linecap="round"/>
+            <!-- Legs -->
+            <rect x="45" y="105" width="6" height="20" fill="#A8E6CF" rx="3"/>
+            <rect x="69" y="105" width="6" height="20" fill="#A8E6CF" rx="3"/>
+            <!-- Hooves -->
+            <rect x="45" y="123" width="6" height="4" fill="#5DADE2" rx="1"/>
+            <rect x="69" y="123" width="6" height="4" fill="#5DADE2" rx="1"/>
+            <!-- Book -->
+            <rect x="82" y="55" width="18" height="24" fill="#E74C3C" rx="1"/>
+            <line x1="91" y1="55" x2="91" y2="79" stroke="#FFF" stroke-width="1"/>
+            <line x1="85" y1="62" x2="97" y2="62" stroke="#FFF" stroke-width="0.5"/>
+            <line x1="85" y1="68" x2="97" y2="68" stroke="#FFF" stroke-width="0.5"/>
+        </svg>
+    `;
+}
+
 // Get meeting from array by ID
 function getMeeting(id) {
     return savedMeetings.find(m => m.id === id);
@@ -43,11 +135,33 @@ function getAnalysisBody() {
         (() => {
             const div = document.createElement('div');
             div.className = 'analysis-body';
-            const existingBody = column.querySelector('.empty-placeholder');
+            const existingBody = column.querySelector('[id="analysisColumnContent"]');
             if (existingBody) existingBody.replaceWith(div);
             else column.appendChild(div);
             return div;
         })();
+}
+
+// Create empty state HTML for Key Insights
+function createKeyInsightsEmptyState() {
+    return `
+        <div class="empty-state-content">
+            ${createScholarlyUnicornSvg()}
+            <p><strong>Knowledge awaits! 📚</strong></p>
+            <p style="font-size: 0.85rem; color: #6b7280; margin: 0;">Pick a meeting to unlock the wisdom</p>
+        </div>
+    `;
+}
+
+// Create empty state HTML for Live Recording
+function createLiveRecordingEmptyState() {
+    return `
+        <div class="empty-state-content">
+            ${createRecordingUnicornSvg()}
+            <p><strong>Ready for some wisdom? 🎤</strong></p>
+            <p style="font-size: 0.85rem; color: #6b7280; margin: 0;">Hit the mic and let's capture some magic!</p>
+        </div>
+    `;
 }
 
 // Filter meetings based on search query
@@ -608,7 +722,7 @@ function clearRecording() {
     currentTranscript = '';
     transcriptionSegments = [];
     audioChunks = [];
-    document.getElementById('transcriptionDisplay').textContent = '';
+    document.getElementById('transcriptionDisplay').innerHTML = createLiveRecordingEmptyState();
     document.getElementById('recordingTimer').textContent = '00:00:00';
 }
 
@@ -770,8 +884,12 @@ function renderAnalysisColumnWithButton(meetingId) {
             <div class="analysis-header">
                 <h2>Key Insights & AI Analysis</h2>
             </div>
-            <p style="color: #6b7280; margin-bottom: 1rem;">No analysis available for this meeting yet.</p>
-            <button class="analyze-btn" data-meeting-id="${meetingId}">Generate Analysis</button>
+            <div style="text-align: center; padding: 2rem 1rem;">
+                ${createScholarlyUnicornSvg()}
+                <p style="color: #6b7280; margin: 1rem 0 0 0; font-size: 0.95rem;"><strong>No wisdom yet! 🤔</strong></p>
+                <p style="color: #9ca3af; margin: 0.5rem 0 1.5rem 0; font-size: 0.85rem;">Let's sprinkle some AI magic on this one</p>
+            </div>
+            <button class="analyze-btn" data-meeting-id="${meetingId}">✨ Generate Analysis</button>
         </div>
     `;
 
@@ -1011,13 +1129,13 @@ function renderAnalysisColumn() {
     const analysisBody = getAnalysisBody();
 
     if (!currentAnalysis) {
-        analysisBody.innerHTML = `
-            <div class="empty-placeholder">
-                <p>Select a meeting to view or generate analysis</p>
-            </div>
-        `;
+        analysisBody.className = 'analysis-body';
+        analysisBody.innerHTML = createKeyInsightsEmptyState();
         return;
     }
+
+    // Ensure analysis body has correct class
+    analysisBody.className = 'analysis-body';
 
     let actionItemsHtml = '';
     if (Array.isArray(currentAnalysis.action_items)) {
@@ -1356,6 +1474,13 @@ async function init() {
             searchQuery = e.target.value;
             renderMeetingHistory();
         });
+    }
+
+    // Initialize empty states with unicorns
+    document.getElementById('transcriptionDisplay').innerHTML = createLiveRecordingEmptyState();
+    const scholarlyUnicornContainer = document.getElementById('scholarlyUnicorn');
+    if (scholarlyUnicornContainer) {
+        scholarlyUnicornContainer.innerHTML = createScholarlyUnicornSvg();
     }
 
     // Render initial UI
