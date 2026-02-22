@@ -356,6 +356,22 @@ footer {
     background-color: #374151;
 }
 
+/* Meetings search */
+.meetings-search-input {
+    width: 100%;
+    padding: 0.5rem;
+    border: 1px solid #d1d5db;
+    border-radius: 0.375rem;
+    font-size: 0.9rem;
+    transition: border-color 0.2s;
+}
+
+.meetings-search-input:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
 /* Meetings list */
 .meetings-list {
     list-style: none;

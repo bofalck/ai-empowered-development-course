@@ -22,6 +22,7 @@ let audioStream = null;
 let currentViewingMeetingId = null;
 let currentSuggestedTags = [];
 let currentSelectedTags = [];
+let searchQuery = '';
 
 // ===== HELPER FUNCTIONS =====
 
@@ -47,6 +48,18 @@ function getAnalysisBody() {
             else column.appendChild(div);
             return div;
         })();
+}
+
+// Filter meetings based on search query
+function getFilteredMeetings() {
+    if (!searchQuery.trim()) return savedMeetings;
+
+    const query = searchQuery.toLowerCase();
+    return savedMeetings.filter(meeting => {
+        const titleMatch = meeting.title.toLowerCase().includes(query);
+        const tagsMatch = meeting.tags && meeting.tags.some(tag => tag.toLowerCase().includes(query));
+        return titleMatch || tagsMatch;
+    });
 }
 
 // Create meeting info HTML header (with title and tags)
@@ -924,7 +937,14 @@ function renderMeetingHistory() {
     const list = document.getElementById('meetingsList');
     list.innerHTML = '';
 
-    savedMeetings.forEach(meeting => {
+    const meetings = getFilteredMeetings();
+
+    if (meetings.length === 0) {
+        list.innerHTML = '<li style="padding: 1rem; text-align: center; color: #9ca3af;">No meetings found</li>';
+        return;
+    }
+
+    meetings.forEach(meeting => {
         const li = document.createElement('li');
         li.className = 'meeting-item';
         li.setAttribute('data-id', meeting.id);
@@ -1328,6 +1348,15 @@ async function init() {
         toggleEditMode();
         updateEditButtonText();
     });
+
+    // Wire up search input
+    const searchInput = document.getElementById('meetingsSearch');
+    if (searchInput) {
+        searchInput.addEventListener('input', (e) => {
+            searchQuery = e.target.value;
+            renderMeetingHistory();
+        });
+    }
 
     // Render initial UI
     renderMeetingHistory();
