@@ -614,6 +614,7 @@ async function saveTranscriptEdit() {
     }
 
     try {
+        // Update database
         const { error } = await supabase
             .from('meetings')
             .update({ transcript: newTranscript })
@@ -621,10 +622,19 @@ async function saveTranscriptEdit() {
 
         if (error) throw error;
 
-        // Update local meetings
-        const meeting = savedMeetings.find(m => m.id === currentViewingMeetingId);
-        if (meeting) {
-            meeting.transcript = newTranscript;
+        // Fetch updated meeting from database
+        const { data: meeting, error: fetchError } = await supabase
+            .from('meetings')
+            .select('*')
+            .eq('id', currentViewingMeetingId)
+            .single();
+
+        if (fetchError) throw fetchError;
+
+        // Update local meetings array
+        const index = savedMeetings.findIndex(m => m.id === currentViewingMeetingId);
+        if (index !== -1) {
+            savedMeetings[index] = meeting;
         }
 
         // Update display
