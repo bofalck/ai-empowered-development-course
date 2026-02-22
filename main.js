@@ -594,7 +594,8 @@ async function viewMeetingTranscript(id) {
     if (!meeting) return;
 
     const modal = document.getElementById('transcriptModal');
-    document.getElementById('modalTitle').textContent = meeting.title;
+    const titleInput = document.getElementById('modalTitleInput');
+    titleInput.value = meeting.title;
 
     const dateStr = new Date(meeting.created_at).toLocaleString();
     const durationMins = Math.floor(meeting.duration / 60);
@@ -753,6 +754,9 @@ function renderAnalysisColumnWithButton(meetingId) {
 }
 
 function closeMeetingTranscript() {
+    // Save title if it changed
+    saveMeetingTitle();
+
     currentViewingMeetingId = null;
     document.getElementById('transcriptModal').classList.add('hidden');
     renderMeetingHistory();
@@ -763,6 +767,102 @@ function closeMeetingTranscript() {
     if (analysisBody) {
         analysisBody.innerHTML = `<div class="empty-placeholder">Select a meeting to view AI analysis</div>`;
     }
+}
+
+// Save meeting title if changed
+async function saveMeetingTitle() {
+    if (!currentViewingMeetingId) return;
+
+    const titleInput = document.getElementById('modalTitleInput');
+    const newTitle = titleInput.value.trim();
+
+    const meeting = savedMeetings.find(m => m.id === currentViewingMeetingId);
+    if (!meeting || newTitle === meeting.title || !newTitle) return;
+
+    try {
+        const { error } = await supabase
+            .from('meetings')
+            .update({ title: newTitle })
+            .eq('id', currentViewingMeetingId);
+
+        if (error) throw error;
+
+        meeting.title = newTitle;
+        renderMeetingHistory();
+    } catch (error) {
+        console.error('Error saving title:', error);
+        alert('Error saving title: ' + error.message);
+    }
+}
+
+// Start inline editing for meeting title
+function startInlineEdit(meetingId, titleDiv) {
+    const meeting = savedMeetings.find(m => m.id === meetingId);
+    if (!meeting) return;
+
+    const originalTitle = meeting.title;
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.value = originalTitle;
+    input.className = 'inline-title-edit';
+
+    titleDiv.replaceWith(input);
+    input.focus();
+    input.select();
+
+    // Save on blur
+    input.addEventListener('blur', () => {
+        finishInlineEdit(meetingId, input, originalTitle);
+    });
+
+    // Save on Enter, cancel on Escape
+    input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            finishInlineEdit(meetingId, input, originalTitle);
+        } else if (e.key === 'Escape') {
+            cancelInlineEdit(input, originalTitle);
+        }
+    });
+}
+
+// Finish inline edit and save
+async function finishInlineEdit(meetingId, input, originalTitle) {
+    const newTitle = input.value.trim();
+
+    if (newTitle && newTitle !== originalTitle) {
+        try {
+            const { error } = await supabase
+                .from('meetings')
+                .update({ title: newTitle })
+                .eq('id', meetingId);
+
+            if (error) throw error;
+
+            const meeting = savedMeetings.find(m => m.id === meetingId);
+            if (meeting) {
+                meeting.title = newTitle;
+            }
+
+            // Re-render to show updated title
+            renderMeetingHistory();
+
+            // Also update modal if it's open
+            if (currentViewingMeetingId === meetingId) {
+                document.getElementById('modalTitleInput').value = newTitle;
+            }
+        } catch (error) {
+            console.error('Error saving title:', error);
+            alert('Error saving title: ' + error.message);
+            renderMeetingHistory();
+        }
+    } else {
+        renderMeetingHistory();
+    }
+}
+
+// Cancel inline edit
+function cancelInlineEdit(input, originalTitle) {
+    renderMeetingHistory();
 }
 
 // Show context menu for meeting
@@ -843,7 +943,7 @@ function renderMeetingHistory() {
         li.innerHTML = `
             <div style="display: flex; justify-content: space-between; align-items: flex-start;">
                 <div style="flex: 1;">
-                    <div class="meeting-title">${escapeHtml(meeting.title)}</div>
+                    <div class="meeting-title" data-meeting-id="${meeting.id}" style="cursor: pointer; user-select: none;">${escapeHtml(meeting.title)}</div>
                     <div class="meeting-meta">
                         <span>${dateStr} ${timeStr}</span>
                         <span>${durationMins}m ${durationSecs}s</span>
@@ -854,10 +954,17 @@ function renderMeetingHistory() {
             </div>
         `;
 
+        // Click title to edit inline
+        const titleDiv = li.querySelector('.meeting-title');
+        titleDiv.addEventListener('dblclick', (e) => {
+            e.stopPropagation();
+            startInlineEdit(meeting.id, titleDiv);
+        });
+
         // Click to select meeting (not open)
         li.addEventListener('click', (e) => {
-            // Don't select if clicking the menu button
-            if (e.target.classList.contains('meeting-menu-btn')) return;
+            // Don't select if clicking the menu button or title
+            if (e.target.classList.contains('meeting-menu-btn') || e.target.classList.contains('meeting-title')) return;
             selectMeeting(meeting.id);
         });
 
@@ -1024,15 +1131,12 @@ async function reanalyzeMeeting(meetingId) {
 
 // Save tags to meeting
 async function saveMeetingTags(meetingId, tags) {
-    console.log('saveMeetingTags called with meetingId:', meetingId, 'tags:', tags);
     try {
         const { data, error } = await supabase
             .from('meetings')
             .update({ tags })
             .eq('id', meetingId)
             .select();
-
-        console.log('Supabase update response:', { data, error });
 
         if (error) throw error;
 
@@ -1051,8 +1155,6 @@ async function saveMeetingTags(meetingId, tags) {
         if (currentViewingMeetingId === meetingId && currentAnalysis) {
             renderAnalysisColumn();
         }
-
-        console.log('Tags saved successfully');
     } catch (error) {
         console.error('Error saving tags:', error);
         alert('Error saving tags: ' + error.message);
@@ -1117,7 +1219,6 @@ function showTagSelection(meetingId, suggestedTags) {
 
     if (saveBtn) {
         saveBtn.addEventListener('click', () => {
-            console.log('Save Tags clicked, meetingId:', meetingId, 'selectedTags:', currentSelectedTags);
             finishTagSelection(meetingId);
         });
     }
