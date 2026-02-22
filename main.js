@@ -571,6 +571,7 @@ async function viewMeetingTranscript(id) {
     // Hide edit area and show view mode
     document.getElementById('modalEditArea').classList.add('hidden');
     document.getElementById('transcriptEditor').value = meeting.transcript;
+    updateEditButtonText();
 
     modal.classList.remove('hidden');
 
@@ -600,11 +601,33 @@ async function viewMeetingTranscript(id) {
 // Toggle between view and edit mode
 function toggleEditMode() {
     const editArea = document.getElementById('modalEditArea');
-    const editBtn = document.getElementById('editTranscriptBtn');
-    const isHidden = editArea.classList.toggle('hidden');
+    editArea.classList.add('hidden');
+    updateEditButtonText();
+}
 
-    // Update button text based on mode
+// Update button text and behavior based on edit mode state
+function updateEditButtonText() {
+    const editArea = document.getElementById('modalEditArea');
+    const editBtn = document.getElementById('editTranscriptBtn');
+    const isHidden = editArea.classList.contains('hidden');
+
     editBtn.textContent = isHidden ? 'Edit Transcript' : 'Save Transcript';
+}
+
+// Handle edit button click - enter edit mode or save
+function handleEditTranscriptClick() {
+    const editArea = document.getElementById('modalEditArea');
+    const isHidden = editArea.classList.contains('hidden');
+
+    if (isHidden) {
+        // Enter edit mode
+        editArea.classList.remove('hidden');
+    } else {
+        // Save transcript
+        saveTranscriptEdit();
+    }
+
+    updateEditButtonText();
 }
 
 // Save edited transcript
@@ -649,7 +672,9 @@ async function saveTranscriptEdit() {
             `Date: ${dateStr}\nDuration: ${durationMins}m ${durationSecs}s\n\n${newTranscript}`;
 
         // Hide edit mode
-        toggleEditMode();
+        const editArea = document.getElementById('modalEditArea');
+        editArea.classList.add('hidden');
+        updateEditButtonText();
 
         // Ask if they want to re-analyze
         const reanalyze = confirm('Transcript updated! Would you like to re-analyze this meeting with the updated transcript?');
@@ -1029,9 +1054,12 @@ async function init() {
     });
 
     // Wire up edit transcript buttons
-    document.getElementById('editTranscriptBtn').addEventListener('click', toggleEditMode);
+    document.getElementById('editTranscriptBtn').addEventListener('click', handleEditTranscriptClick);
     document.getElementById('saveEditBtn').addEventListener('click', saveTranscriptEdit);
-    document.getElementById('cancelEditBtn').addEventListener('click', toggleEditMode);
+    document.getElementById('cancelEditBtn').addEventListener('click', () => {
+        toggleEditMode();
+        updateEditButtonText();
+    });
 
     // Render initial UI
     renderMeetingHistory();
