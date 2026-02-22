@@ -23,6 +23,52 @@ let currentViewingMeetingId = null;
 let currentSuggestedTags = [];
 let currentSelectedTags = [];
 
+// ===== HELPER FUNCTIONS =====
+
+// Get meeting from array by ID
+function getMeeting(id) {
+    return savedMeetings.find(m => m.id === id);
+}
+
+// Get analysis column DOM element
+function getAnalysisColumn() {
+    return document.querySelector('.kanban-column:nth-child(2)');
+}
+
+// Get analysis body element
+function getAnalysisBody() {
+    const column = getAnalysisColumn();
+    return column.querySelector('.analysis-body') ||
+        (() => {
+            const div = document.createElement('div');
+            div.className = 'analysis-body';
+            const existingBody = column.querySelector('.empty-placeholder');
+            if (existingBody) existingBody.replaceWith(div);
+            else column.appendChild(div);
+            return div;
+        })();
+}
+
+// Create meeting info HTML header (with title and tags)
+function createMeetingInfoHtml(meeting) {
+    if (!meeting) return '';
+
+    const tags = meeting.tags || [];
+    const tagsHtml = tags.length > 0 ? `
+        <div class="meeting-tags" style="margin-top: 0.5rem;">
+            ${tags.map(tag => `<span class="tag-badge">${escapeHtml(tag)}</span>`).join('')}
+        </div>
+    ` : '';
+
+    return `
+        <div style="padding: 0.75rem 0; border-bottom: 1px solid #e5e7eb; margin-bottom: 1rem;">
+            <p style="margin: 0 0 0.5rem 0; color: #6b7280; font-size: 0.875rem;">Currently viewing:</p>
+            <h1 style="margin: 0 0 0.5rem 0; font-size: 1.3rem; font-weight: 600; color: var(--color-text);">${escapeHtml(meeting.title)}</h1>
+            ${tagsHtml}
+        </div>
+    `;
+}
+
 // Initialize Web Speech API
 function initSpeechRecognition() {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -702,39 +748,12 @@ async function saveTranscriptEdit() {
 
 // Render analysis column with "Analyze" button when no analysis exists
 function renderAnalysisColumnWithButton(meetingId) {
-    const analysisColumn = document.querySelector('.kanban-column:nth-child(2)');
-    const analysisBody = analysisColumn.querySelector('.analysis-body') ||
-                        (() => {
-                            const div = document.createElement('div');
-                            div.className = 'analysis-body';
-                            const existingBody = analysisColumn.querySelector('.empty-placeholder');
-                            if (existingBody) existingBody.replaceWith(div);
-                            else analysisColumn.appendChild(div);
-                            return div;
-                        })();
-
-    const meeting = savedMeetings.find(m => m.id === meetingId);
-    let meetingInfoHtml = '';
-    if (meeting) {
-        const tags = meeting.tags || [];
-        const tagsHtml = tags.length > 0 ? `
-            <div class="meeting-tags" style="margin-top: 0.5rem;">
-                ${tags.map(tag => `<span class="tag-badge">${escapeHtml(tag)}</span>`).join('')}
-            </div>
-        ` : '';
-
-        meetingInfoHtml = `
-            <div style="padding: 0.75rem 0; border-bottom: 1px solid #e5e7eb; margin-bottom: 1rem;">
-                <p style="margin: 0 0 0.5rem 0; color: #6b7280; font-size: 0.875rem;">Currently viewing:</p>
-                <h1 style="margin: 0 0 0.5rem 0; font-size: 1.3rem; font-weight: 600; color: var(--color-text);">${escapeHtml(meeting.title)}</h1>
-                ${tagsHtml}
-            </div>
-        `;
-    }
+    const analysisBody = getAnalysisBody();
+    const meeting = getMeeting(meetingId);
 
     analysisBody.innerHTML = `
         <div class="analysis-content">
-            ${meetingInfoHtml}
+            ${createMeetingInfoHtml(meeting)}
             <div class="analysis-header">
                 <h2>Key Insights & AI Analysis</h2>
             </div>
@@ -762,11 +781,8 @@ function closeMeetingTranscript() {
     renderMeetingHistory();
 
     // Show empty state in analysis column
-    const analysisColumn = document.querySelector('.kanban-column:nth-child(2)');
-    const analysisBody = analysisColumn.querySelector('.analysis-body');
-    if (analysisBody) {
-        analysisBody.innerHTML = `<div class="empty-placeholder">Select a meeting to view AI analysis</div>`;
-    }
+    const analysisBody = getAnalysisBody();
+    analysisBody.innerHTML = `<div class="empty-placeholder">Select a meeting to view AI analysis</div>`;
 }
 
 // Save meeting title if changed
@@ -776,7 +792,7 @@ async function saveMeetingTitle() {
     const titleInput = document.getElementById('modalTitleInput');
     const newTitle = titleInput.value.trim();
 
-    const meeting = savedMeetings.find(m => m.id === currentViewingMeetingId);
+    const meeting = getMeeting(currentViewingMeetingId);
     if (!meeting || newTitle === meeting.title || !newTitle) return;
 
     try {
@@ -797,72 +813,63 @@ async function saveMeetingTitle() {
 
 // Start inline editing for meeting title
 function startInlineEdit(meetingId, titleDiv) {
-    const meeting = savedMeetings.find(m => m.id === meetingId);
-    if (!meeting) return;
+    const meeting = getMeeting(meetingId);
+    if (!meeting || titleDiv.querySelector('input')) return; // Already editing
 
     const originalTitle = meeting.title;
+
+    // Create input and replace content
+    titleDiv.innerHTML = '';
     const input = document.createElement('input');
     input.type = 'text';
     input.value = originalTitle;
     input.className = 'inline-title-edit';
+    titleDiv.appendChild(input);
 
-    titleDiv.replaceWith(input);
     input.focus();
     input.select();
 
-    // Save on blur
-    input.addEventListener('blur', () => {
-        finishInlineEdit(meetingId, input, originalTitle);
-    });
+    const finishEdit = async () => {
+        const newTitle = input.value.trim();
+        if (newTitle && newTitle !== originalTitle) {
+            await updateMeetingTitle(meetingId, newTitle);
+        }
+        renderMeetingHistory();
+    };
 
-    // Save on Enter, cancel on Escape
+    input.addEventListener('blur', finishEdit);
     input.addEventListener('keydown', (e) => {
         if (e.key === 'Enter') {
-            finishInlineEdit(meetingId, input, originalTitle);
+            finishEdit();
         } else if (e.key === 'Escape') {
-            cancelInlineEdit(input, originalTitle);
+            renderMeetingHistory();
         }
     });
 }
 
-// Finish inline edit and save
-async function finishInlineEdit(meetingId, input, originalTitle) {
-    const newTitle = input.value.trim();
+// Update meeting title in database
+async function updateMeetingTitle(meetingId, newTitle) {
+    try {
+        const { error } = await supabase
+            .from('meetings')
+            .update({ title: newTitle })
+            .eq('id', meetingId);
 
-    if (newTitle && newTitle !== originalTitle) {
-        try {
-            const { error } = await supabase
-                .from('meetings')
-                .update({ title: newTitle })
-                .eq('id', meetingId);
+        if (error) throw error;
 
-            if (error) throw error;
-
-            const meeting = savedMeetings.find(m => m.id === meetingId);
-            if (meeting) {
-                meeting.title = newTitle;
-            }
-
-            // Re-render to show updated title
-            renderMeetingHistory();
-
-            // Also update modal if it's open
-            if (currentViewingMeetingId === meetingId) {
-                document.getElementById('modalTitleInput').value = newTitle;
-            }
-        } catch (error) {
-            console.error('Error saving title:', error);
-            alert('Error saving title: ' + error.message);
-            renderMeetingHistory();
+        const meeting = getMeeting(meetingId);
+        if (meeting) {
+            meeting.title = newTitle;
         }
-    } else {
-        renderMeetingHistory();
-    }
-}
 
-// Cancel inline edit
-function cancelInlineEdit(input, originalTitle) {
-    renderMeetingHistory();
+        // Update modal if it's open
+        if (currentViewingMeetingId === meetingId) {
+            document.getElementById('modalTitleInput').value = newTitle;
+        }
+    } catch (error) {
+        console.error('Error saving title:', error);
+        alert('Error saving title: ' + error.message);
+    }
 }
 
 // Show context menu for meeting
@@ -981,16 +988,7 @@ function renderMeetingHistory() {
 
 // Render analysis in the middle column
 function renderAnalysisColumn() {
-    const analysisColumn = document.querySelector('.kanban-column:nth-child(2)');
-    const analysisBody = analysisColumn.querySelector('.analysis-body') ||
-                        (() => {
-                            const div = document.createElement('div');
-                            div.className = 'analysis-body';
-                            const existingBody = analysisColumn.querySelector('.empty-placeholder');
-                            if (existingBody) existingBody.replaceWith(div);
-                            else analysisColumn.appendChild(div);
-                            return div;
-                        })();
+    const analysisBody = getAnalysisBody();
 
     if (!currentAnalysis) {
         analysisBody.innerHTML = `
@@ -1018,28 +1016,11 @@ function renderAnalysisColumn() {
         `<button class="add-tags-btn" data-meeting-id="${currentAnalysis.meeting_id}">Add Tags</button>` :
         '';
 
-    const meeting = savedMeetings.find(m => m.id === currentViewingMeetingId);
-    let meetingInfoHtml = '';
-    if (meeting) {
-        const tags = meeting.tags || [];
-        const tagsHtml = tags.length > 0 ? `
-            <div class="meeting-tags" style="margin-top: 0.5rem;">
-                ${tags.map(tag => `<span class="tag-badge">${escapeHtml(tag)}</span>`).join('')}
-            </div>
-        ` : '';
-
-        meetingInfoHtml = `
-            <div style="padding: 0.75rem 0; border-bottom: 1px solid #e5e7eb; margin-bottom: 1rem;">
-                <p style="margin: 0 0 0.5rem 0; color: #6b7280; font-size: 0.875rem;">Currently viewing:</p>
-                <h1 style="margin: 0 0 0.5rem 0; font-size: 1.3rem; font-weight: 600; color: var(--color-text);">${escapeHtml(meeting.title)}</h1>
-                ${tagsHtml}
-            </div>
-        `;
-    }
+    const meeting = getMeeting(currentViewingMeetingId);
 
     analysisBody.innerHTML = `
         <div class="analysis-content">
-            ${meetingInfoHtml}
+            ${createMeetingInfoHtml(meeting)}
             <div class="analysis-header">
                 <h2>Key Insights & AI Analysis</h2>
                 <div class="analysis-buttons">
@@ -1080,7 +1061,7 @@ function renderAnalysisColumn() {
 
 // Analyze or re-analyze a meeting
 async function reanalyzeMeeting(meetingId) {
-    const meeting = savedMeetings.find(m => m.id === meetingId);
+    const meeting = getMeeting(meetingId);
     if (!meeting) return;
 
     const analysisBody = document.querySelector('.analysis-body');
@@ -1141,7 +1122,7 @@ async function saveMeetingTags(meetingId, tags) {
         if (error) throw error;
 
         // Update local meetings
-        const meeting = savedMeetings.find(m => m.id === meetingId);
+        const meeting = getMeeting(meetingId);
         if (meeting) {
             meeting.tags = tags;
         }
