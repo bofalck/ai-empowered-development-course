@@ -713,12 +713,23 @@ function renderAnalysisColumnWithButton(meetingId) {
                         })();
 
     const meeting = savedMeetings.find(m => m.id === meetingId);
-    const meetingInfoHtml = meeting ? `
-        <div style="padding: 0.75rem 0; border-bottom: 1px solid #e5e7eb; margin-bottom: 1rem;">
-            <p style="margin: 0 0 0.25rem 0; color: #6b7280; font-size: 0.875rem;">Currently viewing:</p>
-            <p style="margin: 0; font-weight: 500; color: var(--color-text);">${escapeHtml(meeting.title)}</p>
-        </div>
-    ` : '';
+    let meetingInfoHtml = '';
+    if (meeting) {
+        const tags = meeting.tags || [];
+        const tagsHtml = tags.length > 0 ? `
+            <div class="meeting-tags" style="margin-top: 0.5rem;">
+                ${tags.map(tag => `<span class="tag-badge">${escapeHtml(tag)}</span>`).join('')}
+            </div>
+        ` : '';
+
+        meetingInfoHtml = `
+            <div style="padding: 0.75rem 0; border-bottom: 1px solid #e5e7eb; margin-bottom: 1rem;">
+                <p style="margin: 0 0 0.5rem 0; color: #6b7280; font-size: 0.875rem;">Currently viewing:</p>
+                <h1 style="margin: 0 0 0.5rem 0; font-size: 1.3rem; font-weight: 600; color: var(--color-text);">${escapeHtml(meeting.title)}</h1>
+                ${tagsHtml}
+            </div>
+        `;
+    }
 
     analysisBody.innerHTML = `
         <div class="analysis-content">
@@ -901,12 +912,23 @@ function renderAnalysisColumn() {
         '';
 
     const meeting = savedMeetings.find(m => m.id === currentViewingMeetingId);
-    const meetingInfoHtml = meeting ? `
-        <div style="padding: 0.75rem 0; border-bottom: 1px solid #e5e7eb; margin-bottom: 1rem;">
-            <p style="margin: 0 0 0.25rem 0; color: #6b7280; font-size: 0.875rem;">Currently viewing:</p>
-            <p style="margin: 0; font-weight: 500; color: var(--color-text);">${escapeHtml(meeting.title)}</p>
-        </div>
-    ` : '';
+    let meetingInfoHtml = '';
+    if (meeting) {
+        const tags = meeting.tags || [];
+        const tagsHtml = tags.length > 0 ? `
+            <div class="meeting-tags" style="margin-top: 0.5rem;">
+                ${tags.map(tag => `<span class="tag-badge">${escapeHtml(tag)}</span>`).join('')}
+            </div>
+        ` : '';
+
+        meetingInfoHtml = `
+            <div style="padding: 0.75rem 0; border-bottom: 1px solid #e5e7eb; margin-bottom: 1rem;">
+                <p style="margin: 0 0 0.5rem 0; color: #6b7280; font-size: 0.875rem;">Currently viewing:</p>
+                <h1 style="margin: 0 0 0.5rem 0; font-size: 1.3rem; font-weight: 600; color: var(--color-text);">${escapeHtml(meeting.title)}</h1>
+                ${tagsHtml}
+            </div>
+        `;
+    }
 
     analysisBody.innerHTML = `
         <div class="analysis-content">
