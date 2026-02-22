@@ -600,7 +600,11 @@ async function viewMeetingTranscript(id) {
 // Toggle between view and edit mode
 function toggleEditMode() {
     const editArea = document.getElementById('modalEditArea');
-    editArea.classList.toggle('hidden');
+    const editBtn = document.getElementById('editTranscriptBtn');
+    const isHidden = editArea.classList.toggle('hidden');
+
+    // Update button text based on mode
+    editBtn.textContent = isHidden ? 'Edit Transcript' : 'Save Transcript';
 }
 
 // Save edited transcript
