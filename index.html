@@ -3,33 +3,76 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Todo App</title>
+    <title>Meeting Transcriber</title>
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
     <header>
-        <h1>My App</h1>
+        <h1>Meeting Transcriber</h1>
     </header>
 
     <main>
         <div class="container">
-            <h1>My Todos</h1>
-            <div class="input-section">
-                <input type="text" id="todoInput" placeholder="Add a new todo...">
-                <input type="date" id="dueDateInput">
-                <button id="addBtn">Add</button>
-            </div>
+            <div class="kanban-board">
+                <!-- Left Column: Live Recording -->
+                <div class="kanban-column">
+                    <h2 class="column-header">Live Recording</h2>
+                    <div class="recording-controls">
+                        <div class="recording-timer" id="recordingTimer">00:00:00</div>
+                        <div class="control-buttons">
+                            <button id="micButton" class="record-button" title="Start recording">
+                                Record Meeting
+                            </button>
+                            <button id="pauseButton" class="pause-button" title="Pause recording" disabled>
+                                ⏸ Pause
+                            </button>
+                        </div>
+                    </div>
+                    <div class="recording-status" id="recordingStatus">Ready to record</div>
+                    <div class="transcription-display" id="transcriptionDisplay"></div>
+                    <div class="recording-actions">
+                        <button id="saveMeetingBtn" class="action-button save-button">Save Meeting</button>
+                        <button id="clearBtn" class="action-button clear-button">Clear</button>
+                    </div>
+                </div>
 
-            <div class="filters">
-                <button class="filter-btn active" data-filter="all">All</button>
-                <button class="filter-btn" data-filter="active">Active</button>
-                <button class="filter-btn" data-filter="completed">Completed</button>
-                <button class="sort-btn" id="sortByDueDateBtn">Sort by Due Date: OFF</button>
-            </div>
+                <!-- Middle Column: AI Analysis (Phase 2) -->
+                <div class="kanban-column">
+                    <h2 class="column-header">Key Insights</h2>
+                    <div class="empty-placeholder">Select a meeting to view AI analysis</div>
+                </div>
 
-            <ul class="todoList" id="todoList"></ul>
+                <!-- Right Column: Meeting History -->
+                <div class="kanban-column">
+                    <h2 class="column-header">Past Meetings</h2>
+                    <ul class="meetings-list" id="meetingsList"></ul>
+                </div>
+            </div>
         </div>
     </main>
+
+    <!-- Modal for viewing transcript -->
+    <div id="transcriptModal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modalTitle"></h3>
+                <button class="modal-close" id="modalCloseBtn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div id="modalTranscript"></div>
+                <div id="modalEditArea" class="modal-edit-area hidden">
+                    <textarea id="transcriptEditor" class="transcript-editor"></textarea>
+                    <div class="modal-edit-buttons">
+                        <button id="saveEditBtn" class="save-edit-btn">Save Changes</button>
+                        <button id="cancelEditBtn" class="cancel-edit-btn">Cancel</button>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="editTranscriptBtn" class="edit-transcript-btn">Edit Transcript</button>
+            </div>
+        </div>
+    </div>
 
     <footer>
         <p>&copy; 2026</p>
