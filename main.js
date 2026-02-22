@@ -1396,9 +1396,12 @@ async function init() {
 
     // Initialize empty states with unicorns
     document.getElementById('transcriptionDisplay').innerHTML = createLiveRecordingEmptyState();
-    const scholarlyUnicornContainer = document.getElementById('scholarlyUnicorn');
-    if (scholarlyUnicornContainer) {
-        scholarlyUnicornContainer.innerHTML = createScholarlyUnicornSvg();
+
+    // Initialize Key Insights empty state
+    const analysisColumn = getAnalysisColumn();
+    const emptyPlaceholder = analysisColumn.querySelector('.empty-placeholder');
+    if (emptyPlaceholder) {
+        emptyPlaceholder.innerHTML = createKeyInsightsEmptyState();
     }
 
     // Render initial UI
