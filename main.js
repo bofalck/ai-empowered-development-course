@@ -553,11 +553,45 @@ function clearRecording() {
     document.getElementById('recordingTimer').textContent = '00:00:00';
 }
 
-async function viewMeetingTranscript(id) {
+// Just select a meeting for display (don't open modal)
+function selectMeeting(id) {
     const meeting = savedMeetings.find(m => m.id === id);
     if (!meeting) return;
 
     currentViewingMeetingId = id;
+    renderMeetingHistory();
+
+    // Fetch and display analysis
+    fetchAndRenderAnalysis(id);
+}
+
+// Fetch analysis and render it in the middle column
+async function fetchAndRenderAnalysis(id) {
+    const { data: analysis, error } = await supabase
+        .from('analyses')
+        .select('*')
+        .eq('meeting_id', id)
+        .single();
+
+    if (error) {
+        console.log('No analysis yet for this meeting');
+        currentAnalysis = {
+            meeting_id: id,
+            summary: null,
+            action_items: null,
+            sentiment: null,
+        };
+        renderAnalysisColumnWithButton(id);
+    } else {
+        currentAnalysis = analysis;
+        renderAnalysisColumn();
+    }
+}
+
+// Open transcript modal for a meeting (meeting should already be selected)
+async function viewMeetingTranscript(id) {
+    const meeting = savedMeetings.find(m => m.id === id);
+    if (!meeting) return;
 
     const modal = document.getElementById('transcriptModal');
     document.getElementById('modalTitle').textContent = meeting.title;
@@ -574,32 +608,6 @@ async function viewMeetingTranscript(id) {
     updateEditButtonText();
 
     modal.classList.remove('hidden');
-
-    // Update middle column and highlight selected meeting
-    updateAnalysisColumnStatus();
-    renderMeetingHistory();
-
-    // Fetch and display analysis in the middle column
-    const { data: analysis, error } = await supabase
-        .from('analyses')
-        .select('*')
-        .eq('meeting_id', id)
-        .single();
-
-    if (error) {
-        console.log('No analysis yet for this meeting');
-        // Create a placeholder with analyze button
-        currentAnalysis = {
-            meeting_id: id,
-            summary: null,
-            action_items: null,
-            sentiment: null,
-        };
-        renderAnalysisColumnWithButton(id);
-    } else {
-        currentAnalysis = analysis;
-        renderAnalysisColumn();
-    }
 }
 
 // Toggle between view and edit mode
@@ -704,8 +712,17 @@ function renderAnalysisColumnWithButton(meetingId) {
                             return div;
                         })();
 
+    const meeting = savedMeetings.find(m => m.id === meetingId);
+    const meetingInfoHtml = meeting ? `
+        <div style="padding: 0.75rem 0; border-bottom: 1px solid #e5e7eb; margin-bottom: 1rem;">
+            <p style="margin: 0 0 0.25rem 0; color: #6b7280; font-size: 0.875rem;">Currently viewing:</p>
+            <p style="margin: 0; font-weight: 500; color: var(--color-text);">${escapeHtml(meeting.title)}</p>
+        </div>
+    ` : '';
+
     analysisBody.innerHTML = `
         <div class="analysis-content">
+            ${meetingInfoHtml}
             <div class="analysis-header">
                 <h2>Key Insights & AI Analysis</h2>
             </div>
@@ -727,40 +744,63 @@ function renderAnalysisColumnWithButton(meetingId) {
 function closeMeetingTranscript() {
     currentViewingMeetingId = null;
     document.getElementById('transcriptModal').classList.add('hidden');
-    updateAnalysisColumnStatus();
     renderMeetingHistory();
+
+    // Show empty state in analysis column
+    const analysisColumn = document.querySelector('.kanban-column:nth-child(2)');
+    const analysisBody = analysisColumn.querySelector('.analysis-body');
+    if (analysisBody) {
+        analysisBody.innerHTML = `<div class="empty-placeholder">Select a meeting to view AI analysis</div>`;
+    }
 }
 
-// Update middle column to show currently selected meeting
-function updateAnalysisColumnStatus() {
-    const container = document.getElementById('analysisContainer');
-
-    if (!currentViewingMeetingId) {
-        container.innerHTML = 'Select a meeting to view AI analysis';
-        container.className = 'empty-placeholder';
-        return;
+// Show context menu for meeting
+function showMeetingMenu(meetingId, buttonElement) {
+    // Remove any existing menu
+    const existingMenu = document.getElementById('meetingContextMenu');
+    if (existingMenu) {
+        existingMenu.remove();
     }
 
-    const meeting = savedMeetings.find(m => m.id === currentViewingMeetingId);
-    if (!meeting) {
-        container.innerHTML = 'Meeting not found';
-        container.className = 'empty-placeholder';
-        return;
-    }
-
-    const date = new Date(meeting.created_at);
-    const dateStr = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-    const timeStr = date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
-
-    container.innerHTML = `
-        <div style="padding: 1rem;">
-            <p style="margin: 0 0 0.5rem 0; color: #6b7280; font-size: 0.875rem;">Currently viewing:</p>
-            <h3 style="margin: 0 0 1rem 0; color: var(--color-text); font-size: 1.1rem;">${escapeHtml(meeting.title)}</h3>
-            <p style="margin: 0; color: #6b7280; font-size: 0.875rem;">${dateStr} ${timeStr}</p>
-        </div>
+    // Create menu
+    const menu = document.createElement('div');
+    menu.id = 'meetingContextMenu';
+    menu.className = 'meeting-context-menu';
+    menu.innerHTML = `
+        <button class="meeting-menu-item" data-action="edit" data-meeting-id="${meetingId}">
+            ✏️ Edit Transcript
+        </button>
     `;
-    container.className = '';
+
+    document.body.appendChild(menu);
+
+    // Position menu near button
+    const rect = buttonElement.getBoundingClientRect();
+    menu.style.top = (rect.bottom + 5) + 'px';
+    menu.style.left = (rect.right - 150) + 'px';
+
+    // Handle menu item click
+    menu.querySelector('[data-action="edit"]').addEventListener('click', async (e) => {
+        const mId = parseInt(e.target.getAttribute('data-meeting-id'));
+        // First select the meeting if not already selected
+        if (currentViewingMeetingId !== mId) {
+            selectMeeting(mId);
+        }
+        // Then open the modal to view/edit
+        await viewMeetingTranscript(mId);
+        menu.remove();
+    });
+
+    // Close menu when clicking elsewhere
+    const closeMenu = (e) => {
+        if (e.target !== buttonElement && !menu.contains(e.target)) {
+            menu.remove();
+            document.removeEventListener('click', closeMenu);
+        }
+    };
+    document.addEventListener('click', closeMenu);
 }
+
 
 function renderMeetingHistory() {
     const list = document.getElementById('meetingsList');
@@ -790,15 +830,33 @@ function renderMeetingHistory() {
         ` : '';
 
         li.innerHTML = `
-            <div class="meeting-title">${escapeHtml(meeting.title)}</div>
-            <div class="meeting-meta">
-                <span>${dateStr} ${timeStr}</span>
-                <span>${durationMins}m ${durationSecs}s</span>
+            <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                <div style="flex: 1;">
+                    <div class="meeting-title">${escapeHtml(meeting.title)}</div>
+                    <div class="meeting-meta">
+                        <span>${dateStr} ${timeStr}</span>
+                        <span>${durationMins}m ${durationSecs}s</span>
+                    </div>
+                    ${tagsHtml}
+                </div>
+                <button class="meeting-menu-btn" data-meeting-id="${meeting.id}" title="Options">⋮</button>
             </div>
-            ${tagsHtml}
         `;
 
-        li.addEventListener('click', () => viewMeetingTranscript(meeting.id));
+        // Click to select meeting (not open)
+        li.addEventListener('click', (e) => {
+            // Don't select if clicking the menu button
+            if (e.target.classList.contains('meeting-menu-btn')) return;
+            selectMeeting(meeting.id);
+        });
+
+        // Menu button click
+        const menuBtn = li.querySelector('.meeting-menu-btn');
+        menuBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            showMeetingMenu(meeting.id, e.target);
+        });
+
         list.appendChild(li);
     });
 }
@@ -842,8 +900,17 @@ function renderAnalysisColumn() {
         `<button class="add-tags-btn" data-meeting-id="${currentAnalysis.meeting_id}">Add Tags</button>` :
         '';
 
+    const meeting = savedMeetings.find(m => m.id === currentViewingMeetingId);
+    const meetingInfoHtml = meeting ? `
+        <div style="padding: 0.75rem 0; border-bottom: 1px solid #e5e7eb; margin-bottom: 1rem;">
+            <p style="margin: 0 0 0.25rem 0; color: #6b7280; font-size: 0.875rem;">Currently viewing:</p>
+            <p style="margin: 0; font-weight: 500; color: var(--color-text);">${escapeHtml(meeting.title)}</p>
+        </div>
+    ` : '';
+
     analysisBody.innerHTML = `
         <div class="analysis-content">
+            ${meetingInfoHtml}
             <div class="analysis-header">
                 <h2>Key Insights & AI Analysis</h2>
                 <div class="analysis-buttons">
