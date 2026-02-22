@@ -482,11 +482,27 @@ footer {
     text-align: center;
     padding: 2rem 1rem;
     width: 100%;
+    gap: 0.5rem;
+}
+
+.empty-state-content img {
+    display: block;
+    margin: 0 auto;
 }
 
 .empty-state-content p {
-    margin: 0.5rem 0;
+    margin: 0;
     font-size: 0.95rem;
+}
+
+.empty-state-content p:first-of-type {
+    margin-top: 0.75rem;
+    font-weight: 600;
+}
+
+.empty-state-content p:last-of-type {
+    font-size: 0.85rem;
+    color: #6b7280;
 }
 
 /* Analysis column */

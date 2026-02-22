@@ -28,12 +28,12 @@ let searchQuery = '';
 
 // Create recording unicorn image
 function createRecordingUnicornSvg() {
-    return `<img src="/unicorn-recording.png" alt="Singing unicorn with microphone" style="max-width: 140px; max-height: 160px; margin: 0.5rem auto;">`;
+    return `<img src="/unicorn-recording.png" alt="Singing unicorn with microphone" style="max-width: 140px; max-height: 160px; display: block; margin: 0 auto;">`;
 }
 
 // Create scholarly unicorn image
 function createScholarlyUnicornSvg() {
-    return `<img src="/unicorns.png" alt="Scholarly unicorn with glasses" style="max-width: 140px; max-height: 160px; margin: 0.5rem auto;">`;
+    return `<img src="/unicorn-analysis.png" alt="Scholarly unicorn with glasses and books" style="max-width: 140px; max-height: 160px; display: block; margin: 0 auto;">`;
 }
 
 // Get meeting from array by ID
@@ -65,8 +65,8 @@ function createKeyInsightsEmptyState() {
     return `
         <div class="empty-state-content">
             ${createScholarlyUnicornSvg()}
-            <p><strong>Knowledge awaits! 📚</strong></p>
-            <p style="font-size: 0.85rem; color: #6b7280; margin: 0;">Pick a meeting to unlock the wisdom</p>
+            <p>Knowledge awaits! 📚</p>
+            <p>Pick a meeting to unlock the wisdom</p>
         </div>
     `;
 }
@@ -76,8 +76,8 @@ function createLiveRecordingEmptyState() {
     return `
         <div class="empty-state-content">
             ${createRecordingUnicornSvg()}
-            <p><strong>Ready for some wisdom? 🎤</strong></p>
-            <p style="font-size: 0.85rem; color: #6b7280; margin: 0;">Hit the mic and let's capture some magic!</p>
+            <p>Ready for some wisdom? 🎤</p>
+            <p>Hit the mic and let's capture some magic!</p>
         </div>
     `;
 }
@@ -802,10 +802,10 @@ function renderAnalysisColumnWithButton(meetingId) {
             <div class="analysis-header">
                 <h2>Key Insights & AI Analysis</h2>
             </div>
-            <div style="text-align: center; padding: 2rem 1rem;">
+            <div class="empty-state-content" style="margin: 1.5rem 0;">
                 ${createScholarlyUnicornSvg()}
-                <p style="color: #6b7280; margin: 1rem 0 0 0; font-size: 0.95rem;"><strong>No wisdom yet! 🤔</strong></p>
-                <p style="color: #9ca3af; margin: 0.5rem 0 1.5rem 0; font-size: 0.85rem;">Let's sprinkle some AI magic on this one</p>
+                <p>No wisdom yet! 🤔</p>
+                <p>Let's sprinkle some AI magic on this one</p>
             </div>
             <button class="analyze-btn" data-meeting-id="${meetingId}">✨ Generate Analysis</button>
         </div>
