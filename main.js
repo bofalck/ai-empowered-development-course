@@ -1017,8 +1017,14 @@ async function saveMeetingTags(meetingId, tags) {
         }
 
         currentSelectedTags = [];
+
+        // Refresh UI
         renderMeetingHistory();
-        alert('Tags saved!');
+
+        // Also refresh analysis column to show updated data
+        if (currentViewingMeetingId === meetingId && currentAnalysis) {
+            renderAnalysisColumn();
+        }
     } catch (error) {
         console.error('Error saving tags:', error);
         alert('Error saving tags: ' + error.message);
