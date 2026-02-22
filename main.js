@@ -28,12 +28,12 @@ let searchQuery = '';
 
 // Create recording unicorn image
 function createRecordingUnicornSvg() {
-    return `<img src="/unicorns.png" alt="Recording unicorn with mic" style="max-width: 150px; max-height: 180px; object-fit: cover; object-position: left; margin: 0.5rem auto;">`;
+    return `<img src="/unicorn-recording.png" alt="Singing unicorn with microphone" style="max-width: 140px; max-height: 160px; margin: 0.5rem auto;">`;
 }
 
 // Create scholarly unicorn image
 function createScholarlyUnicornSvg() {
-    return `<img src="/unicorns.png" alt="Scholarly unicorn with glasses" style="max-width: 150px; max-height: 180px; object-fit: cover; object-position: right; margin: 0.5rem auto;">`;
+    return `<img src="/unicorns.png" alt="Scholarly unicorn with glasses" style="max-width: 140px; max-height: 160px; margin: 0.5rem auto;">`;
 }
 
 // Get meeting from array by ID
