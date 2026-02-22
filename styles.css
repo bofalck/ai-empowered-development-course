@@ -379,6 +379,20 @@ footer {
     background-color: #f3f4f6;
 }
 
+.meeting-item.selected {
+    background-color: var(--color-primary);
+    border-color: var(--color-primary);
+    color: white;
+}
+
+.meeting-item.selected .meeting-title {
+    color: white;
+}
+
+.meeting-item.selected .meeting-meta {
+    color: rgba(255, 255, 255, 0.9);
+}
+
 .meeting-title {
     font-weight: 600;
     color: var(--color-text);

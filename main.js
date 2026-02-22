@@ -575,6 +575,10 @@ async function viewMeetingTranscript(id) {
 
     modal.classList.remove('hidden');
 
+    // Update middle column and highlight selected meeting
+    updateAnalysisColumnStatus();
+    renderMeetingHistory();
+
     // Fetch and display analysis in the middle column
     const { data: analysis, error } = await supabase
         .from('analyses')
@@ -721,7 +725,41 @@ function renderAnalysisColumnWithButton(meetingId) {
 }
 
 function closeMeetingTranscript() {
+    currentViewingMeetingId = null;
     document.getElementById('transcriptModal').classList.add('hidden');
+    updateAnalysisColumnStatus();
+    renderMeetingHistory();
+}
+
+// Update middle column to show currently selected meeting
+function updateAnalysisColumnStatus() {
+    const container = document.getElementById('analysisContainer');
+
+    if (!currentViewingMeetingId) {
+        container.innerHTML = 'Select a meeting to view AI analysis';
+        container.className = 'empty-placeholder';
+        return;
+    }
+
+    const meeting = savedMeetings.find(m => m.id === currentViewingMeetingId);
+    if (!meeting) {
+        container.innerHTML = 'Meeting not found';
+        container.className = 'empty-placeholder';
+        return;
+    }
+
+    const date = new Date(meeting.created_at);
+    const dateStr = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    const timeStr = date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+
+    container.innerHTML = `
+        <div style="padding: 1rem;">
+            <p style="margin: 0 0 0.5rem 0; color: #6b7280; font-size: 0.875rem;">Currently viewing:</p>
+            <h3 style="margin: 0 0 1rem 0; color: var(--color-text); font-size: 1.1rem;">${escapeHtml(meeting.title)}</h3>
+            <p style="margin: 0; color: #6b7280; font-size: 0.875rem;">${dateStr} ${timeStr}</p>
+        </div>
+    `;
+    container.className = '';
 }
 
 function renderMeetingHistory() {
@@ -731,6 +769,12 @@ function renderMeetingHistory() {
     savedMeetings.forEach(meeting => {
         const li = document.createElement('li');
         li.className = 'meeting-item';
+        li.setAttribute('data-id', meeting.id);
+
+        // Add selected class if this is the current viewing meeting
+        if (meeting.id === currentViewingMeetingId) {
+            li.classList.add('selected');
+        }
 
         const date = new Date(meeting.created_at);
         const dateStr = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
