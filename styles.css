@@ -380,17 +380,8 @@ footer {
 }
 
 .meeting-item.selected {
-    background-color: var(--color-primary);
-    border-color: var(--color-primary);
-    color: white;
-}
-
-.meeting-item.selected .meeting-title {
-    color: white;
-}
-
-.meeting-item.selected .meeting-meta {
-    color: rgba(255, 255, 255, 0.9);
+    background-color: #eff6ff;
+    border-left: 3px solid var(--color-primary);
 }
 
 .meeting-menu-btn {
