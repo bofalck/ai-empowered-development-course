@@ -1037,23 +1037,23 @@ function showTagSelection(meetingId, suggestedTags) {
         <div class="tag-selection">
             <h4>Add Tags to Meeting</h4>
             <p>Suggested tags:</p>
-            <div class="suggested-tags">
+            <div class="suggested-tags" id="suggestedTagsContainer">
                 ${suggestedTags.map(tag => `
-                    <button class="tag-btn" data-tag="${escapeHtml(tag)}" onclick="toggleTag('${escapeHtml(tag)}')">${escapeHtml(tag)}</button>
+                    <button class="tag-btn" data-tag="${tag}">${escapeHtml(tag)}</button>
                 `).join('')}
             </div>
             <p>Or add custom tag:</p>
             <div class="custom-tag-input">
                 <input type="text" id="customTagInput" placeholder="Enter custom tag">
-                <button onclick="addCustomTag()">Add</button>
+                <button id="addCustomTagBtn">Add</button>
             </div>
             <div class="selected-tags">
                 <p>Selected tags:</p>
                 <div id="selectedTagsList"></div>
             </div>
             <div class="tag-actions">
-                <button class="save-tags-btn" onclick="finishTagSelection(${meetingId})">Save Tags</button>
-                <button class="cancel-tags-btn" onclick="closeTagSelection()">Cancel</button>
+                <button class="save-tags-btn" id="saveTagsBtn">Save Tags</button>
+                <button class="cancel-tags-btn" id="cancelTagsBtn">Cancel</button>
             </div>
         </div>
     `;
@@ -1063,6 +1063,31 @@ function showTagSelection(meetingId, suggestedTags) {
     currentSuggestedTags = suggestedTags;
     currentSelectedTags = [];
     updateTagsList();
+
+    // Wire up event listeners
+    // Suggested tags
+    document.querySelectorAll('#suggestedTagsContainer .tag-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const tag = btn.getAttribute('data-tag');
+            toggleTag(tag);
+        });
+    });
+
+    // Custom tag input
+    document.getElementById('addCustomTagBtn').addEventListener('click', addCustomTag);
+
+    // Key press on input
+    document.getElementById('customTagInput').addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+            addCustomTag();
+        }
+    });
+
+    // Action buttons
+    document.getElementById('saveTagsBtn').addEventListener('click', () => {
+        finishTagSelection(meetingId);
+    });
+    document.getElementById('cancelTagsBtn').addEventListener('click', closeTagSelection);
 }
 
 function toggleTag(tag) {
@@ -1090,8 +1115,16 @@ function updateTagsList() {
     const tagsList = document.getElementById('selectedTagsList');
     if (tagsList) {
         tagsList.innerHTML = currentSelectedTags.map(tag => `
-            <span class="selected-tag">${escapeHtml(tag)} <button onclick="removeTag('${escapeHtml(tag)}')">×</button></span>
+            <span class="selected-tag" data-tag="${tag}">${escapeHtml(tag)} <button class="remove-tag-btn">×</button></span>
         `).join('');
+
+        // Wire up remove buttons
+        tagsList.querySelectorAll('.remove-tag-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const tag = btn.closest('.selected-tag').getAttribute('data-tag');
+                removeTag(tag);
+            });
+        });
     }
 }
 
