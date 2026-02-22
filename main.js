@@ -1002,11 +1002,15 @@ async function reanalyzeMeeting(meetingId) {
 
 // Save tags to meeting
 async function saveMeetingTags(meetingId, tags) {
+    console.log('saveMeetingTags called with meetingId:', meetingId, 'tags:', tags);
     try {
-        const { error } = await supabase
+        const { data, error } = await supabase
             .from('meetings')
             .update({ tags })
-            .eq('id', meetingId);
+            .eq('id', meetingId)
+            .select();
+
+        console.log('Supabase update response:', { data, error });
 
         if (error) throw error;
 
@@ -1025,6 +1029,8 @@ async function saveMeetingTags(meetingId, tags) {
         if (currentViewingMeetingId === meetingId && currentAnalysis) {
             renderAnalysisColumn();
         }
+
+        console.log('Tags saved successfully');
     } catch (error) {
         console.error('Error saving tags:', error);
         alert('Error saving tags: ' + error.message);
@@ -1084,10 +1090,18 @@ function showTagSelection(meetingId, suggestedTags) {
     });
 
     // Action buttons
-    document.getElementById('saveTagsBtn').addEventListener('click', () => {
-        finishTagSelection(meetingId);
-    });
-    document.getElementById('cancelTagsBtn').addEventListener('click', closeTagSelection);
+    const saveBtn = document.getElementById('saveTagsBtn');
+    const cancelBtn = document.getElementById('cancelTagsBtn');
+
+    if (saveBtn) {
+        saveBtn.addEventListener('click', () => {
+            console.log('Save Tags clicked, meetingId:', meetingId, 'selectedTags:', currentSelectedTags);
+            finishTagSelection(meetingId);
+        });
+    }
+    if (cancelBtn) {
+        cancelBtn.addEventListener('click', closeTagSelection);
+    }
 }
 
 function toggleTag(tag) {
