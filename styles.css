@@ -483,6 +483,7 @@ footer {
     padding: 2rem 1rem;
     width: 100%;
     gap: 0.5rem;
+    font-family: 'Monaco', 'Courier New', monospace;
 }
 
 .empty-state-content img {
@@ -493,16 +494,18 @@ footer {
 .empty-state-content p {
     margin: 0;
     font-size: 0.95rem;
+    color: #9ca3af;
 }
 
 .empty-state-content p:first-of-type {
     margin-top: 0.75rem;
     font-weight: 600;
+    color: #6b7280;
 }
 
 .empty-state-content p:last-of-type {
     font-size: 0.85rem;
-    color: #6b7280;
+    color: #9ca3af;
 }
 
 /* Analysis column */
