@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>After the Noise - Sign In</title>
+    <link rel="stylesheet" href="login.css">
+</head>
+<body>
+    <div class="login-container">
+        <!-- Login Panel -->
+        <div id="loginPanel" class="panel active">
+            <div class="panel-content">
+                <div class="logo">
+                    <img src="/assets/unicorn_journalist.png" alt="Journalist unicorn" class="logo-image">
+                </div>
+                <h1>AFTER THE NOISE</h1>
+                <p class="subtitle">Quiet intelligence for your conversations</p>
+
+                <form id="loginForm" class="form">
+                    <div class="form-group">
+                        <label for="loginUsername">Username</label>
+                        <input type="text" id="loginUsername" placeholder="Enter your username" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="loginPassword">Password</label>
+                        <input type="password" id="loginPassword" placeholder="Enter your password" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Theme</label>
+                        <div class="theme-selector-login">
+                            <button type="button" class="theme-btn-login" data-theme="default" title="Default theme">☀️</button>
+                            <button type="button" class="theme-btn-login" data-theme="signal" title="Signal in Silence theme">📡</button>
+                            <button type="button" class="theme-btn-login" data-theme="dark" title="Dark theme">🌙</button>
+                            <button type="button" class="theme-btn-login" data-theme="prism" title="PrismPulse theme">🦄</button>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">Continue</button>
+                </form>
+
+                <div class="divider">or</div>
+
+                <button id="showAdminBtn" class="btn btn-secondary">Add User</button>
+
+                <div id="loginError" class="error-message hidden"></div>
+            </div>
+        </div>
+
+        <!-- Admin Panel -->
+        <div id="adminPanel" class="panel">
+            <div class="panel-content">
+                <div class="admin-header">
+                    <h2>Add New User</h2>
+                    <button id="backToLoginBtn" class="btn-back" title="Back to login">&times;</button>
+                </div>
+
+                <form id="addUserForm" class="form">
+                    <div class="form-group">
+                        <label for="newUsername">Username</label>
+                        <input type="text" id="newUsername" placeholder="Username" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="newPassword">Password</label>
+                        <input type="password" id="newPassword" placeholder="Password" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Theme</label>
+                        <div class="theme-selector-admin">
+                            <button type="button" class="theme-btn-admin" data-theme="default" title="Default theme">☀️</button>
+                            <button type="button" class="theme-btn-admin" data-theme="signal" title="Signal in Silence theme">📡</button>
+                            <button type="button" class="theme-btn-admin" data-theme="dark" title="Dark theme">🌙</button>
+                            <button type="button" class="theme-btn-admin" data-theme="prism" title="PrismPulse theme">🦄</button>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">Create</button>
+                </form>
+
+                <div id="adminMessage" class="success-message hidden"></div>
+                <div id="adminError" class="error-message hidden"></div>
+
+                <div class="users-list">
+                    <h3>Users</h3>
+                    <ul id="usersList" class="users-ul"></ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="login.js"></script>
+</body>
+</html>
