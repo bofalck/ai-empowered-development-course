@@ -23,17 +23,45 @@ let currentViewingMeetingId = null;
 let currentSuggestedTags = [];
 let currentSelectedTags = [];
 let searchQuery = '';
+let currentUser = null;
+
+// ===== SESSION MANAGEMENT =====
+
+function getSession() {
+    const data = localStorage.getItem('transcriber_session');
+    return data ? JSON.parse(data) : null;
+}
+
+function clearSession() {
+    localStorage.removeItem('transcriber_session');
+}
+
+function logout() {
+    clearSession();
+    window.location.href = 'login.html';
+}
+
+// Check if user is logged in
+function checkAuth() {
+    const session = getSession();
+    if (!session) {
+        window.location.href = 'login.html';
+        return false;
+    }
+    currentUser = session;
+    return true;
+}
 
 // ===== HELPER FUNCTIONS =====
 
 // Create recording unicorn image
 function createRecordingUnicornSvg() {
-    return `<img src="/unicorn-recording.png" alt="Singing unicorn with microphone" style="max-width: 140px; max-height: 160px; display: block; margin: 0 auto;">`;
+    return `<img src="/assets/unicorn-recording.png" alt="Singing unicorn with microphone" style="max-width: 180px; max-height: 200px; display: block; margin: 0 auto;">`;
 }
 
 // Create scholarly unicorn image
 function createScholarlyUnicornSvg() {
-    return `<img src="/unicorn-analysis.png" alt="Scholarly unicorn with glasses and books" style="max-width: 140px; max-height: 160px; display: block; margin: 0 auto;">`;
+    return `<img src="/assets/unicorn-analysis.png" alt="Scholarly unicorn with glasses and books" style="max-width: 180px; max-height: 200px; display: block; margin: 0 auto;">`;
 }
 
 // Get meeting from array by ID
@@ -49,15 +77,43 @@ function getAnalysisColumn() {
 // Get analysis body element
 function getAnalysisBody() {
     const column = getAnalysisColumn();
-    return column.querySelector('.analysis-body') ||
-        (() => {
-            const div = document.createElement('div');
-            div.className = 'analysis-body';
-            const existingBody = column.querySelector('[id="analysisColumnContent"]');
-            if (existingBody) existingBody.replaceWith(div);
-            else column.appendChild(div);
-            return div;
-        })();
+    let body = column.querySelector('.analysis-body');
+
+    if (body) {
+        return body;
+    }
+
+    // Create analysis body and remove empty placeholder
+    const emptyPlaceholder = column.querySelector('.empty-placeholder');
+    if (emptyPlaceholder) {
+        emptyPlaceholder.remove();
+    }
+
+    const div = document.createElement('div');
+    div.className = 'analysis-body';
+    column.appendChild(div);
+    return div;
+}
+
+// Set up event listeners for the currently viewing title
+function setupMeetingInfoListeners() {
+    const titleElement = document.querySelector('.currently-viewing-title');
+    if (titleElement) {
+        titleElement.addEventListener('dblclick', (e) => {
+            e.stopPropagation();
+            const meetingId = parseInt(titleElement.getAttribute('data-meeting-id'));
+            startInlineEdit(meetingId, titleElement);
+        });
+
+        // Add hover effect
+        titleElement.addEventListener('mouseenter', () => {
+            titleElement.style.backgroundColor = 'rgba(59, 130, 246, 0.05)';
+        });
+
+        titleElement.addEventListener('mouseleave', () => {
+            titleElement.style.backgroundColor = 'transparent';
+        });
+    }
 }
 
 // Create empty state HTML for Key Insights
@@ -65,8 +121,8 @@ function createKeyInsightsEmptyState() {
     return `
         <div class="empty-state-content">
             ${createScholarlyUnicornSvg()}
-            <p>Knowledge awaits! 📚</p>
-            <p>Pick a meeting to unlock the wisdom</p>
+            <p>No analysis yet.</p>
+            <p>Select a recording to extract patterns.</p>
         </div>
     `;
 }
@@ -76,8 +132,8 @@ function createLiveRecordingEmptyState() {
     return `
         <div class="empty-state-content">
             ${createRecordingUnicornSvg()}
-            <p>Ready for some wisdom? 🎤</p>
-            <p>Hit the mic and let's capture some magic!</p>
+            <p>Ready to listen.</p>
+            <p>Press Record when you begin.</p>
         </div>
     `;
 }
@@ -106,12 +162,65 @@ function createMeetingInfoHtml(meeting) {
     ` : '';
 
     return `
-        <div style="padding: 0.75rem 0; border-bottom: 1px solid #e5e7eb; margin-bottom: 1rem;">
+        <div style="padding: 0.75rem 0; border-bottom: 1px solid var(--color-border-light); margin-bottom: 1rem;">
             <p style="margin: 0 0 0.5rem 0; color: #6b7280; font-size: 0.875rem;">Currently viewing:</p>
-            <h1 style="margin: 0 0 0.5rem 0; font-size: 1.3rem; font-weight: 600; color: var(--color-text);">${escapeHtml(meeting.title)}</h1>
+            <h1 class="currently-viewing-title" style="margin: 0 0 0.5rem 0; font-size: 1.3rem; font-weight: 600; color: var(--color-text); cursor: pointer; padding: 0.25rem 0.5rem; border-radius: 0.25rem; transition: background-color 0.2s;" data-meeting-id="${meeting.id}">${escapeHtml(meeting.title)}</h1>
             ${tagsHtml}
         </div>
     `;
+}
+
+// ===== THEME MANAGEMENT =====
+
+// Set theme to specified value
+function setTheme(themeName) {
+    const body = document.body;
+
+    // Remove all theme classes
+    body.classList.remove('theme-signal', 'theme-dark', 'theme-prism');
+
+    // Add selected theme class
+    if (themeName === 'signal') {
+        body.classList.add('theme-signal');
+    } else if (themeName === 'dark') {
+        body.classList.add('theme-dark');
+    } else if (themeName === 'prism') {
+        body.classList.add('theme-prism');
+    }
+
+    // Save preference
+    localStorage.setItem('theme', themeName);
+
+    // Update active state on buttons
+    updateThemeButtons();
+}
+
+// Update active state on theme buttons
+function updateThemeButtons() {
+    const buttons = document.querySelectorAll('.theme-btn');
+    const currentTheme = localStorage.getItem('theme') || 'default';
+
+    buttons.forEach(btn => {
+        btn.classList.remove('active');
+        if (btn.getAttribute('data-theme') === currentTheme) {
+            btn.classList.add('active');
+        }
+    });
+}
+
+// Load theme preference from localStorage
+function loadTheme() {
+    const savedTheme = localStorage.getItem('theme') || 'default';
+
+    if (savedTheme === 'signal') {
+        document.body.classList.add('theme-signal');
+    } else if (savedTheme === 'dark') {
+        document.body.classList.add('theme-dark');
+    } else if (savedTheme === 'prism') {
+        document.body.classList.add('theme-prism');
+    }
+
+    updateThemeButtons();
 }
 
 // Initialize Web Speech API
@@ -163,6 +272,7 @@ function initSpeechRecognition() {
         const display = document.getElementById('transcriptionDisplay');
         const displayText = currentTranscript + (interimTranscript ? interimTranscript : '');
         display.textContent = displayText || '';
+        display.classList.remove('empty');
         display.scrollTop = display.scrollHeight;
     };
 
@@ -364,13 +474,13 @@ async function startRecording() {
     audioChunks = [];
 
     const recordBtn = document.getElementById('micButton');
-    recordBtn.textContent = 'Stop Recording';
+    recordBtn.textContent = 'Stop';
 
     const pauseBtn = document.getElementById('pauseButton');
     pauseBtn.disabled = false;
 
     const status = document.getElementById('recordingStatus');
-    status.textContent = 'Recording... (speak now)';
+    status.textContent = 'Listening';
     status.classList.add('recording');
 
     // Start audio recording
@@ -406,7 +516,7 @@ function pauseRecording() {
     isRecording = false;
 
     const recordBtn = document.getElementById('micButton');
-    recordBtn.textContent = 'Continue Recording';
+    recordBtn.textContent = 'Resume';
 
     const pauseBtn = document.getElementById('pauseButton');
     pauseBtn.disabled = true;
@@ -433,13 +543,13 @@ function resumeRecording() {
     isRecording = true;
 
     const recordBtn = document.getElementById('micButton');
-    recordBtn.textContent = 'Stop Recording';
+    recordBtn.textContent = 'Stop';
 
     const pauseBtn = document.getElementById('pauseButton');
     pauseBtn.disabled = false;
 
     const status = document.getElementById('recordingStatus');
-    status.textContent = 'Recording... (speak now)';
+    status.textContent = 'Listening';
     status.classList.add('recording');
 
     try {
@@ -512,20 +622,20 @@ function stopRecordingDueToError(errorType) {
     // Show user-friendly error message
     const errorMessages = {
         'no-speech': {
-            title: 'No Speech Detected',
-            message: 'The microphone didn\'t pick up any speech. This could happen if:\n\n• Your microphone is not working\n• You were speaking too quietly\n• There was too much background noise\n• Your microphone permissions were revoked\n\nPlease check your microphone and try again.'
+            title: 'No signal detected',
+            message: 'The microphone picked up no speech.\n\nCheck:\n• Microphone is connected\n• You are speaking clearly\n• Background noise level\n• Microphone permissions\n\nTry again.'
         },
         'network': {
-            title: 'Network Error',
-            message: 'There was a problem connecting to the speech recognition service. Please check your internet connection and try again.'
+            title: 'Connection lost',
+            message: 'Cannot reach the speech service.\n\nCheck your internet connection and try again.'
         },
         'not-allowed': {
-            title: 'Microphone Permission Denied',
-            message: 'The browser doesn\'t have permission to access your microphone. Please:\n\n1. Click the camera/microphone icon in your browser address bar\n2. Allow microphone access for this site\n3. Try recording again'
+            title: 'Microphone access denied',
+            message: 'Grant microphone access to continue.\n\nCheck your browser permissions for this site.'
         },
         'default': {
-            title: 'Recording Error',
-            message: 'An error occurred while recording. Please try again.'
+            title: 'Recording stopped',
+            message: 'Try again.'
         }
     };
 
@@ -640,7 +750,9 @@ function clearRecording() {
     currentTranscript = '';
     transcriptionSegments = [];
     audioChunks = [];
-    document.getElementById('transcriptionDisplay').innerHTML = createLiveRecordingEmptyState();
+    const display = document.getElementById('transcriptionDisplay');
+    display.innerHTML = createLiveRecordingEmptyState();
+    display.classList.add('empty');
     document.getElementById('recordingTimer').textContent = '00:00:00';
 }
 
@@ -654,6 +766,13 @@ function selectMeeting(id) {
 
     // Fetch and display analysis
     fetchAndRenderAnalysis(id);
+}
+
+function deselectMeeting() {
+    currentViewingMeetingId = null;
+    currentAnalysis = null;
+    renderMeetingHistory();
+    renderAnalysisColumn();
 }
 
 // Fetch analysis and render it in the middle column
@@ -819,6 +938,9 @@ function renderAnalysisColumnWithButton(meetingId) {
             reanalyzeMeeting(parseInt(mId));
         });
     }
+
+    // Set up inline edit listener for title
+    setupMeetingInfoListeners();
 }
 
 function closeMeetingTranscript() {
@@ -878,19 +1000,37 @@ function startInlineEdit(meetingId, titleDiv) {
     input.focus();
     input.select();
 
-    const finishEdit = async () => {
+    const finishEdit = async (e) => {
+        // Prevent multiple calls
+        if (input.dataset.saving) return;
+
+        input.dataset.saving = 'true';
         const newTitle = input.value.trim();
-        if (newTitle && newTitle !== originalTitle) {
-            await updateMeetingTitle(meetingId, newTitle);
+
+        if (!newTitle) {
+            renderMeetingHistory();
+            return;
         }
+
+        if (newTitle !== originalTitle) {
+            try {
+                await updateMeetingTitle(meetingId, newTitle);
+            } catch (error) {
+                console.error('Failed to save title:', error);
+                alert('Failed to save title. Please try again.');
+            }
+        }
+
         renderMeetingHistory();
     };
 
     input.addEventListener('blur', finishEdit);
     input.addEventListener('keydown', (e) => {
         if (e.key === 'Enter') {
+            e.preventDefault();
             finishEdit();
         } else if (e.key === 'Escape') {
+            e.preventDefault();
             renderMeetingHistory();
         }
     });
@@ -914,6 +1054,22 @@ async function updateMeetingTitle(meetingId, newTitle) {
         // Update modal if it's open
         if (currentViewingMeetingId === meetingId) {
             document.getElementById('modalTitleInput').value = newTitle;
+
+            // Update the "Currently viewing" section in the analysis column
+            const analysisBody = getAnalysisBody();
+            const allParagraphs = analysisBody.querySelectorAll('p');
+            for (const p of allParagraphs) {
+                if (p.textContent === 'Currently viewing:') {
+                    // Found it - update the parent div that contains the meeting info
+                    const meetingInfoDiv = p.closest('div');
+                    if (meetingInfoDiv) {
+                        meetingInfoDiv.innerHTML = createMeetingInfoHtml(meeting);
+                        // Re-setup event listeners on the newly created title
+                        setupMeetingInfoListeners();
+                        break;
+                    }
+                }
+            }
         }
     } catch (error) {
         console.error('Error saving title:', error);
@@ -1024,11 +1180,17 @@ function renderMeetingHistory() {
             startInlineEdit(meeting.id, titleDiv);
         });
 
-        // Click to select meeting (not open)
+        // Click to select/deselect meeting (not open)
         li.addEventListener('click', (e) => {
             // Don't select if clicking the menu button or title
             if (e.target.classList.contains('meeting-menu-btn') || e.target.classList.contains('meeting-title')) return;
-            selectMeeting(meeting.id);
+
+            // Toggle selection: if already selected, deselect; otherwise select
+            if (currentViewingMeetingId === meeting.id) {
+                deselectMeeting();
+            } else {
+                selectMeeting(meeting.id);
+            }
         });
 
         // Menu button click
@@ -1113,6 +1275,9 @@ function renderAnalysisColumn() {
             showTagSelection(meetingId, currentAnalysis.suggested_tags || []);
         });
     }
+
+    // Set up inline edit listener for title
+    setupMeetingInfoListeners();
 }
 
 // Analyze or re-analyze a meeting
@@ -1336,10 +1501,28 @@ function escapeHtml(text) {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
+    // Check if user is logged in
+    if (!checkAuth()) return;
+
     init();
 });
 
 async function init() {
+    // Display current user
+    if (currentUser) {
+        document.getElementById('currentUser').textContent = `Logged in as: ${currentUser.username}`;
+    }
+
+    // Load user's theme preference if available
+    if (currentUser?.theme) {
+        setTheme(currentUser.theme);
+    } else {
+        loadTheme();
+    }
+
+    // Wire up logout button
+    document.getElementById('logoutBtn').addEventListener('click', logout);
+
     // Initialize speech recognition
     initSpeechRecognition();
 
@@ -1394,8 +1577,22 @@ async function init() {
         });
     }
 
+    // Load saved theme preference
+    loadTheme();
+
+    // Wire up theme buttons
+    const themeButtons = document.querySelectorAll('.theme-btn');
+    themeButtons.forEach(btn => {
+        btn.addEventListener('click', () => {
+            const themeName = btn.getAttribute('data-theme');
+            setTheme(themeName);
+        });
+    });
+
     // Initialize empty states with unicorns
-    document.getElementById('transcriptionDisplay').innerHTML = createLiveRecordingEmptyState();
+    const transcriptionDisplay = document.getElementById('transcriptionDisplay');
+    transcriptionDisplay.innerHTML = createLiveRecordingEmptyState();
+    transcriptionDisplay.classList.add('empty');
 
     // Initialize Key Insights empty state
     const analysisColumn = getAnalysisColumn();

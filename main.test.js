@@ -118,3 +118,86 @@ describe('JSON parsing', () => {
         expect(parsed.sentiment).toBe('Neutral');
     });
 });
+
+// Test empty state removal
+describe('Empty state management', () => {
+    it('should remove empty placeholder when analysis body is created', () => {
+        // Create a mock column with empty placeholder
+        const column = document.createElement('div');
+        column.className = 'kanban-column';
+
+        const header = document.createElement('h2');
+        header.className = 'column-header';
+        header.textContent = 'Key Insights';
+        column.appendChild(header);
+
+        const emptyPlaceholder = document.createElement('div');
+        emptyPlaceholder.className = 'empty-placeholder';
+        emptyPlaceholder.textContent = 'Select a meeting to view AI analysis';
+        column.appendChild(emptyPlaceholder);
+
+        // Mock the DOM query to return our test column
+        document.body.appendChild(column);
+
+        // Simulate getAnalysisBody logic
+        const existingBody = column.querySelector('.analysis-body');
+        if (!existingBody) {
+            const placeholder = column.querySelector('.empty-placeholder');
+            if (placeholder) {
+                placeholder.remove();
+            }
+            const body = document.createElement('div');
+            body.className = 'analysis-body';
+            column.appendChild(body);
+        }
+
+        // Verify empty placeholder is gone
+        expect(column.querySelector('.empty-placeholder')).toBeNull();
+
+        // Verify analysis body exists
+        expect(column.querySelector('.analysis-body')).not.toBeNull();
+
+        // Cleanup
+        document.body.removeChild(column);
+    });
+
+    it('should not create duplicate analysis bodies', () => {
+        const column = document.createElement('div');
+        column.className = 'kanban-column';
+
+        const emptyPlaceholder = document.createElement('div');
+        emptyPlaceholder.className = 'empty-placeholder';
+        column.appendChild(emptyPlaceholder);
+
+        // First call to getAnalysisBody logic
+        let body = column.querySelector('.analysis-body');
+        if (!body) {
+            const placeholder = column.querySelector('.empty-placeholder');
+            if (placeholder) {
+                placeholder.remove();
+            }
+            body = document.createElement('div');
+            body.className = 'analysis-body';
+            column.appendChild(body);
+        }
+
+        const firstBodyCount = column.querySelectorAll('.analysis-body').length;
+
+        // Second call to getAnalysisBody logic (should reuse existing)
+        body = column.querySelector('.analysis-body');
+        if (!body) {
+            const placeholder = column.querySelector('.empty-placeholder');
+            if (placeholder) {
+                placeholder.remove();
+            }
+            body = document.createElement('div');
+            body.className = 'analysis-body';
+            column.appendChild(body);
+        }
+
+        const secondBodyCount = column.querySelectorAll('.analysis-body').length;
+
+        expect(firstBodyCount).toBe(1);
+        expect(secondBodyCount).toBe(1);
+    });
+});
