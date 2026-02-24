@@ -13,7 +13,6 @@ let transcriptionSegments = [];
 let savedMeetings = [];
 let recordingStartTime = null;
 let timerInterval = null;
-let recognition = null;
 let isRestarting = false;
 let currentAnalysis = null;
 let mediaRecorder = null;
@@ -24,6 +23,12 @@ let currentSuggestedTags = [];
 let currentSelectedTags = [];
 let searchQuery = '';
 let currentUser = null;
+
+// Phase 2: Whisper API + Screen Capture
+let recordingMode = 'microphone'; // 'microphone' or 'screen_audio'
+let transcriptionLanguage = 'en'; // Default to English
+let isProcessingWithWhisper = false; // Flag while sending to Whisper API
+let screenStream = null; // For screen capture mode
 
 // ===== SESSION MANAGEMENT =====
 
@@ -50,6 +55,215 @@ function checkAuth() {
     }
     currentUser = session;
     return true;
+}
+
+// Load user's language preference from localStorage
+function loadUserLanguagePreference() {
+    const saved = localStorage.getItem('transcription_language');
+    if (saved) {
+        transcriptionLanguage = saved;
+        const select = document.getElementById('transcriptionLanguage');
+        if (select) {
+            select.value = saved;
+        }
+        updateLanguageButtonActive();
+    }
+}
+
+// Load control panel visibility preference from localStorage
+function loadControlPanelVisibility() {
+    const saved = localStorage.getItem('control_panel_visible');
+    const isVisible = saved === null ? true : saved === 'true'; // Default to visible
+    setControlPanelVisibility(isVisible);
+
+    // Set initial hint text
+    const toggleHint = document.getElementById('toggleHint');
+    if (toggleHint) {
+        toggleHint.textContent = isVisible ? 'Hide Controls' : 'Show Controls';
+    }
+}
+
+// Set control panel visibility and save preference
+function setControlPanelVisibility(isVisible) {
+    const floatingPanel = document.querySelector('.floating-control-panel');
+    if (floatingPanel) {
+        if (isVisible) {
+            floatingPanel.classList.remove('hidden');
+            // Ensure theme is reapplied when showing panel
+            reapplyThemeToControlPanel();
+        } else {
+            floatingPanel.classList.add('hidden');
+        }
+    }
+    localStorage.setItem('control_panel_visible', isVisible.toString());
+}
+
+// Reapply theme styling to control panel
+function reapplyThemeToControlPanel() {
+    const floatingPanel = document.querySelector('.floating-control-panel');
+    if (!floatingPanel) return;
+
+    // Force a reflow to ensure theme styles are applied
+    const currentTheme = localStorage.getItem('theme') || 'default';
+
+    // Remove and re-add hidden class to trigger CSS re-evaluation
+    const wasHidden = floatingPanel.classList.contains('hidden');
+    if (wasHidden) {
+        floatingPanel.classList.remove('hidden');
+        // Trigger reflow
+        void floatingPanel.offsetWidth;
+        floatingPanel.classList.add('hidden');
+    }
+}
+
+// Toggle control panel visibility
+function toggleControlPanel() {
+    const floatingPanel = document.querySelector('.floating-control-panel');
+    if (floatingPanel) {
+        const isCurrentlyHidden = floatingPanel.classList.contains('hidden');
+        const willBeVisible = isCurrentlyHidden;
+
+        setControlPanelVisibility(willBeVisible); // Show if hidden, hide if shown
+
+        // Reapply theme when showing
+        if (willBeVisible) {
+            setTimeout(() => {
+                reapplyThemeToControlPanel();
+            }, 0);
+        }
+
+        // Update toggle hint text
+        const toggleHint = document.getElementById('toggleHint');
+        if (toggleHint) {
+            toggleHint.textContent = isCurrentlyHidden ? 'Hide Controls' : 'Show Controls';
+        }
+    }
+}
+
+// Dragging state
+let isDragging = false;
+let dragOffsetX = 0;
+let dragOffsetY = 0;
+
+// Initialize dragging for control panel
+function initControlPanelDragging() {
+    const floatingPanel = document.querySelector('.floating-control-panel');
+    if (!floatingPanel) return;
+
+    floatingPanel.addEventListener('mousedown', startDragging);
+    document.addEventListener('mousemove', handleDrag);
+    document.addEventListener('mouseup', stopDragging);
+
+    // Double-click to reset position
+    floatingPanel.addEventListener('dblclick', resetControlPanelPosition);
+}
+
+// Start dragging
+function startDragging(e) {
+    isDragging = true;
+    const floatingPanel = document.querySelector('.floating-control-panel');
+
+    const rect = floatingPanel.getBoundingClientRect();
+    dragOffsetX = e.clientX - rect.left;
+    dragOffsetY = e.clientY - rect.top;
+
+    floatingPanel.classList.add('dragging');
+}
+
+// Handle dragging
+function handleDrag(e) {
+    if (!isDragging) return;
+
+    const floatingPanel = document.querySelector('.floating-control-panel');
+    if (!floatingPanel) return;
+
+    const newX = e.clientX - dragOffsetX;
+    const newY = e.clientY - dragOffsetY;
+
+    // Keep within viewport
+    const minX = 0;
+    const maxX = window.innerWidth - floatingPanel.offsetWidth;
+    const minY = 0;
+    const maxY = window.innerHeight - floatingPanel.offsetHeight;
+
+    const constrainedX = Math.max(minX, Math.min(newX, maxX));
+    const constrainedY = Math.max(minY, Math.min(newY, maxY));
+
+    floatingPanel.style.left = constrainedX + 'px';
+    floatingPanel.style.top = constrainedY + 'px';
+    floatingPanel.style.transform = 'none';
+    floatingPanel.style.bottom = 'auto';
+    floatingPanel.style.right = 'auto';
+
+    // Save position to sessionStorage
+    saveControlPanelPosition(constrainedX, constrainedY);
+}
+
+// Stop dragging
+function stopDragging() {
+    isDragging = false;
+    const floatingPanel = document.querySelector('.floating-control-panel');
+    if (floatingPanel) {
+        floatingPanel.classList.remove('dragging');
+    }
+}
+
+// Save control panel position to sessionStorage
+function saveControlPanelPosition(x, y) {
+    sessionStorage.setItem('control_panel_position', JSON.stringify({ x, y }));
+}
+
+// Load control panel position from sessionStorage
+function loadControlPanelPosition() {
+    const floatingPanel = document.querySelector('.floating-control-panel');
+    if (!floatingPanel) return;
+
+    const saved = sessionStorage.getItem('control_panel_position');
+    if (saved) {
+        try {
+            const { x, y } = JSON.parse(saved);
+            floatingPanel.style.left = x + 'px';
+            floatingPanel.style.top = y + 'px';
+            floatingPanel.style.transform = 'none';
+            floatingPanel.style.bottom = 'auto';
+            floatingPanel.style.right = 'auto';
+        } catch (e) {
+            console.error('Error loading control panel position:', e);
+        }
+    }
+}
+
+// Reset control panel position to bottom center
+function resetControlPanelPosition() {
+    const floatingPanel = document.querySelector('.floating-control-panel');
+    if (!floatingPanel) return;
+
+    floatingPanel.style.left = '50%';
+    floatingPanel.style.top = 'auto';
+    floatingPanel.style.bottom = 'var(--spacing-lg)';
+    floatingPanel.style.transform = 'translateX(-50%)';
+    floatingPanel.style.right = 'auto';
+
+    // Clear position from sessionStorage
+    sessionStorage.removeItem('control_panel_position');
+}
+
+// Update language button active state based on current transcriptionLanguage
+function updateLanguageButtonActive() {
+    const languageBtns = document.querySelectorAll('.language-btn');
+    languageBtns.forEach(btn => {
+        if (btn.getAttribute('data-language') === transcriptionLanguage) {
+            btn.classList.add('active');
+        } else {
+            btn.classList.remove('active');
+        }
+    });
+}
+
+// Save user's language preference to localStorage
+function saveUserLanguagePreference(language) {
+    transcriptionLanguage = language;
+    localStorage.setItem('transcription_language', language);
 }
 
 // ===== HELPER FUNCTIONS =====
@@ -224,88 +438,6 @@ function loadTheme() {
 }
 
 // Initialize Web Speech API
-function initSpeechRecognition() {
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SpeechRecognition) {
-        console.error('Speech Recognition API not supported');
-        alert('Speech Recognition is not supported in your browser. Please use Chrome, Edge, or Safari.');
-        return;
-    }
-
-    recognition = new SpeechRecognition();
-    recognition.language = 'en-US'; // English for testing
-    recognition.continuous = true;
-    recognition.interimResults = true;
-    recognition.maxAlternatives = 1;
-
-    let interimTranscript = '';
-
-    recognition.onstart = () => {
-        // Recording started
-    };
-
-    recognition.onresult = (event) => {
-        interimTranscript = '';
-
-        for (let i = event.resultIndex; i < event.results.length; i++) {
-            const transcript = event.results[i][0].transcript;
-
-            if (event.results[i].isFinal) {
-                // Final result - add to segments
-                if (transcript.trim()) {
-                    transcriptionSegments.push({
-                        id: transcriptionSegments.length + 1,
-                        speaker: 'Speaker',
-                        text: transcript,
-                        timestamp: new Date().toLocaleTimeString(),
-                        duration: 0
-                    });
-                    currentTranscript += transcript + ' ';
-                }
-            } else {
-                // Interim result
-                interimTranscript += transcript;
-            }
-        }
-
-        // Update display with interim + final
-        const display = document.getElementById('transcriptionDisplay');
-        const displayText = currentTranscript + (interimTranscript ? interimTranscript : '');
-        display.textContent = displayText || '';
-        display.classList.remove('empty');
-        display.scrollTop = display.scrollHeight;
-    };
-
-    recognition.onerror = (event) => {
-        // Ignore 'aborted' error - that's normal when we pause/stop
-        if (event.error === 'aborted') {
-            return;
-        }
-
-        console.error('Speech recognition error:', event.error);
-        const status = document.getElementById('recordingStatus');
-
-        if (event.error === 'no-speech') {
-            status.textContent = 'No speech detected. Please try again.';
-            // Stop recording and show error
-            stopRecordingDueToError('no-speech');
-        } else if (event.error === 'network') {
-            status.textContent = 'Network error. Check your connection.';
-            stopRecordingDueToError('network');
-        } else if (event.error === 'not-allowed') {
-            status.textContent = 'Microphone permission denied';
-            stopRecordingDueToError('not-allowed');
-        } else {
-            status.textContent = `Error: ${event.error}`;
-            stopRecordingDueToError(event.error);
-        }
-    };
-
-    recognition.onend = () => {
-        // Recording ended
-    };
-}
-
 // Load meetings from Supabase
 async function loadMeetings() {
     const { data, error } = await supabase
@@ -349,7 +481,7 @@ async function saveMeetingToSupabase(title, transcript, segments, duration) {
             }
         }
 
-        // Insert meeting with audio URL
+        // Insert meeting with audio URL and Whisper metadata
         const { data: meetingData, error: meetingError } = await supabase
             .from('meetings')
             .insert([
@@ -359,6 +491,8 @@ async function saveMeetingToSupabase(title, transcript, segments, duration) {
                     segments,
                     duration,
                     audio_url: audioUrl,
+                    recording_mode: recordingMode,
+                    language: transcriptionLanguage,
                 }
             ])
             .select()
@@ -462,10 +596,121 @@ ${transcript}`,
     }
 }
 
+// Initialize recording mode and language selector controls
+function initRecordingControls() {
+    // Check browser support for screen capture
+    if (!navigator.mediaDevices.getDisplayMedia) {
+        console.warn('Screen capture not supported in this browser');
+    }
+
+    // Mode selector buttons
+    const modeBtns = document.querySelectorAll('.mode-btn');
+    modeBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            // Update active state
+            modeBtns.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+
+            // Update recording mode
+            recordingMode = btn.getAttribute('data-mode');
+            console.log('Recording mode changed to:', recordingMode);
+
+            // Update status message
+            const status = document.getElementById('recordingStatus');
+            if (!isRecording && !isPaused) {
+                if (recordingMode === 'screen_audio') {
+                    status.textContent = 'Ready (Screen + Audio)';
+                } else {
+                    status.textContent = 'Ready (Microphone)';
+                }
+            }
+        });
+    });
+
+    // Language selector buttons (button group with flag emojis)
+    const languageBtns = document.querySelectorAll('.language-btn');
+    languageBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            // Update active state
+            languageBtns.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+
+            // Update transcription language
+            const language = btn.getAttribute('data-language');
+            saveUserLanguagePreference(language);
+            console.log('Language changed to:', transcriptionLanguage);
+        });
+    });
+
+    // Legacy language selector (for backwards compatibility)
+    const languageSelect = document.getElementById('transcriptionLanguage');
+    if (languageSelect) {
+        languageSelect.addEventListener('change', (e) => {
+            saveUserLanguagePreference(e.target.value);
+            console.log('Language changed to:', transcriptionLanguage);
+            // Update button group to match
+            updateLanguageButtonActive();
+        });
+    }
+}
+
+// Send audio to Whisper API for transcription
+async function sendAudioToWhisper(audioBlob, language = 'en') {
+    try {
+        isProcessingWithWhisper = true;
+        const status = document.getElementById('recordingStatus');
+        status.textContent = 'Transcribing...';
+
+        const apiKey = import.meta.env.VITE_OPENAI_API_KEY;
+        if (!apiKey) {
+            throw new Error('API key not configured');
+        }
+
+        const formData = new FormData();
+        formData.append('file', audioBlob, 'audio.webm');
+        formData.append('model', 'whisper-1');
+        formData.append('language', language);
+
+        const response = await fetch(
+            'https://llm.netlight.ai/v1/audio/transcriptions',
+            {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${apiKey}`,
+                },
+                body: formData,
+            }
+        );
+
+        if (!response.ok) {
+            throw new Error(`Transcription failed: ${response.status} ${response.statusText}`);
+        }
+
+        const result = await response.json();
+
+        isProcessingWithWhisper = false;
+
+        // Update transcript
+        currentTranscript = result.text || '';
+        const display = document.getElementById('transcriptionDisplay');
+        display.textContent = currentTranscript || '';
+        display.classList.remove('empty');
+        display.scrollTop = display.scrollHeight;
+
+        status.textContent = 'Transcription complete';
+
+        return { text: result.text, segments: result.segments };
+    } catch (error) {
+        console.error('Error transcribing audio:', error);
+        isProcessingWithWhisper = false;
+        const status = document.getElementById('recordingStatus');
+        status.textContent = 'Transcription failed: ' + error.message;
+        return null;
+    }
+}
+
 // Recording controls
 async function startRecording() {
-    if (!recognition) return;
-
     isRecording = true;
     isPaused = false;
     currentTranscript = '';
@@ -480,29 +725,64 @@ async function startRecording() {
     pauseBtn.disabled = false;
 
     const status = document.getElementById('recordingStatus');
-    status.textContent = 'Listening';
     status.classList.add('recording');
 
-    // Start audio recording
+    // Start audio recording based on recording mode
     try {
-        audioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        mediaRecorder = new MediaRecorder(audioStream);
+        let stream;
+
+        if (recordingMode === 'screen_audio') {
+            // Screen + Audio mode
+            try {
+                screenStream = await navigator.mediaDevices.getDisplayMedia({
+                    audio: true,
+                    video: true
+                });
+                stream = screenStream;
+                status.textContent = 'Capturing (Screen + Audio)';
+                console.log('Screen + Audio recording started');
+            } catch (err) {
+                if (err.name === 'NotAllowedError') {
+                    status.textContent = 'Screen capture cancelled';
+                    isRecording = false;
+                    recordBtn.textContent = 'Record Meeting';
+                    pauseBtn.disabled = true;
+                    status.classList.remove('recording');
+                    return;
+                }
+                throw err;
+            }
+        } else {
+            // Microphone-only mode (default)
+            audioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            stream = audioStream;
+            status.textContent = 'Listening (Microphone)';
+            console.log('Microphone recording started');
+        }
+
+        // Extract audio track and create MediaRecorder
+        let audioTrack;
+        if (recordingMode === 'screen_audio' && stream.getAudioTracks().length > 0) {
+            audioTrack = stream.getAudioTracks()[0];
+        } else if (recordingMode === 'microphone') {
+            audioTrack = stream.getAudioTracks()[0];
+        }
+
+        mediaRecorder = new MediaRecorder(stream);
 
         mediaRecorder.ondataavailable = (event) => {
             audioChunks.push(event.data);
         };
 
         mediaRecorder.start();
-        console.log('Audio recording started');
     } catch (err) {
-        console.error('Error starting audio recording:', err);
-    }
-
-    // Start speech recognition
-    try {
-        recognition.start();
-    } catch (err) {
-        console.error('Error starting recognition:', err);
+        console.error('Error starting recording:', err);
+        status.textContent = 'Error: ' + err.message;
+        isRecording = false;
+        recordBtn.textContent = 'Record Meeting';
+        pauseBtn.disabled = true;
+        status.classList.remove('recording');
+        return;
     }
 
     // Start timer
@@ -510,8 +790,6 @@ async function startRecording() {
 }
 
 function pauseRecording() {
-    if (!recognition) return;
-
     isPaused = true;
     isRecording = false;
 
@@ -526,7 +804,6 @@ function pauseRecording() {
     status.classList.remove('recording');
 
     try {
-        recognition.abort();
         if (mediaRecorder && mediaRecorder.state !== 'inactive') {
             mediaRecorder.pause();
         }
@@ -537,8 +814,6 @@ function pauseRecording() {
 }
 
 function resumeRecording() {
-    if (!recognition) return;
-
     isPaused = false;
     isRecording = true;
 
@@ -549,11 +824,14 @@ function resumeRecording() {
     pauseBtn.disabled = false;
 
     const status = document.getElementById('recordingStatus');
-    status.textContent = 'Listening';
+    if (recordingMode === 'screen_audio') {
+        status.textContent = 'Capturing (Screen + Audio)';
+    } else {
+        status.textContent = 'Listening (Microphone)';
+    }
     status.classList.add('recording');
 
     try {
-        recognition.start();
         if (mediaRecorder && mediaRecorder.state === 'paused') {
             mediaRecorder.resume();
         }
@@ -565,9 +843,7 @@ function resumeRecording() {
     timerInterval = setInterval(updateTimer, 100);
 }
 
-function stopRecording() {
-    if (!recognition) return;
-
+async function stopRecording() {
     isRecording = false;
     isPaused = false;
 
@@ -578,73 +854,38 @@ function stopRecording() {
     pauseBtn.disabled = true;
 
     const status = document.getElementById('recordingStatus');
-    status.textContent = 'Ready to record';
     status.classList.remove('recording');
 
     try {
-        recognition.abort();
+        // Stop MediaRecorder
         if (mediaRecorder && mediaRecorder.state !== 'inactive') {
             mediaRecorder.stop();
         }
+
+        // Stop all streams
         if (audioStream) {
             audioStream.getTracks().forEach(track => track.stop());
         }
+        if (screenStream) {
+            screenStream.getTracks().forEach(track => track.stop());
+            screenStream = null;
+        }
+
+        console.log('Recording stopped, audio chunks:', audioChunks.length);
     } catch (err) {
-        console.error('Error stopping:', err);
+        console.error('Error stopping recording:', err);
     }
-    clearInterval(timerInterval);
-}
-
-function stopRecordingDueToError(errorType) {
-    isRecording = false;
-    isPaused = false;
-    isRestarting = false;
-
-    const recordBtn = document.getElementById('micButton');
-    recordBtn.textContent = 'Record Meeting';
-
-    const pauseBtn = document.getElementById('pauseButton');
-    pauseBtn.disabled = true;
-
-    const status = document.getElementById('recordingStatus');
-    status.classList.remove('recording');
 
     clearInterval(timerInterval);
 
-    try {
-        if (recognition) {
-            recognition.abort();
-        }
-    } catch (err) {
-        console.log('Recognition already stopped');
+    // Trigger Whisper transcription if we have audio data
+    if (audioChunks.length > 0) {
+        const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+        status.textContent = 'Transcribing...';
+        await sendAudioToWhisper(audioBlob, transcriptionLanguage);
+    } else {
+        status.textContent = 'Ready to record';
     }
-
-    // Show user-friendly error message
-    const errorMessages = {
-        'no-speech': {
-            title: 'No signal detected',
-            message: 'The microphone picked up no speech.\n\nCheck:\n• Microphone is connected\n• You are speaking clearly\n• Background noise level\n• Microphone permissions\n\nTry again.'
-        },
-        'network': {
-            title: 'Connection lost',
-            message: 'Cannot reach the speech service.\n\nCheck your internet connection and try again.'
-        },
-        'not-allowed': {
-            title: 'Microphone access denied',
-            message: 'Grant microphone access to continue.\n\nCheck your browser permissions for this site.'
-        },
-        'default': {
-            title: 'Recording stopped',
-            message: 'Try again.'
-        }
-    };
-
-    const error = errorMessages[errorType] || errorMessages['default'];
-    showErrorPopup(error.title, error.message);
-}
-
-function showErrorPopup(title, message) {
-    alert(`${title}\n\n${message}`);
 }
 
 function updateTimer() {
@@ -1218,9 +1459,16 @@ function renderAnalysisColumn() {
     analysisBody.className = 'analysis-body';
 
     let actionItemsHtml = '';
+    let checkAllBtn = '';
     if (Array.isArray(currentAnalysis.action_items)) {
-        actionItemsHtml = '<ul>' +
-            currentAnalysis.action_items.map(item => `<li>${escapeHtml(item)}</li>`).join('') +
+        checkAllBtn = `<button class="check-all-btn" title="Check all action items">✓ Check All</button>`;
+        actionItemsHtml = '<ul class="action-items-list">' +
+            currentAnalysis.action_items.map((item, index) => `
+                <li class="action-item">
+                    <input type="checkbox" class="action-item-checkbox" data-item-index="${index}" title="Click to mark as complete">
+                    <span class="action-item-text">${escapeHtml(item)}</span>
+                </li>
+            `).join('') +
             '</ul>';
     } else if (typeof currentAnalysis.action_items === 'string') {
         actionItemsHtml = `<p>${escapeHtml(currentAnalysis.action_items)}</p>`;
@@ -1250,8 +1498,13 @@ function renderAnalysisColumn() {
             <h3>Executive Summary</h3>
             <p>${escapeHtml(currentAnalysis.summary || '')}</p>
 
-            <h3>Action Items</h3>
-            ${actionItemsHtml}
+            <div class="action-items-section">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <h3>Action Items</h3>
+                    ${checkAllBtn}
+                </div>
+                ${actionItemsHtml}
+            </div>
 
             <h3>Sentiment</h3>
             <p>${escapeHtml(currentAnalysis.sentiment || '')}</p>
@@ -1273,6 +1526,41 @@ function renderAnalysisColumn() {
         addTagsButton.addEventListener('click', () => {
             const meetingId = addTagsButton.getAttribute('data-meeting-id');
             showTagSelection(meetingId, currentAnalysis.suggested_tags || []);
+        });
+    }
+
+    // Set up action item checkboxes
+    const actionItemCheckboxes = analysisBody.querySelectorAll('.action-item-checkbox');
+    actionItemCheckboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', (e) => {
+            const li = checkbox.closest('.action-item');
+            if (checkbox.checked) {
+                li.classList.add('completed');
+            } else {
+                li.classList.remove('completed');
+            }
+        });
+    });
+
+    // Set up "Check All" button
+    const checkAllButton = analysisBody.querySelector('.check-all-btn');
+    if (checkAllButton) {
+        checkAllButton.addEventListener('click', () => {
+            const allChecked = Array.from(actionItemCheckboxes).every(cb => cb.checked);
+
+            actionItemCheckboxes.forEach(checkbox => {
+                checkbox.checked = !allChecked;
+                const li = checkbox.closest('.action-item');
+                if (checkbox.checked) {
+                    li.classList.add('completed');
+                } else {
+                    li.classList.remove('completed');
+                }
+            });
+
+            // Update button text based on state
+            const hasAnyChecked = Array.from(actionItemCheckboxes).some(cb => cb.checked);
+            checkAllButton.textContent = hasAnyChecked ? '✗ Uncheck All' : '✓ Check All';
         });
     }
 
@@ -1523,8 +1811,10 @@ async function init() {
     // Wire up logout button
     document.getElementById('logoutBtn').addEventListener('click', logout);
 
-    // Initialize speech recognition
-    initSpeechRecognition();
+    // Initialize recording controls (Whisper API + Screen Capture)
+    initRecordingControls();
+    loadUserLanguagePreference();
+    updateLanguageButtonActive();
 
     // Load meetings from Supabase
     await loadMeetings();
@@ -1579,6 +1869,21 @@ async function init() {
 
     // Load saved theme preference
     loadTheme();
+
+    // Wire up control panel toggle button
+    const toggleBtn = document.getElementById('toggleControlPanel');
+    if (toggleBtn) {
+        toggleBtn.addEventListener('click', toggleControlPanel);
+    }
+
+    // Load control panel visibility preference
+    loadControlPanelVisibility();
+
+    // Initialize control panel dragging
+    initControlPanelDragging();
+
+    // Load saved position from sessionStorage
+    loadControlPanelPosition();
 
     // Wire up theme buttons
     const themeButtons = document.querySelectorAll('.theme-btn');
