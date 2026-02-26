@@ -9,13 +9,7 @@
 <body>
     <header class="portfolio-header">
         <div class="header-content">
-            <h1 class="site-title">After The Noise</h1>
-            <nav class="portfolio-nav">
-                <a href="#blog" class="nav-link">Blog</a>
-                <a href="#projects" class="nav-link">Projects</a>
-                <a href="#about" class="nav-link">About</a>
-                <a href="#cv" class="nav-link">CV</a>
-            </nav>
+            <div class="header-spacer"></div>
             <div class="header-actions">
                 <div class="theme-selector" id="themeSelector">
                     <button class="theme-btn" data-theme="default" title="Default theme">☀️</button>
@@ -25,46 +19,65 @@
                 </div>
                 <button id="logoutBtn" class="btn-logout">Sign Out</button>
             </div>
+            <h1 class="site-title">
+                <span>After</span>
+                <span>The</span>
+                <span>Noise</span>
+            </h1>
         </div>
     </header>
 
     <main class="portfolio-main">
-        <!-- Blog Section -->
-        <section id="blog" class="portfolio-section">
-            <h2>Blog</h2>
-            <div id="blogContainer" class="blog-grid"></div>
-        </section>
-
-        <!-- Projects Section -->
-        <section id="projects" class="portfolio-section">
-            <h2>Selected Projects</h2>
-            <div id="projectsContainer" class="projects-grid"></div>
-        </section>
-
-        <!-- About Section -->
-        <section id="about" class="portfolio-section">
-            <h2>About Me</h2>
-            <div id="aboutContainer" class="about-content"></div>
-        </section>
-
-        <!-- CV Section -->
-        <section id="cv" class="portfolio-section">
-            <h2>CV</h2>
-            <div id="cvContainer" class="cv-content"></div>
-        </section>
-
-        <!-- Apps Grid -->
-        <section id="apps" class="portfolio-section apps-section">
-            <h2>Applications</h2>
-            <div class="apps-grid">
-                <div class="app-card" id="transcriberApp">
-                    <div class="app-icon">📝</div>
-                    <h3>Transcriber</h3>
-                    <p>Record, transcribe, and analyze meetings</p>
-                    <button class="btn-launch">Launch App</button>
+        <div class="widgets-grid">
+            <!-- Blog Widget -->
+            <section id="blog" class="widget widget-blog">
+                <div class="widget-header">
+                    <h2>Blog</h2>
                 </div>
-            </div>
-        </section>
+                <div id="blogContainer" class="widget-content"></div>
+            </section>
+
+            <!-- Projects Widget -->
+            <section id="projects" class="widget widget-projects">
+                <div class="widget-header">
+                    <h2>Selected Projects</h2>
+                </div>
+                <div id="projectsContainer" class="widget-content"></div>
+            </section>
+
+            <!-- About Widget -->
+            <section id="about" class="widget widget-about">
+                <div class="widget-header">
+                    <h2>About Me</h2>
+                </div>
+                <div id="aboutContainer" class="widget-content"></div>
+            </section>
+
+            <!-- CV Widget -->
+            <section id="cv" class="widget widget-cv">
+                <div class="widget-header">
+                    <h2>CV</h2>
+                </div>
+                <div id="cvContainer" class="widget-content"></div>
+            </section>
+
+            <!-- Applications Widget -->
+            <section id="apps" class="widget widget-apps">
+                <div class="widget-header">
+                    <h2>Applications</h2>
+                </div>
+                <div class="widget-content">
+                    <div class="apps-grid">
+                        <div class="app-card" id="transcriberApp">
+                            <div class="app-icon">📝</div>
+                            <h3>Transcriber</h3>
+                            <p>Record, transcribe, and analyze meetings</p>
+                            <button class="btn-launch">Launch App</button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
     </main>
 
     <!-- Hidden app frame -->
