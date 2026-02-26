@@ -1186,14 +1186,92 @@ body {
     flex-direction: column;
 }
 
+/* Typography System - Design Scale */
+
+/* Heading base styles */
 h1,
 h2,
 h3,
 h4,
 h5,
 h6 {
-    font-family: 'Druk Wide Heavy', 'Canela', serif;
+    margin: 0;
+    color: var(--color-text);
     font-weight: normal;
+}
+
+/* H1 - Title Headers Only */
+h1 {
+    font-family: 'Druk Wide Heavy', serif;
+    font-size: 2.5rem;
+    line-height: 1.2;
+    letter-spacing: -0.02em;
+}
+
+/* H2 - Section Headers */
+h2 {
+    font-family: 'DrukText-Super', serif;
+    font-size: 2rem;
+    line-height: 1.25;
+    letter-spacing: -0.015em;
+}
+
+/* H3-H6 - Druk Medium */
+h3,
+h4,
+h5,
+h6 {
+    font-family: 'Druk Medium', serif;
+}
+
+h3 {
+    font-size: 1.5rem;
+    line-height: 1.3;
+    letter-spacing: -0.01em;
+}
+
+h4 {
+    font-size: 1.25rem;
+    line-height: 1.4;
+}
+
+h5 {
+    font-size: 1.1rem;
+    line-height: 1.4;
+}
+
+h6 {
+    font-size: 1rem;
+    line-height: 1.5;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+/* Body text system */
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+    font-size: 1rem;
+    line-height: 1.6;
+    color: var(--color-text);
+}
+
+p {
+    margin: 0;
+    color: var(--color-text);
+}
+
+/* Content text - Monospace for blog posts and projects */
+.cms-item-preview p,
+.project-item-description,
+.cms-project-description-preview {
+    font-family: 'Courier New', 'Monaco', monospace;
+    font-size: 0.95rem;
+    line-height: 1.7;
+}
+
+small {
+    font-size: 0.875rem;
+    color: var(--color-text-secondary);
 }
 
 header {
@@ -6306,9 +6384,17 @@ body.theme-prism .empty-placeholder {
     max-width: 800px;
 }
 
+/* CMS Typography */
+.cms-tab-content h2 {
+    margin-bottom: var(--spacing-lg);
+    border-bottom: 2px solid var(--color-divider);
+    padding-bottom: var(--spacing-md);
+}
+
 .cms-form h3 {
     margin-bottom: var(--spacing-lg);
-    color: var(--color-text);
+    padding-bottom: var(--spacing-md);
+    border-bottom: 1px solid var(--color-divider);
 }
 
 .cms-form .form-group {
@@ -6317,10 +6403,12 @@ body.theme-prism .empty-placeholder {
 
 .cms-form label {
     display: block;
-    margin-bottom: 0.5rem;
+    margin-bottom: var(--spacing-sm);
     font-weight: 500;
     color: var(--color-text);
     font-size: 0.9rem;
+    text-transform: capitalize;
+    letter-spacing: 0.3px;
 }
 
 .cms-form input,
