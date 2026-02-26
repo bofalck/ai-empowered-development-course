@@ -10,12 +10,7 @@ import {
     logout
 } from './auth.js';
 
-import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
-
-const SUPABASE_URL = 'https://vtvebpqjucqxvdmznqbq.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ0dmVicHFqdWNxeHZkbXpucWJxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MDkwOTg4MzEsImV4cCI6MjAyNDY3NDgzMX0.I9XnvTe0SHCqHN_Xx6q2c4ZN0cWAFRJDFEu8SvXDkpE';
-
-const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+import { supabase } from './supabase-client.js';
 
 // App state
 const appState = {
@@ -140,15 +135,64 @@ async function loadBlog() {
 async function loadProjects() {
     const container = document.getElementById('projectsContainer');
 
-    // Placeholder for now
-    container.innerHTML = `
-        <div class="empty-state">
-            <p>Projects coming soon...</p>
-        </div>
-    `;
+    try {
+        const { data, error } = await supabase
+            .from('projects')
+            .select('*')
+            .order('created_at', { ascending: false });
 
-    // In future: fetch from supabase
-    // const { data, error } = await supabase.from('projects').select('*');
+        if (error) throw error;
+
+        if (!data || data.length === 0) {
+            container.innerHTML = `
+                <div class="empty-state">
+                    <p>No projects yet...</p>
+                </div>
+            `;
+            return;
+        }
+
+        // Render projects as a table
+        const tableHTML = `
+            <table class="projects-table">
+                <thead>
+                    <tr>
+                        <th>Project</th>
+                        <th>Description</th>
+                        <th>Tags</th>
+                        <th>Link</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${data.map(project => `
+                        <tr>
+                            <td class="project-title">${project.title}</td>
+                            <td class="project-description">
+                                <div class="project-description-preview">${project.description}</div>
+                            </td>
+                            <td class="project-tags">
+                                ${project.tags ? project.tags.split(',').map(tag =>
+                                    `<span class="tag">${tag.trim()}</span>`
+                                ).join('') : '-'}
+                            </td>
+                            <td class="project-link">
+                                ${project.link ? `<a href="${project.link}" target="_blank" rel="noopener noreferrer">→</a>` : '-'}
+                            </td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+        `;
+
+        container.innerHTML = tableHTML;
+    } catch (error) {
+        console.error('Failed to load projects:', error);
+        container.innerHTML = `
+            <div class="empty-state">
+                <p>Error loading projects: ${error.message}</p>
+            </div>
+        `;
+    }
 }
 
 // Load about content
