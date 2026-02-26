@@ -176,39 +176,31 @@ async function loadProjects() {
 
         console.log(`Successfully loaded ${data.length} projects`);
 
-        // Render projects as a table
-        const tableHTML = `
-            <table class="projects-table">
-                <thead>
-                    <tr>
-                        <th>Project</th>
-                        <th>Description</th>
-                        <th>Tags</th>
-                        <th>Link</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    ${data.map(project => `
-                        <tr>
-                            <td class="project-title">${project.title}</td>
-                            <td class="project-description">
-                                <div class="project-description-preview">${project.description}</div>
-                            </td>
-                            <td class="project-tags">
-                                ${project.tags ? project.tags.split(',').map(tag =>
-                                    `<span class="tag">${tag.trim()}</span>`
-                                ).join('') : '-'}
-                            </td>
-                            <td class="project-link">
-                                ${project.link ? `<a href="${project.link}" target="_blank" rel="noopener noreferrer">→</a>` : '-'}
-                            </td>
-                        </tr>
-                    `).join('')}
-                </tbody>
-            </table>
+        // Render projects as a list of clickable items
+        const projectsHTML = `
+            <div class="projects-list">
+                ${data.map(project => `
+                    <a href="${project.link || '#'}" ${project.link ? 'target="_blank" rel="noopener noreferrer"' : 'class="project-item-disabled"'} class="project-item">
+                        <div class="project-item-header">
+                            <h3 class="project-item-title">${project.title}</h3>
+                            ${project.link ? '<span class="project-item-external">↗</span>' : ''}
+                        </div>
+                        ${project.description ? `
+                            <p class="project-item-description">${project.description}</p>
+                        ` : ''}
+                        ${project.tags ? `
+                            <div class="project-item-tags">
+                                ${project.tags.split(',').map(tag =>
+                                    `<span class="project-tag">${tag.trim()}</span>`
+                                ).join('')}
+                            </div>
+                        ` : ''}
+                    </a>
+                `).join('')}
+            </div>
         `;
 
-        container.innerHTML = tableHTML;
+        container.innerHTML = projectsHTML;
     } catch (error) {
         console.error('Failed to load projects:', error);
         container.innerHTML = `
