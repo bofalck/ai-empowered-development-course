@@ -141,16 +141,24 @@ function setupLoginForm() {
 
 // Initialize
 function init() {
-    // If already logged in, redirect to portfolio
-    if (restoreSession()) {
-        if (window.location.pathname === '/' || window.location.pathname === '/index.html') {
-            window.location.href = '/portfolio.html';
+    // Skip redirect logic if running in iframe (app context)
+    const isInIframe = window.parent !== window;
+
+    if (!isInIframe) {
+        // If already logged in, redirect to portfolio
+        if (restoreSession()) {
+            if (window.location.pathname === '/' || window.location.pathname === '/index.html') {
+                window.location.href = '/portfolio.html';
+            }
+        } else {
+            // Not logged in, show login form
+            if (window.location.pathname !== '/' && window.location.pathname !== '/index.html') {
+                window.location.href = '/';
+            }
         }
     } else {
-        // Not logged in, show login form
-        if (window.location.pathname !== '/' && window.location.pathname !== '/index.html') {
-            window.location.href = '/';
-        }
+        // In iframe - just restore session without redirecting
+        restoreSession();
     }
 
     applyTheme();
