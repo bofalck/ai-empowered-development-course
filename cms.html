@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>After The Noise - CMS</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header class="cms-header">
+        <div class="header-content">
+            <h1>Content Management</h1>
+            <a href="/portfolio.html" class="btn-back">← Back to Portfolio</a>
+        </div>
+    </header>
+
+    <main class="cms-main">
+        <!-- Tabs -->
+        <div class="cms-tabs">
+            <button class="cms-tab active" data-tab="blog">Blog Posts</button>
+            <button class="cms-tab" data-tab="projects">Projects</button>
+        </div>
+
+        <!-- Blog Tab -->
+        <section id="blog-tab" class="cms-tab-content active">
+            <h2>Blog Posts</h2>
+
+            <div class="cms-actions">
+                <button id="newBlogBtn" class="btn-new">+ New Post</button>
+            </div>
+
+            <div id="blogList" class="cms-list"></div>
+
+            <!-- Blog Form (hidden by default) -->
+            <div id="blogForm" class="cms-form hidden">
+                <h3>New Blog Post</h3>
+                <form>
+                    <div class="form-group">
+                        <label for="blogTitle">Title</label>
+                        <input type="text" id="blogTitle" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="blogSlug">Slug</label>
+                        <input type="text" id="blogSlug" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="blogExcerpt">Excerpt</label>
+                        <textarea id="blogExcerpt" rows="3"></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="blogContent">Content</label>
+                        <textarea id="blogContent" rows="10" required></textarea>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="submit" class="btn-save">Save</button>
+                        <button type="button" class="btn-cancel">Cancel</button>
+                    </div>
+                </form>
+            </div>
+        </section>
+
+        <!-- Projects Tab -->
+        <section id="projects-tab" class="cms-tab-content">
+            <h2>Projects</h2>
+
+            <div class="cms-actions">
+                <button id="newProjectBtn" class="btn-new">+ New Project</button>
+            </div>
+
+            <div id="projectsList" class="cms-list"></div>
+
+            <!-- Project Form (hidden by default) -->
+            <div id="projectForm" class="cms-form hidden">
+                <h3>New Project</h3>
+                <form>
+                    <div class="form-group">
+                        <label for="projectTitle">Title</label>
+                        <input type="text" id="projectTitle" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="projectDescription">Description</label>
+                        <textarea id="projectDescription" rows="5" required></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="projectLink">Project Link</label>
+                        <input type="url" id="projectLink">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="projectTags">Tags (comma-separated)</label>
+                        <input type="text" id="projectTags">
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="submit" class="btn-save">Save</button>
+                        <button type="button" class="btn-cancel">Cancel</button>
+                    </div>
+                </form>
+            </div>
+        </section>
+    </main>
+
+    <script type="module" src="cms.js"></script>
+</body>
+</html>
