@@ -5873,6 +5873,10 @@ body.theme-prism .empty-placeholder {
     gap: var(--spacing-md);
 }
 
+.cms-list.hidden {
+    display: none !important;
+}
+
 .cms-empty {
     padding: var(--spacing-lg);
     text-align: center;
