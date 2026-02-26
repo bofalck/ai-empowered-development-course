@@ -86,19 +86,21 @@ function setupBlog() {
     loadBlogPosts();
 }
 
-// Setup blog editor toolbar
-function setupBlogEditor() {
-    const editor = document.getElementById('blogContentEditor');
-    const headingSelect = document.getElementById('blogHeading');
-    const fontSelect = document.getElementById('blogFont');
-    const sizeSelect = document.getElementById('blogSize');
-    const boldBtn = document.getElementById('blogBold');
-    const italicBtn = document.getElementById('blogItalic');
-    const underlineBtn = document.getElementById('blogUnderline');
-    const bulletBtn = document.getElementById('blogBullet');
-    const numberBtn = document.getElementById('blogNumber');
-    const linkBtn = document.getElementById('blogLink');
-    const clearBtn = document.getElementById('blogClear');
+// Generic content editor setup
+function setupContentEditor(prefix) {
+    const editor = document.getElementById(`${prefix}ContentEditor`);
+    const headingSelect = document.getElementById(`${prefix}Heading`);
+    const fontSelect = document.getElementById(`${prefix}Font`);
+    const sizeSelect = document.getElementById(`${prefix}Size`);
+    const boldBtn = document.getElementById(`${prefix}Bold`);
+    const italicBtn = document.getElementById(`${prefix}Italic`);
+    const underlineBtn = document.getElementById(`${prefix}Underline`);
+    const bulletBtn = document.getElementById(`${prefix}Bullet`);
+    const numberBtn = document.getElementById(`${prefix}Number`);
+    const linkBtn = document.getElementById(`${prefix}Link`);
+    const clearBtn = document.getElementById(`${prefix}Clear`);
+
+    if (!editor) return; // Editor doesn't exist for this prefix
 
     headingSelect.addEventListener('change', () => {
         document.execCommand('formatBlock', false, `<${headingSelect.value}>`);
@@ -175,8 +177,15 @@ function setupBlogEditor() {
 
     // Sync editor content to hidden input
     editor.addEventListener('blur', () => {
-        document.getElementById('blogContent').value = editor.innerHTML;
+        // For blog: blogContent, for project: projectDescription
+        const hiddenField = prefix === 'blog' ? 'blogContent' : 'projectDescription';
+        document.getElementById(hiddenField).value = editor.innerHTML;
     });
+}
+
+// Setup blog editor toolbar
+function setupBlogEditor() {
+    setupContentEditor('blog');
 }
 
 // Load blog posts
@@ -276,6 +285,7 @@ function setupProjects() {
     newProjectBtn.addEventListener('click', () => {
         projectForm.classList.remove('hidden');
         projectFormElement.reset();
+        setupContentEditor('project');
     });
 
     cancelBtn.addEventListener('click', () => {
@@ -287,6 +297,7 @@ function setupProjects() {
         await saveProject();
     });
 
+    setupContentEditor('project');
     loadProjects();
 }
 
@@ -314,7 +325,9 @@ async function loadProjects() {
                     <h4>${project.title}</h4>
                     <span class="cms-item-date">${new Date(project.created_at).toLocaleDateString()}</span>
                 </div>
-                <p class="cms-item-description">${project.description}</p>
+                <div class="cms-item-preview">
+                    ${project.description}
+                </div>
                 ${project.link ? `<p class="cms-item-link"><a href="${project.link}" target="_blank">View Project →</a></p>` : ''}
                 ${project.tags ? `<p class="cms-item-tags">Tags: ${project.tags}</p>` : ''}
                 <div class="cms-item-actions">
@@ -336,7 +349,14 @@ async function loadProjects() {
 // Save project
 async function saveProject() {
     const title = document.getElementById('projectTitle').value;
-    const description = document.getElementById('projectDescription').value;
+
+    // Get description from editor
+    const editor = document.getElementById('projectContentEditor');
+    const description = editor.innerHTML.trim();
+
+    // Also save to hidden input
+    document.getElementById('projectDescription').value = description;
+
     const link = document.getElementById('projectLink').value;
     const tags = document.getElementById('projectTags').value;
 
@@ -361,6 +381,7 @@ async function saveProject() {
         showCmsModal('Success', 'Project saved successfully!', 'success');
         document.getElementById('projectForm').classList.add('hidden');
         document.getElementById('projectForm').querySelector('form').reset();
+        document.getElementById('projectContentEditor').innerHTML = '';
         // Reload projects
         await loadProjects();
     } catch (error) {
