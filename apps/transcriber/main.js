@@ -1,4 +1,5 @@
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.47.0/+esm';
+import { getTheme, restoreSession } from '../../auth.js';
 
 // Supabase client
 const supabaseUrl = 'https://xqpqcuvvjgnjtqmhrtku.supabase.co';
