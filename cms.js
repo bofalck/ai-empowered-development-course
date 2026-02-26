@@ -70,6 +70,9 @@ function setupBlog() {
     newBlogBtn.addEventListener('click', () => {
         blogForm.classList.remove('hidden');
         blogFormElement.reset();
+        document.getElementById('blogTitleEditor').innerHTML = '';
+        document.getElementById('blogContentEditor').innerHTML = '';
+        setupTitleEditor('blog');
         setupBlogEditor();
     });
 
@@ -82,8 +85,81 @@ function setupBlog() {
         await saveBlogPost();
     });
 
+    setupTitleEditor('blog');
     setupBlogEditor();
     loadBlogPosts();
+}
+
+// Setup title editor
+function setupTitleEditor(prefix) {
+    const editor = document.getElementById(`${prefix}TitleEditor`);
+    const headingSelect = document.getElementById(`${prefix}TitleHeading`);
+    const fontSelect = document.getElementById(`${prefix}TitleFont`);
+    const sizeSelect = document.getElementById(`${prefix}TitleSize`);
+    const boldBtn = document.getElementById(`${prefix}TitleBold`);
+    const italicBtn = document.getElementById(`${prefix}TitleItalic`);
+    const underlineBtn = document.getElementById(`${prefix}TitleUnderline`);
+    const clearBtn = document.getElementById(`${prefix}TitleClear`);
+
+    if (!editor) return; // Editor doesn't exist for this prefix
+
+    headingSelect.addEventListener('change', () => {
+        document.execCommand('formatBlock', false, `<${headingSelect.value}>`);
+        editor.focus();
+        headingSelect.value = 'p';
+    });
+
+    fontSelect.addEventListener('change', () => {
+        if (fontSelect.value !== 'inherit') {
+            document.execCommand('fontName', false, fontSelect.value);
+            editor.focus();
+        }
+        fontSelect.value = 'inherit';
+    });
+
+    sizeSelect.addEventListener('change', () => {
+        if (sizeSelect.value) {
+            const selection = window.getSelection();
+            if (selection.rangeCount > 0) {
+                const range = selection.getRangeAt(0);
+                const span = document.createElement('span');
+                span.style.fontSize = sizeSelect.value;
+                range.surroundContents(span);
+                editor.focus();
+            }
+        }
+        sizeSelect.value = '';
+    });
+
+    boldBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        document.execCommand('bold', false, null);
+        editor.focus();
+    });
+
+    italicBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        document.execCommand('italic', false, null);
+        editor.focus();
+    });
+
+    underlineBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        document.execCommand('underline', false, null);
+        editor.focus();
+    });
+
+    clearBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        document.execCommand('removeFormat', false, null);
+        editor.focus();
+    });
+
+    // Sync editor content to hidden input
+    editor.addEventListener('blur', () => {
+        const hiddenField = prefix === 'blog' ? 'blogTitle' : 'projectTitle';
+        document.getElementById(hiddenField).value = editor.innerHTML;
+    });
 }
 
 // Generic content editor setup
@@ -235,7 +311,11 @@ async function loadBlogPosts() {
 
 // Save blog post
 async function saveBlogPost() {
-    const title = document.getElementById('blogTitle').value;
+    // Get title from editor
+    const titleEditor = document.getElementById('blogTitleEditor');
+    const title = titleEditor.innerHTML.trim();
+    document.getElementById('blogTitle').value = title;
+
     const slug = document.getElementById('blogSlug').value;
     const excerpt = document.getElementById('blogExcerpt').value;
 
@@ -289,6 +369,9 @@ function setupProjects() {
     newProjectBtn.addEventListener('click', () => {
         projectForm.classList.remove('hidden');
         projectFormElement.reset();
+        document.getElementById('projectTitleEditor').innerHTML = '';
+        document.getElementById('projectContentEditor').innerHTML = '';
+        setupTitleEditor('project');
         setupContentEditor('project');
     });
 
@@ -301,6 +384,7 @@ function setupProjects() {
         await saveProject();
     });
 
+    setupTitleEditor('project');
     setupContentEditor('project');
     loadProjects();
 }
@@ -352,7 +436,10 @@ async function loadProjects() {
 
 // Save project
 async function saveProject() {
-    const title = document.getElementById('projectTitle').value;
+    // Get title from editor
+    const titleEditor = document.getElementById('projectTitleEditor');
+    const title = titleEditor.innerHTML.trim();
+    document.getElementById('projectTitle').value = title;
 
     // Get description from editor
     const editor = document.getElementById('projectContentEditor');

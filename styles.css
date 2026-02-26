@@ -6169,6 +6169,30 @@ body.theme-prism .empty-placeholder {
     text-decoration: underline;
 }
 
+/* Title Editor Variant */
+.title-editor {
+    min-height: 60px;
+    max-height: 150px;
+    font-size: 1.5rem;
+    font-weight: 700;
+}
+
+.title-editor h1,
+.title-editor h2,
+.title-editor h3,
+.title-editor h4,
+.title-editor h5,
+.title-editor h6 {
+    margin: 0;
+}
+
+.title-editor h1 { font-size: 2rem; }
+.title-editor h2 { font-size: 1.75rem; }
+.title-editor h3 { font-size: 1.5rem; }
+.title-editor h4 { font-size: 1.25rem; }
+.title-editor h5 { font-size: 1.1rem; }
+.title-editor h6 { font-size: 1rem; }
+
 .cms-form .form-actions {
     display: flex;
     gap: 1rem;
