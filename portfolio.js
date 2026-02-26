@@ -168,12 +168,12 @@ async function loadProjects() {
 
         console.log(`Successfully loaded ${data.length} projects`);
 
-        // Render as a compact widget with just a teaser
+        // Render as a compact widget with icon and teaser
         const projectsHTML = `
             <div class="widget-teaser">
-                <p class="widget-teaser-count">${data.length} ${data.length === 1 ? 'project' : 'projects'} available</p>
-                <p class="widget-teaser-text">Explore my selected projects and work</p>
-                <a href="#projects" class="widget-teaser-link">View all projects →</a>
+                <div class="widget-teaser-icon">📁</div>
+                <p class="widget-teaser-count">${data.length} ${data.length === 1 ? 'project' : 'projects'}</p>
+                <a href="#projects" class="widget-teaser-button">Explore →</a>
             </div>
         `;
 
