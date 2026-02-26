@@ -122,6 +122,7 @@ function setupTitleEditor(prefix) {
     const boldBtn = document.getElementById(`${prefix}TitleBold`);
     const italicBtn = document.getElementById(`${prefix}TitleItalic`);
     const underlineBtn = document.getElementById(`${prefix}TitleUnderline`);
+    const accentBtn = document.getElementById(`${prefix}TitleAccent`);
     const clearBtn = document.getElementById(`${prefix}TitleClear`);
 
     if (!editor) return; // Editor doesn't exist for this prefix
@@ -171,6 +172,21 @@ function setupTitleEditor(prefix) {
         document.execCommand('underline', false, null);
         editor.focus();
     });
+
+    if (accentBtn) {
+        accentBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            const selection = window.getSelection();
+            if (selection.rangeCount > 0 && !selection.isCollapsed) {
+                const range = selection.getRangeAt(0);
+                const span = document.createElement('span');
+                span.setAttribute('data-accent', 'true');
+                span.className = 'title-accent';
+                range.surroundContents(span);
+            }
+            editor.focus();
+        });
+    }
 
     clearBtn.addEventListener('click', (e) => {
         e.preventDefault();

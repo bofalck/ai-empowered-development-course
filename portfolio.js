@@ -218,7 +218,7 @@ async function loadProjects() {
                     <div class="project-preview-item">
                         <div class="project-preview-header">
                             <span class="project-preview-emoji">${getProjectEmoji(project)}</span>
-                            <h4 class="project-preview-title">${extractPlainText(project.title)}</h4>
+                            <h4 class="project-preview-title">${project.title}</h4>
                         </div>
                         ${project.tags ? `
                             <div class="project-preview-tags">

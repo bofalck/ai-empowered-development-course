@@ -5849,6 +5849,14 @@ body.theme-prism .empty-placeholder {
     font-weight: 600;
     color: var(--color-text);
     flex: 1;
+    font-family: 'DrukText-Medium', serif;
+}
+
+.project-preview-title .title-accent {
+    font-size: 0.85em;
+    color: var(--color-primary);
+    font-style: italic;
+    opacity: 0.85;
 }
 
 .project-preview-tags {
@@ -6644,6 +6652,14 @@ body.theme-prism .empty-placeholder {
 .title-editor h4 { font-size: 1.25rem; }
 .title-editor h5 { font-size: 1.1rem; }
 .title-editor h6 { font-size: 1rem; }
+
+/* Title Accent Styling */
+.title-accent {
+    font-size: 0.85em;
+    color: var(--color-primary);
+    font-style: italic;
+    opacity: 0.8;
+}
 
 .cms-form .form-actions {
     display: flex;
