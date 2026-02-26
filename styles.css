@@ -4319,101 +4319,11 @@ body.theme-prism.theme-dark .recording-timer {
 }
 
 /* ========================================
-   ACCESSIBILITY: Keyboard Navigation
-   Focus rings appear only during keyboard navigation
-   (using :focus-visible instead of :focus)
-   ======================================== */
-
-/* Show focus rings only for keyboard navigation (not mouse) */
-button:focus-visible,
-a:focus-visible,
-input:focus-visible,
-textarea:focus-visible,
-select:focus-visible,
-.modal-btn:focus-visible,
-.theme-btn:focus-visible,
-.mode-btn:focus-visible,
-.language-btn:focus-visible,
-.record-button:focus-visible,
-.pause-button:focus-visible,
-.save-button:focus-visible,
-.clear-button:focus-visible,
-.control-toggle-btn:focus-visible,
-.edit-transcript-btn:focus-visible,
-.cancel-edit-btn:focus-visible,
-.save-edit-btn:focus-visible {
-    outline: 2px solid var(--color-primary);
-    outline-offset: 2px;
-}
-
-/* Theme-specific focus rings (keyboard only) */
-body.theme-signal button:focus-visible,
-body.theme-signal a:focus-visible,
-body.theme-signal input:focus-visible,
-body.theme-signal select:focus-visible {
-    outline-color: #E10600;
-}
-
-body.theme-dark button:focus-visible,
-body.theme-dark a:focus-visible,
-body.theme-dark input:focus-visible,
-body.theme-dark select:focus-visible {
-    outline-color: #D4A574;
-}
-
-body.theme-prism button:focus-visible,
-body.theme-prism a:focus-visible,
-body.theme-prism input:focus-visible,
-body.theme-prism select:focus-visible {
-    outline-color: #9A6BFF;
-}
-
-/* Still need outline: none to prevent browser default on :focus (mouse) */
-button:focus,
-a:focus,
-input:focus,
-textarea:focus,
-select:focus,
-.modal-btn:focus,
-.theme-btn:focus,
-.mode-btn:focus,
-.language-btn:focus,
-.record-button:focus,
-.pause-button:focus,
-.save-button:focus,
-.clear-button:focus,
-.control-toggle-btn:focus,
-.edit-transcript-btn:focus,
-.cancel-edit-btn:focus,
-.save-edit-btn:focus {
-    outline: none;
-}
-
-/* ========================================
    ACCESSIBILITY: Color-Independent Indicators
    For Colorblind Users (Protanopia, Deuteranopia, Tritanopia)
    ======================================== */
 
-/* ACTIVE STATES: Border + Content Indicators */
-.mode-btn.active::before,
-.language-btn.active::before,
-.theme-btn.active::before {
-    content: '✓';
-    position: absolute;
-    top: -8px;
-    right: -8px;
-    font-size: 1.2rem;
-    font-weight: 700;
-    background: var(--color-primary);
-    border-radius: 50%;
-    width: 24px;
-    height: 24px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: white;
-}
-
+/* ACTIVE STATES */
 .mode-btn.active,
 .language-btn.active,
 .theme-btn.active {
@@ -4548,23 +4458,7 @@ select:focus,
     font-weight: 600;
 }
 
-.meeting-item.selected::before {
-    content: '📌 ';
-    margin-right: 0.5rem;
-}
 
-/* Focus Indicators (Enhanced for Accessibility) */
-.mode-btn:focus,
-.language-btn:focus,
-.theme-btn:focus,
-.action-button:focus,
-.save-button:focus,
-.clear-button:focus,
-.record-button:focus,
-.pause-button:focus {
-    outline: 3px solid currentColor;
-    outline-offset: 2px;
-}
 
 /* ========================================
    ACCESSIBILITY: Reduced Motion Support
