@@ -1,5 +1,5 @@
 // CMS Logic for blog posts and projects
-import { restoreSession, isAdmin, getTheme } from './auth.js';
+import { restoreSession, isAdmin, getTheme, setTheme } from './auth.js';
 import { supabase } from './supabase-client.js';
 
 // Edit state
@@ -39,6 +39,9 @@ async function init() {
     // Apply theme
     applyTheme();
 
+    // Setup theme switcher
+    setupThemeSwitcher();
+
     // Setup tabs
     setupTabs();
 
@@ -49,12 +52,12 @@ async function init() {
     setupProjects();
 }
 
-// Sanitize pasted content - strip all external formatting
-function sanitizeEditorContent(html, allowedFormatting = ['b', 'strong', 'i', 'em']) {
+// Sanitize pasted content - strip disallowed formatting and attributes
+function sanitizeEditorContent(html, allowedTags = ['b', 'strong', 'i', 'em', 'u', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'ul', 'ol', 'li', 'a']) {
     const temp = document.createElement('div');
     temp.innerHTML = html;
 
-    const allowed = new Set(allowedFormatting.map(tag => tag.toLowerCase()));
+    const allowed = new Set(allowedTags.map(tag => tag.toLowerCase()));
 
     // Remove all attributes and disallowed tags
     const walk = (node) => {
@@ -67,9 +70,20 @@ function sanitizeEditorContent(html, allowedFormatting = ['b', 'strong', 'i', 'e
                 }
                 node.parentNode.removeChild(node);
             } else {
-                // Remove all attributes from allowed tags
-                while (node.attributes.length > 0) {
-                    node.removeAttribute(node.attributes[0].name);
+                // Only keep href for links, remove all other attributes
+                if (tagName !== 'a') {
+                    while (node.attributes.length > 0) {
+                        node.removeAttribute(node.attributes[0].name);
+                    }
+                } else {
+                    // For links, keep only href and sanitize it
+                    const href = node.getAttribute('href');
+                    while (node.attributes.length > 0) {
+                        node.removeAttribute(node.attributes[0].name);
+                    }
+                    if (href && (href.startsWith('http') || href.startsWith('mailto') || href.startsWith('/'))) {
+                        node.setAttribute('href', href);
+                    }
                 }
                 let child = node.firstChild;
                 while (child) {
@@ -85,19 +99,17 @@ function sanitizeEditorContent(html, allowedFormatting = ['b', 'strong', 'i', 'e
     return temp.innerHTML;
 }
 
-// Setup editor with proper sanitization
-function setupEditor(editorId, hiddenInputId, allowBold = true, allowItalic = false) {
+// Setup simple editor (title, description) with limited formatting
+function setupSimpleEditor(editorId, hiddenInputId, allowBold = true, allowItalic = false) {
     const editor = document.getElementById(editorId);
     const hiddenInput = document.getElementById(hiddenInputId);
 
     if (!editor) return;
 
-    // Get toolbar buttons - find all buttons in the preceding toolbar
     const toolbar = editor.previousElementSibling;
     const boldBtn = toolbar ? toolbar.querySelector('button[title*="Bold"]') : null;
     const italicBtn = toolbar ? toolbar.querySelector('button[title*="Italic"]') : null;
 
-    // Bold button
     if (boldBtn && allowBold) {
         boldBtn.addEventListener('click', (e) => {
             e.preventDefault();
@@ -106,7 +118,6 @@ function setupEditor(editorId, hiddenInputId, allowBold = true, allowItalic = fa
         });
     }
 
-    // Italic button
     if (italicBtn && allowItalic) {
         italicBtn.addEventListener('click', (e) => {
             e.preventDefault();
@@ -118,17 +129,147 @@ function setupEditor(editorId, hiddenInputId, allowBold = true, allowItalic = fa
     // Handle paste - sanitize immediately
     editor.addEventListener('paste', (e) => {
         e.preventDefault();
-
         const text = e.clipboardData.getData('text/html') || e.clipboardData.getData('text/plain');
         const allowedTags = [];
         if (allowBold) allowedTags.push('b', 'strong');
         if (allowItalic) allowedTags.push('i', 'em');
-
         const sanitized = sanitizeEditorContent(text, allowedTags);
         document.execCommand('insertHTML', false, sanitized);
     });
 
-    // Sync to hidden input on blur and input
+    // Sync to hidden input
+    editor.addEventListener('blur', () => {
+        hiddenInput.value = editor.innerHTML;
+    });
+
+    editor.addEventListener('input', () => {
+        hiddenInput.value = editor.innerHTML;
+    });
+}
+
+// Setup full editor for content with all formatting options
+function setupFullEditor(editorId, hiddenInputId) {
+    const editor = document.getElementById(editorId);
+    const hiddenInput = document.getElementById(hiddenInputId);
+
+    if (!editor) return;
+
+    const toolbar = editor.previousElementSibling;
+    const prefix = editorId.replace('Editor', '').replace('Content', '').replace('Editor', '');
+
+    // Heading select
+    const headingSelect = toolbar ? toolbar.querySelector(`#${prefix}Heading`) : null;
+    if (headingSelect) {
+        headingSelect.addEventListener('change', (e) => {
+            document.execCommand('formatBlock', false, `<${e.target.value}>`);
+            editor.focus();
+        });
+    }
+
+    // Font select
+    const fontSelect = toolbar ? toolbar.querySelector(`#${prefix}Font`) : null;
+    if (fontSelect) {
+        fontSelect.addEventListener('change', (e) => {
+            if (e.target.value !== 'inherit') {
+                document.execCommand('fontName', false, e.target.value);
+            }
+            editor.focus();
+        });
+    }
+
+    // Size select
+    const sizeSelect = toolbar ? toolbar.querySelector(`#${prefix}Size`) : null;
+    if (sizeSelect) {
+        sizeSelect.addEventListener('change', (e) => {
+            if (e.target.value) {
+                document.execCommand('fontSize', false, '7');
+                const selections = editor.querySelectorAll('span[style*="font-size"]');
+                selections.forEach(s => s.style.fontSize = e.target.value);
+            }
+            editor.focus();
+        });
+    }
+
+    // Text formatting buttons
+    const boldBtn = toolbar ? toolbar.querySelector(`#${prefix}Bold`) : null;
+    if (boldBtn) {
+        boldBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            document.execCommand('bold', false, null);
+            editor.focus();
+        });
+    }
+
+    const italicBtn = toolbar ? toolbar.querySelector(`#${prefix}Italic`) : null;
+    if (italicBtn) {
+        italicBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            document.execCommand('italic', false, null);
+            editor.focus();
+        });
+    }
+
+    const underlineBtn = toolbar ? toolbar.querySelector(`#${prefix}Underline`) : null;
+    if (underlineBtn) {
+        underlineBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            document.execCommand('underline', false, null);
+            editor.focus();
+        });
+    }
+
+    // List buttons
+    const bulletBtn = toolbar ? toolbar.querySelector(`#${prefix}Bullet`) : null;
+    if (bulletBtn) {
+        bulletBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            document.execCommand('insertUnorderedList', false, null);
+            editor.focus();
+        });
+    }
+
+    const numberBtn = toolbar ? toolbar.querySelector(`#${prefix}Number`) : null;
+    if (numberBtn) {
+        numberBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            document.execCommand('insertOrderedList', false, null);
+            editor.focus();
+        });
+    }
+
+    // Link button
+    const linkBtn = toolbar ? toolbar.querySelector(`#${prefix}Link`) : null;
+    if (linkBtn) {
+        linkBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            const url = prompt('Enter URL:');
+            if (url) {
+                document.execCommand('createLink', false, url);
+            }
+            editor.focus();
+        });
+    }
+
+    // Clear formatting button
+    const clearBtn = toolbar ? toolbar.querySelector(`#${prefix}Clear`) : null;
+    if (clearBtn) {
+        clearBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            document.execCommand('removeFormat', false, null);
+            editor.focus();
+        });
+    }
+
+    // Handle paste - sanitize to allowed tags only
+    editor.addEventListener('paste', (e) => {
+        e.preventDefault();
+        const text = e.clipboardData.getData('text/html') || e.clipboardData.getData('text/plain');
+        const allowedTags = ['b', 'strong', 'i', 'em', 'u', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'ul', 'ol', 'li', 'a'];
+        const sanitized = sanitizeEditorContent(text, allowedTags);
+        document.execCommand('insertHTML', false, sanitized);
+    });
+
+    // Sync to hidden input
     editor.addEventListener('blur', () => {
         hiddenInput.value = editor.innerHTML;
     });
@@ -142,6 +283,31 @@ function setupEditor(editorId, hiddenInputId, allowBold = true, allowItalic = fa
 function applyTheme() {
     const theme = getTheme();
     document.body.className = `theme-${theme}`;
+    updateThemeButtons(theme);
+}
+
+// Setup theme switcher
+function setupThemeSwitcher() {
+    const themeButtons = document.querySelectorAll('#themeSelector .theme-btn');
+    themeButtons.forEach(btn => {
+        btn.addEventListener('click', () => {
+            const theme = btn.getAttribute('data-theme');
+            setTheme(theme);
+            applyTheme();
+        });
+    });
+}
+
+// Update theme buttons
+function updateThemeButtons(currentTheme) {
+    const themeButtons = document.querySelectorAll('#themeSelector .theme-btn');
+    themeButtons.forEach(btn => {
+        if (btn.getAttribute('data-theme') === currentTheme) {
+            btn.classList.add('active');
+        } else {
+            btn.classList.remove('active');
+        }
+    });
 }
 
 // Setup tabs
@@ -184,6 +350,7 @@ function setupBlog() {
         blogFormElement.reset();
         document.getElementById('blogTitleEditor').innerHTML = '';
         document.getElementById('blogDescriptionEditor').innerHTML = '';
+        document.getElementById('blogContentEditor').innerHTML = '';
         document.getElementById('blogTitleEditor').focus();
     });
 
@@ -198,10 +365,10 @@ function setupBlog() {
         await saveBlogPost();
     });
 
-    // Setup title editor (bold only)
-    setupEditor('blogTitleEditor', 'blogTitle', true, false);
-    // Setup description editor (bold + italic)
-    setupEditor('blogDescriptionEditor', 'blogDescription', true, true);
+    // Setup editors
+    setupSimpleEditor('blogTitleEditor', 'blogTitle', true, false);
+    setupSimpleEditor('blogDescriptionEditor', 'blogDescription', true, true);
+    setupFullEditor('blogContentEditor', 'blogContent');
 
     loadBlogPosts();
 }
@@ -268,6 +435,11 @@ async function saveBlogPost() {
     const description = descriptionEditor.innerHTML.trim();
     document.getElementById('blogDescription').value = description;
 
+    // Get content from editor
+    const contentEditor = document.getElementById('blogContentEditor');
+    const content = contentEditor.innerHTML.trim();
+    document.getElementById('blogContent').value = content;
+
     if (!title) {
         showCmsModal('Error', 'Please fill in the title', 'error');
         return;
@@ -279,7 +451,8 @@ async function saveBlogPost() {
                 title,
                 slug,
                 excerpt,
-                content: description,
+                description,
+                content,
                 created_at: new Date().toISOString()
             }
         ]);
@@ -294,6 +467,7 @@ async function saveBlogPost() {
         document.getElementById('blogForm').querySelector('form').reset();
         document.getElementById('blogTitleEditor').innerHTML = '';
         document.getElementById('blogDescriptionEditor').innerHTML = '';
+        document.getElementById('blogContentEditor').innerHTML = '';
         // Show list and reload blog posts
         document.getElementById('blogList').classList.remove('hidden');
         await loadBlogPosts();
@@ -332,10 +506,9 @@ function setupProjects() {
         await saveProject();
     });
 
-    // Setup title editor (bold only)
-    setupEditor('projectTitleEditor', 'projectTitle', true, false);
-    // Setup description editor (bold + italic)
-    setupEditor('projectDescriptionEditor', 'projectDescription', true, true);
+    // Setup editors
+    setupSimpleEditor('projectTitleEditor', 'projectTitle', true, false);
+    setupSimpleEditor('projectDescriptionEditor', 'projectDescription', true, true);
 
     loadProjects();
 }
