@@ -34,6 +34,15 @@
     box-sizing: border-box;
 }
 
+html {
+    scroll-behavior: smooth;
+    overflow-x: hidden;
+}
+
+body {
+    overflow-x: hidden;
+}
+
 :root {
     /* MUJI-inspired color system */
     --color-background: #F7F6F3;
@@ -92,23 +101,8 @@ h6 {
     border: 1px solid var(--color-divider);
     border-radius: var(--border-radius-sm);
     padding: 2.5rem 2rem;
-    text-align: center;
 }
 
-.logo {
-    margin-bottom: 1.5rem;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-}
-
-.logo-image {
-    max-width: 140px;
-    max-height: 140px;
-    width: 100%;
-    height: auto;
-    display: block;
-}
 
 h1 {
     font-size: 1.75rem;
@@ -118,10 +112,29 @@ h1 {
     letter-spacing: -0.5px;
 }
 
+.header-title {
+    font-family: 'Druk Wide Heavy', 'Canela', serif;
+    font-size: 2.5rem;
+    font-weight: normal;
+    color: var(--color-text);
+    letter-spacing: -0.3px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    line-height: 1.1;
+    margin-bottom: 1rem;
+}
+
+.header-title div {
+    font-family: inherit;
+    font-size: inherit;
+}
+
 .subtitle {
     font-size: 0.9rem;
     color: var(--color-text-secondary);
     margin-bottom: 2rem;
+    text-align: left;
 }
 
 .form {
@@ -141,6 +154,21 @@ h1 {
     letter-spacing: 0.3px;
     text-transform: uppercase;
     color: var(--color-text-secondary);
+}
+
+body.theme-prism .form-group input,
+body.theme-prism .form-group select {
+    border: 1px solid rgba(155, 140, 255, 0.2);
+    background-color: var(--soft-surface-1);
+    color: var(--color-text);
+    transition: all cubic-bezier(0.4, 0.0, 0.2, 1) 200ms;
+}
+
+body.theme-prism .form-group input:focus,
+body.theme-prism .form-group select:focus {
+    border-color: var(--color-accent-hot-pink);
+    background-color: var(--color-background);
+    box-shadow: 0 0 0 3px rgba(255, 79, 216, 0.1);
 }
 
 .form-group input,
@@ -180,6 +208,24 @@ h1 {
     letter-spacing: 0.3px;
 }
 
+body.theme-prism .btn-primary {
+    background: linear-gradient(135deg, #FF4FD8 0%, #9A6BFF 100%);
+    color: #FFFFFF;
+    border: none;
+    box-shadow: var(--shadow-2);
+    transition: all cubic-bezier(0.4, 0.0, 0.2, 1) 200ms;
+}
+
+body.theme-prism .btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-3), var(--glow);
+}
+
+body.theme-prism .btn-primary:active {
+    transform: translateY(0);
+    box-shadow: var(--shadow-2);
+}
+
 .btn-primary {
     background-color: var(--color-primary);
     color: #F7F6F3;
@@ -193,6 +239,24 @@ h1 {
 
 .btn-primary:active {
     background-color: #3F3D3A;
+}
+
+body.theme-prism .btn-secondary {
+    background-color: var(--soft-surface-1);
+    color: var(--color-text);
+    border: 1px solid rgba(155, 140, 255, 0.2);
+    box-shadow: var(--shadow-1);
+    transition: all cubic-bezier(0.4, 0.0, 0.2, 1) 200ms;
+}
+
+body.theme-prism .btn-secondary:hover {
+    background-color: var(--soft-surface-2);
+    border-color: rgba(155, 140, 255, 0.4);
+    box-shadow: var(--shadow-2);
+}
+
+body.theme-prism .btn-secondary:active {
+    box-shadow: var(--shadow-1);
 }
 
 .btn-secondary {
@@ -498,48 +562,63 @@ body.theme-dark .theme-btn-admin.active {
 /* PrismPulse theme */
 body.theme-prism {
     --color-background: #FDFBFF;
-    --color-surface: #F0E6FF;
-    --color-divider: #E6D9F0;
+    --color-surface: #F3EEFF;
+    --color-divider: rgba(155, 140, 255, 0.2);
     --color-text: #2B1B47;
-    --color-text-secondary: #5A4570;
+    --color-text-secondary: #5A5370;
     --color-primary: #FF4FD8;
     --color-secondary: #9A6BFF;
-    --color-border-light: #E6D9F0;
-    --color-border-medium: #D4B8E0;
-    --color-accent-secondary: #9A6BFF;
-    --color-accent-tertiary: #39D9FF;
-    --color-accent-success: #6EEB83;
-    --color-accent-highlight: #FFC83D;
-    --color-accent-alert: #FF7A59;
-    --border-radius-sm: 8px;
-    --border-radius-md: 12px;
-    --border-radius-lg: 16px;
+    --color-accent-hot-pink: #FF4FD8;
+    --color-accent-lavender: #9A6BFF;
+    --color-accent-aqua: #39D9FF;
+    --color-accent-lime: #6EEB83;
+    --color-accent-golden: #FFC83D;
+    --color-accent-coral: #FF7A59;
+    --soft-surface-1: #F3EEFF;
+    --soft-surface-2: #EAF7FF;
+    --soft-surface-3: #FFF8E8;
+    --shadow-1: 0px 8px 20px rgba(155, 100, 255, 0.15);
+    --shadow-2: 0px 12px 30px rgba(255, 79, 216, 0.18);
+    --shadow-3: 0px 20px 60px rgba(154, 107, 255, 0.25);
+    --glow: 0px 0px 30px rgba(255, 79, 216, 0.35);
+    --border-radius-sm: 16px;
+    --border-radius-md: 20px;
+    --border-radius-lg: 28px;
 }
 
 body.theme-prism .panel-content {
     background-color: var(--color-background);
-    border-color: var(--color-border-light);
+    border: 1px solid rgba(155, 140, 255, 0.2);
 }
 
 body.theme-prism .theme-btn-login,
 body.theme-prism .theme-btn-admin {
-    border: 2px solid transparent;
+    border: 1px solid rgba(155, 140, 255, 0.2);
     border-radius: var(--border-radius-md);
-    transition: all 0.3s ease;
+    background-color: var(--soft-surface-1);
+    transition: all cubic-bezier(0.4, 0.0, 0.2, 1) 200ms;
 }
 
 body.theme-prism .theme-btn-login:hover,
 body.theme-prism .theme-btn-admin:hover {
-    border: 2px solid var(--color-primary);
-    background: transparent;
+    border-color: rgba(155, 140, 255, 0.4);
+    background-color: var(--soft-surface-2);
 }
 
 body.theme-prism .theme-btn-login.active,
 body.theme-prism .theme-btn-admin.active {
-    border: 2px solid var(--color-primary);
-    background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-accent-secondary) 100%);
+    border: 1px solid transparent;
+    background: linear-gradient(135deg, #FF4FD8 0%, #9A6BFF 100%);
     color: white;
-    box-shadow: 0 4px 16px rgba(255, 79, 216, 0.5), 0 0 12px rgba(255, 79, 216, 0.3);
+    box-shadow: var(--shadow-2), var(--glow);
+}
+
+body.theme-prism .header-title {
+    color: var(--color-text);
+}
+
+body.theme-prism .subtitle {
+    color: var(--color-text-secondary);
 }
 
 /* Dark mode support */
@@ -576,8 +655,14 @@ body.theme-prism .theme-btn-admin.active {
     }
 }
 
-/* Responsive */
-@media (max-width: 480px) {
+/* Responsive Breakpoints */
+
+/* Tablet: 768px - 1023px */
+@media (max-width: 1023px) {
+    .login-container {
+        max-width: 90%;
+    }
+
     .panel-content {
         padding: 2rem 1.5rem;
     }
@@ -586,8 +671,163 @@ body.theme-prism .theme-btn-admin.active {
         font-size: 1.5rem;
     }
 
+    .header-title {
+        font-size: 2rem;
+    }
+
     .logo-image {
-        max-width: 110px;
-        max-height: 110px;
+        max-width: 120px;
+        max-height: 120px;
+    }
+}
+
+/* Mobile: 480px - 767px */
+@media (max-width: 767px) {
+    body {
+        padding: 0.5rem;
+    }
+
+    .login-container {
+        width: 100%;
+        max-width: 100%;
+    }
+
+    .panel-content {
+        padding: 1.5rem 1.25rem;
+        border-radius: 16px;
+    }
+
+    .header-title {
+        font-size: 1.75rem;
+    }
+
+    .header-title div {
+        font-size: 1.75rem;
+    }
+
+    .subtitle {
+        font-size: 0.85rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .form-group {
+        margin-bottom: 1rem;
+    }
+
+    .form-group label {
+        font-size: 0.8rem;
+    }
+
+    .form-group input {
+        padding: 0.65rem;
+        font-size: 0.95rem;
+    }
+
+    .btn {
+        padding: 0.65rem 0.75rem;
+        font-size: 0.9rem;
+    }
+
+    .divider {
+        margin: 1rem 0;
+        font-size: 0.8rem;
+    }
+
+    .theme-selector-login,
+    .theme-selector-admin {
+        gap: 0.4rem;
+    }
+
+    .theme-btn-login,
+    .theme-btn-admin {
+        padding: 0.4rem 0.6rem;
+        font-size: 1rem;
+    }
+
+    .logo-image {
+        max-width: 100px;
+        max-height: 100px;
+    }
+
+    .admin-header h2 {
+        font-size: 1.1rem;
+    }
+
+    .users-list h3 {
+        font-size: 0.9rem;
+    }
+
+    .users-ul li {
+        padding: 0.5rem;
+        font-size: 0.85rem;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .user-info {
+        width: 100%;
+    }
+
+    .user-delete {
+        align-self: flex-start;
+    }
+}
+
+/* Extra Small: < 480px */
+@media (max-width: 479px) {
+    body {
+        padding: 0.25rem;
+    }
+
+    .login-container {
+        width: 100%;
+    }
+
+    .panel-content {
+        padding: 1.25rem 1rem;
+        border-radius: 12px;
+    }
+
+    .header-title {
+        font-size: 1.5rem;
+    }
+
+    .header-title div {
+        font-size: 1.5rem;
+    }
+
+    .subtitle {
+        font-size: 0.8rem;
+        margin-bottom: 1.25rem;
+    }
+
+    .form-group {
+        margin-bottom: 0.85rem;
+    }
+
+    .form-group label {
+        font-size: 0.75rem;
+    }
+
+    .form-group input {
+        padding: 0.6rem;
+        font-size: 0.9rem;
+    }
+
+    .btn {
+        padding: 0.6rem 0.65rem;
+        font-size: 0.85rem;
+    }
+
+    .theme-btn-login,
+    .theme-btn-admin {
+        padding: 0.35rem 0.55rem;
+        font-size: 0.9rem;
+    }
+
+    .error-message,
+    .success-message {
+        font-size: 0.85rem;
+        padding: 0.6rem;
     }
 }

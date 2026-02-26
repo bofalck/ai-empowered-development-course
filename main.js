@@ -21,6 +21,7 @@ let audioStream = null;
 let currentViewingMeetingId = null;
 let currentSuggestedTags = [];
 let currentSelectedTags = [];
+let recordingLengthWarning = false;
 let searchQuery = '';
 let currentUser = null;
 
@@ -29,6 +30,153 @@ let recordingMode = 'microphone'; // 'microphone' or 'screen_audio'
 let transcriptionLanguage = 'en'; // Default to English
 let isProcessingWithWhisper = false; // Flag while sending to Whisper API
 let screenStream = null; // For screen capture mode
+
+// Recording Segments Management
+let recordingSegments = []; // Array of {number, startTime, endTime, transcript, audioBlob}
+let currentSegmentNumber = 1;
+const MAX_SEGMENT_DURATION_MINUTES = 50; // Auto-save at 50 minutes
+
+// Audio Device Management
+let audioDevices = [];
+let selectedAudioDeviceId = 'default';
+const AUDIO_CONSTRAINT_PROFILES = {
+    default: { audio: true },
+    microphone: { audio: { echoCancellation: true, noiseSuppression: true } },
+    headphones: { audio: { echoCancellation: false, noiseSuppression: false } }
+};
+
+// ===== THEMED MODAL DIALOGS =====
+
+let modalResolve = null;
+
+function showModal(type, title, message, defaultValue = '') {
+    const overlay = document.getElementById('modalOverlay');
+    overlay.classList.remove('hidden');
+
+    return new Promise((resolve) => {
+        modalResolve = resolve;
+
+        if (type === 'alert') {
+            const modal = document.getElementById('alertModal');
+            document.getElementById('alertTitle').textContent = title;
+            document.getElementById('alertMessage').textContent = message;
+            modal.classList.remove('hidden');
+        } else if (type === 'confirm') {
+            const modal = document.getElementById('confirmModal');
+            document.getElementById('confirmTitle').textContent = title;
+            document.getElementById('confirmMessage').textContent = message;
+            modal.classList.remove('hidden');
+        } else if (type === 'prompt') {
+            const modal = document.getElementById('promptModal');
+            document.getElementById('promptTitle').textContent = title;
+            document.getElementById('promptMessage').textContent = message;
+            const input = document.getElementById('promptInput');
+            input.value = defaultValue;
+            input.focus();
+            modal.classList.remove('hidden');
+        }
+    });
+}
+
+function closeAlert() {
+    const modal = document.getElementById('alertModal');
+    const overlay = document.getElementById('modalOverlay');
+    modal.classList.add('hidden');
+    overlay.classList.add('hidden');
+    if (modalResolve) modalResolve(undefined);
+}
+
+function acceptConfirm() {
+    const modal = document.getElementById('confirmModal');
+    const overlay = document.getElementById('modalOverlay');
+    modal.classList.add('hidden');
+    overlay.classList.add('hidden');
+    if (modalResolve) modalResolve(true);
+}
+
+function cancelConfirm() {
+    const modal = document.getElementById('confirmModal');
+    const overlay = document.getElementById('modalOverlay');
+    modal.classList.add('hidden');
+    overlay.classList.add('hidden');
+    if (modalResolve) modalResolve(false);
+}
+
+async function acceptPrompt() {
+    const input = document.getElementById('promptInput');
+    const value = input.value;
+    const modal = document.getElementById('promptModal');
+    const overlay = document.getElementById('modalOverlay');
+    modal.classList.add('hidden');
+    overlay.classList.add('hidden');
+    if (modalResolve) modalResolve(value);
+}
+
+function cancelPrompt() {
+    const modal = document.getElementById('promptModal');
+    const overlay = document.getElementById('modalOverlay');
+    modal.classList.add('hidden');
+    overlay.classList.add('hidden');
+    if (modalResolve) modalResolve(null);
+}
+
+// Keyboard support for modals
+document.addEventListener('keydown', (e) => {
+    const overlay = document.getElementById('modalOverlay');
+    if (overlay.classList.contains('hidden')) return;
+
+    if (e.key === 'Escape') {
+        // Close alert modal
+        const alertModal = document.getElementById('alertModal');
+        if (!alertModal.classList.contains('hidden')) {
+            closeAlert();
+            return;
+        }
+
+        // Cancel confirm modal
+        const confirmModal = document.getElementById('confirmModal');
+        if (!confirmModal.classList.contains('hidden')) {
+            cancelConfirm();
+            return;
+        }
+
+        // Cancel prompt modal
+        const promptModal = document.getElementById('promptModal');
+        if (!promptModal.classList.contains('hidden')) {
+            cancelPrompt();
+            return;
+        }
+    }
+
+    if (e.key === 'Enter') {
+        // Accept confirm modal
+        const confirmModal = document.getElementById('confirmModal');
+        if (!confirmModal.classList.contains('hidden')) {
+            acceptConfirm();
+            return;
+        }
+
+        // Accept prompt modal
+        const promptModal = document.getElementById('promptModal');
+        if (!promptModal.classList.contains('hidden')) {
+            acceptPrompt();
+            return;
+        }
+    }
+});
+
+// Wrapper functions to replace alert/confirm/prompt
+async function showAlert(message, title = 'Alert') {
+    await showModal('alert', title, message);
+}
+
+async function showConfirm(message, title = 'Confirm') {
+    return await showModal('confirm', title, message);
+}
+
+async function showPrompt(message, defaultValue = '', title = 'Enter Value') {
+    return await showModal('prompt', title, message, defaultValue);
+}
 
 // ===== SESSION MANAGEMENT =====
 
@@ -89,31 +237,11 @@ function setControlPanelVisibility(isVisible) {
     if (floatingPanel) {
         if (isVisible) {
             floatingPanel.classList.remove('hidden');
-            // Ensure theme is reapplied when showing panel
-            reapplyThemeToControlPanel();
         } else {
             floatingPanel.classList.add('hidden');
         }
     }
     localStorage.setItem('control_panel_visible', isVisible.toString());
-}
-
-// Reapply theme styling to control panel
-function reapplyThemeToControlPanel() {
-    const floatingPanel = document.querySelector('.floating-control-panel');
-    if (!floatingPanel) return;
-
-    // Force a reflow to ensure theme styles are applied
-    const currentTheme = localStorage.getItem('theme') || 'default';
-
-    // Remove and re-add hidden class to trigger CSS re-evaluation
-    const wasHidden = floatingPanel.classList.contains('hidden');
-    if (wasHidden) {
-        floatingPanel.classList.remove('hidden');
-        // Trigger reflow
-        void floatingPanel.offsetWidth;
-        floatingPanel.classList.add('hidden');
-    }
 }
 
 // Toggle control panel visibility
@@ -124,13 +252,6 @@ function toggleControlPanel() {
         const willBeVisible = isCurrentlyHidden;
 
         setControlPanelVisibility(willBeVisible); // Show if hidden, hide if shown
-
-        // Reapply theme when showing
-        if (willBeVisible) {
-            setTimeout(() => {
-                reapplyThemeToControlPanel();
-            }, 0);
-        }
 
         // Update toggle hint text
         const toggleHint = document.getElementById('toggleHint');
@@ -264,6 +385,22 @@ function updateLanguageButtonActive() {
 function saveUserLanguagePreference(language) {
     transcriptionLanguage = language;
     localStorage.setItem('transcription_language', language);
+}
+
+// Normalize action items to object format with text, assigned_to, and completed fields
+function normalizeActionItems(items) {
+    if (!Array.isArray(items)) return [];
+    return items.map(item => {
+        // Handle both old format (strings) and new format (objects)
+        if (typeof item === 'string') {
+            return { text: item, assigned_to: null, completed: false };
+        }
+        return {
+            text: item.text || '',
+            assigned_to: item.assigned_to || null,
+            completed: item.completed || false
+        };
+    });
 }
 
 // ===== HELPER FUNCTIONS =====
@@ -424,15 +561,21 @@ function updateThemeButtons() {
 
 // Load theme preference from localStorage
 function loadTheme() {
+    const body = document.body;
     const savedTheme = localStorage.getItem('theme') || 'default';
 
+    // Remove all theme classes first
+    body.classList.remove('theme-signal', 'theme-dark', 'theme-prism');
+
+    // Add the saved theme class (default has no class - uses :root)
     if (savedTheme === 'signal') {
-        document.body.classList.add('theme-signal');
+        body.classList.add('theme-signal');
     } else if (savedTheme === 'dark') {
-        document.body.classList.add('theme-dark');
+        body.classList.add('theme-dark');
     } else if (savedTheme === 'prism') {
-        document.body.classList.add('theme-prism');
+        body.classList.add('theme-prism');
     }
+    // 'default' theme applies :root styles (no class added)
 
     updateThemeButtons();
 }
@@ -455,58 +598,84 @@ async function loadMeetings() {
 }
 
 // Save meeting to Supabase and auto-analyze
-async function saveMeetingToSupabase(title, transcript, segments, duration) {
+async function saveMeetingToSupabase(title, transcript, segments, duration, metadata = {}) {
     try {
         let audioUrl = null;
 
-        // Upload audio if available
-        if (audioChunks.length > 0) {
-            const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
-            const fileName = `meeting-${Date.now()}.webm`;
+        // Upload first segment or combined audio (for backward compatibility)
+        // If multiple segments, upload the first one as the primary audio file
+        try {
+            const audioToUpload = recordingSegments.length > 0 ? recordingSegments[0].audioBlob : new Blob(audioChunks, { type: 'audio/webm' });
 
-            const { data: uploadData, error: uploadError } = await supabase
-                .storage
-                .from('meeting-audio')
-                .upload(fileName, audioBlob);
+            if (audioToUpload && audioToUpload.size > 0) {
+                const fileName = `meeting-${Date.now()}.webm`;
 
-            if (uploadError) {
-                console.error('Error uploading audio:', uploadError);
-            } else {
-                const { data: urlData } = supabase
+                console.log(`Uploading audio file: ${fileName}, size: ${(audioToUpload.size / (1024 * 1024)).toFixed(2)}MB`);
+
+                const { data: uploadData, error: uploadError } = await supabase
                     .storage
                     .from('meeting-audio')
-                    .getPublicUrl(fileName);
+                    .upload(fileName, audioToUpload);
 
-                audioUrl = urlData.publicUrl;
+                if (uploadError) {
+                    console.warn('Warning - audio upload failed (meeting will still be saved):', uploadError);
+                    // Don't fail the entire save if audio upload fails - continue without audio URL
+                } else {
+                    const { data: urlData } = supabase
+                        .storage
+                        .from('meeting-audio')
+                        .getPublicUrl(fileName);
+
+                    audioUrl = urlData.publicUrl;
+                    console.log('Audio uploaded successfully:', audioUrl);
+                }
             }
+        } catch (err) {
+            console.warn('Warning - error uploading audio:', err);
+            // Continue without audio URL
         }
 
-        // Insert meeting with audio URL and Whisper metadata
-        const { data: meetingData, error: meetingError } = await supabase
+        // Prepare meeting data with existing schema columns only
+        const meetingData = {
+            title,
+            transcript,
+            segments,
+            duration,
+            audio_url: audioUrl,
+            recording_mode: recordingMode,
+            language: transcriptionLanguage,
+        };
+
+        // Log multi-segment info for tracking
+        if (recordingSegments.length > 1) {
+            console.log(`Recording has ${recordingSegments.length} segments, total duration: ${duration}s`);
+        }
+
+        console.log('Inserting meeting data:', meetingData);
+
+        // Insert meeting using existing schema
+        const { data: insertResult, error: meetingError } = await supabase
             .from('meetings')
-            .insert([
-                {
-                    title,
-                    transcript,
-                    segments,
-                    duration,
-                    audio_url: audioUrl,
-                    recording_mode: recordingMode,
-                    language: transcriptionLanguage,
-                }
-            ])
-            .select()
-            .single();
+            .insert([meetingData])
+            .select();
 
-        if (meetingError) throw meetingError;
+        if (meetingError) {
+            console.error('Error inserting meeting:', meetingError);
+            throw new Error(`Failed to save meeting: ${meetingError.message}`);
+        }
 
-        // Auto-analyze
-        await analyzeMeeting(meetingData.id, transcript);
+        console.log('Meeting saved successfully:', insertResult);
 
-        return meetingData;
+        // Auto-analyze if we have the meeting ID
+        if (insertResult && insertResult.length > 0) {
+            const meetingId = insertResult[0].id;
+            await analyzeMeeting(meetingId, transcript);
+        }
+
+        return insertResult[0];
     } catch (error) {
         console.error('Error saving meeting:', error);
-        alert('Error saving meeting: ' + error.message);
+        await showAlert('Error saving meeting: ' + error.message);
     }
 }
 
@@ -573,7 +742,7 @@ ${transcript}`,
                 {
                     meeting_id: meetingId,
                     summary: analysis.summary || '',
-                    action_items: analysis.action_items || [],
+                    action_items: normalizeActionItems(analysis.action_items || []),
                     sentiment: analysis.sentiment || '',
                     suggested_tags: analysis.suggested_tags || [],
                 }
@@ -657,11 +826,15 @@ function initRecordingControls() {
 // Send audio to Whisper API for transcription
 async function sendAudioToWhisper(audioBlob, language = 'en') {
     try {
+        console.log('Starting Whisper transcription, blob size:', audioBlob.size, 'bytes');
         isProcessingWithWhisper = true;
         const status = document.getElementById('recordingStatus');
+        const loader = document.getElementById('transcriptionLoader');
         status.textContent = 'Transcribing...';
+        loader.classList.add('active');
 
         const apiKey = import.meta.env.VITE_OPENAI_API_KEY;
+        console.log('API Key available:', !!apiKey);
         if (!apiKey) {
             throw new Error('API key not configured');
         }
@@ -671,6 +844,7 @@ async function sendAudioToWhisper(audioBlob, language = 'en') {
         formData.append('model', 'whisper-1');
         formData.append('language', language);
 
+        console.log('Sending to Whisper API...');
         const response = await fetch(
             'https://llm.netlight.ai/v1/audio/transcriptions',
             {
@@ -682,11 +856,25 @@ async function sendAudioToWhisper(audioBlob, language = 'en') {
             }
         );
 
+        console.log('Response status:', response.status);
+
         if (!response.ok) {
-            throw new Error(`Transcription failed: ${response.status} ${response.statusText}`);
+            const errorText = await response.text();
+            console.error('API error response:', errorText);
+
+            if (response.status === 413) {
+                throw new Error('Recording too large. Please record a shorter clip (maximum ~2 hours at 64kbps).');
+            } else if (response.status === 401) {
+                throw new Error('API key invalid. Please check your configuration.');
+            } else if (response.status === 429) {
+                throw new Error('API rate limit reached. Please try again later.');
+            } else {
+                throw new Error(`Transcription failed: ${response.status} ${response.statusText}`);
+            }
         }
 
         const result = await response.json();
+        console.log('Transcription result:', result);
 
         isProcessingWithWhisper = false;
 
@@ -698,14 +886,268 @@ async function sendAudioToWhisper(audioBlob, language = 'en') {
         display.scrollTop = display.scrollHeight;
 
         status.textContent = 'Transcription complete';
+        loader.classList.remove('active');
 
         return { text: result.text, segments: result.segments };
     } catch (error) {
         console.error('Error transcribing audio:', error);
         isProcessingWithWhisper = false;
         const status = document.getElementById('recordingStatus');
+        const loader = document.getElementById('transcriptionLoader');
         status.textContent = 'Transcription failed: ' + error.message;
+        loader.classList.remove('active');
         return null;
+    }
+}
+
+// Enumerate available audio input devices
+async function enumerateAudioDevices() {
+    try {
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        audioDevices = devices.filter(device => device.kind === 'audioinput');
+
+        console.log('Available audio input devices:', audioDevices);
+
+        const select = document.getElementById('audioDeviceSelect');
+        if (!select) return;
+
+        // Clear existing options except default
+        select.innerHTML = '<option value="default">Default Device</option>';
+
+        // Add available devices
+        audioDevices.forEach((device, index) => {
+            const option = document.createElement('option');
+            option.value = device.deviceId;
+            // Show device label if available, otherwise show generic name
+            const label = device.label || `Audio Input ${index + 1}`;
+            option.textContent = label;
+            select.appendChild(option);
+        });
+
+        console.log(`Found ${audioDevices.length} audio input device(s)`);
+
+        // Log device details for debugging
+        audioDevices.forEach((device, index) => {
+            console.log(`  Device ${index}: ${device.label || 'Unknown'} (ID: ${device.deviceId})`);
+        });
+    } catch (err) {
+        console.error('Error enumerating audio devices:', err);
+    }
+}
+
+// Get audio constraints for the selected device
+function getAudioConstraints() {
+    // Basic audio constraints that work with most devices
+    const basicConstraints = {
+        audio: {
+            echoCancellation: true,
+            noiseSuppression: true,
+            autoGainControl: true
+        }
+    };
+
+    if (selectedAudioDeviceId === 'default') {
+        return basicConstraints;
+    }
+
+    // Try to use specific device, but don't make it strict
+    return {
+        audio: {
+            ...basicConstraints.audio,
+            deviceId: selectedAudioDeviceId // Not using { exact: } to allow fallback
+        }
+    };
+}
+
+// Request audio stream from the selected device
+async function getAudioStream() {
+    try {
+        let constraints = getAudioConstraints();
+        console.log('Requesting audio stream with constraints:', constraints);
+
+        let stream;
+        try {
+            stream = await navigator.mediaDevices.getUserMedia(constraints);
+        } catch (err) {
+            console.warn('Failed with specified constraints, trying basic audio:', err);
+            // Fallback to basic audio constraint
+            stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        }
+
+        const audioTracks = stream.getAudioTracks();
+        console.log(`Audio tracks available: ${audioTracks.length}`);
+
+        if (audioTracks.length === 0) {
+            throw new Error('No audio tracks in stream');
+        }
+
+        const deviceLabel = audioTracks[0].label;
+        console.log(`Recording from: ${deviceLabel}`);
+
+        // Verify stream is active
+        if (!stream.active) {
+            throw new Error('Audio stream is not active');
+        }
+
+        return stream;
+    } catch (err) {
+        console.error('Error getting audio stream:', err);
+        if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
+            throw new Error(`Audio device not found. Please check your audio input devices.`);
+        } else if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+            throw new Error(`Microphone permission denied. Please allow microphone access.`);
+        } else if (err.name === 'OverconstrainedError') {
+            throw new Error(`The selected audio device doesn't support the required settings. Try selecting a different device.`);
+        }
+        throw new Error(`Error accessing audio: ${err.message}`);
+    }
+}
+
+// Save current recording segment and start a new one
+async function saveRecordingSegment() {
+    if (audioChunks.length === 0) {
+        console.log('No audio chunks to save');
+        return;
+    }
+
+    try {
+        const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+        const segmentEndTime = Date.now();
+        const segmentDuration = Math.floor((segmentEndTime - recordingStartTime) / 1000);
+        const segmentNumber = currentSegmentNumber;
+
+        console.log(`Auto-saving segment ${segmentNumber}:`, {
+            duration: segmentDuration,
+            size: (audioBlob.size / (1024 * 1024)).toFixed(2) + 'MB'
+        });
+
+        // Show status
+        const status = document.getElementById('recordingStatus');
+        status.textContent = `📹 Segment ${segmentNumber} reached 50min limit. Transcribing...`;
+
+        // Transcribe this segment
+        const segmentTranscript = await sendAudioToWhisper(audioBlob, transcriptionLanguage);
+
+        // Store segment with metadata and transcription
+        const segment = {
+            number: segmentNumber,
+            startTime: recordingStartTime,
+            endTime: segmentEndTime,
+            durationSeconds: segmentDuration,
+            transcript: currentTranscript,
+            audioBlob: audioBlob,
+            transcriptionSegments: transcriptionSegments
+        };
+
+        recordingSegments.push(segment);
+        console.log(`Segment ${segmentNumber} transcribed and saved`);
+
+        // Prepare for next segment
+        currentSegmentNumber++;
+        audioChunks = [];
+        const previousTranscript = currentTranscript;
+        currentTranscript = '';
+        transcriptionSegments = [];
+        recordingStartTime = Date.now();
+        recordingLengthWarning = false;
+
+        // Continue recording with new segment
+        const recordBtn = document.getElementById('micButton');
+        recordBtn.textContent = 'Stop';
+
+        // Reset recording for new segment
+        try {
+            let newStream;
+
+            if (recordingMode === 'screen_audio') {
+                // For screen mode, get fresh microphone audio and keep using screen
+                if (audioStream) {
+                    audioStream.getTracks().forEach(track => track.stop());
+                }
+
+                audioStream = await getAudioStream();
+                const audioTracks = audioStream.getAudioTracks();
+
+                if (audioTracks.length === 0) {
+                    throw new Error('No audio tracks from microphone for new segment');
+                }
+
+                // Check if screen is still active
+                const videoTracks = screenStream ? screenStream.getVideoTracks() : [];
+                if (videoTracks.length === 0) {
+                    throw new Error('Screen capture ended. Please restart recording.');
+                }
+
+                // Combine screen video with fresh microphone audio
+                newStream = new MediaStream();
+                newStream.addTrack(videoTracks[0]);
+                newStream.addTrack(audioTracks[0]);
+
+                status.textContent = `✓ Segment ${segmentNumber} complete. Recording segment ${currentSegmentNumber}...`;
+            } else {
+                // For microphone mode, just get fresh audio
+                if (audioStream) {
+                    audioStream.getTracks().forEach(track => track.stop());
+                }
+
+                audioStream = await getAudioStream();
+
+                // Verify stream has audio tracks
+                const audioTracks = audioStream.getAudioTracks();
+                if (audioTracks.length === 0) {
+                    throw new Error('No audio tracks in new segment stream');
+                }
+
+                if (!audioStream.active) {
+                    throw new Error('Audio stream is not active for new segment');
+                }
+
+                newStream = audioStream;
+                status.textContent = `✓ Segment ${segmentNumber} complete. Recording segment ${currentSegmentNumber}...`;
+            }
+
+            const options = {};
+
+            if (MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) {
+                options.mimeType = 'audio/webm;codecs=opus';
+                options.audioBitsPerSecond = 64000;
+            } else if (MediaRecorder.isTypeSupported('audio/webm')) {
+                options.mimeType = 'audio/webm';
+                options.audioBitsPerSecond = 64000;
+            }
+
+            mediaRecorder = new MediaRecorder(newStream, options);
+
+            mediaRecorder.ondataavailable = (event) => {
+                if (event.data.size > 0) {
+                    audioChunks.push(event.data);
+                }
+            };
+
+            mediaRecorder.onerror = (event) => {
+                console.error('MediaRecorder error in new segment:', event.error);
+                status.textContent = 'Recording error: ' + event.error;
+            };
+
+            mediaRecorder.start();
+
+            // Show combined transcript so far
+            const display = document.getElementById('transcriptionDisplay');
+            const combinedSoFar = recordingSegments.map(seg => seg.transcript).join('\n\n[New Segment]\n\n');
+            display.textContent = combinedSoFar;
+            display.classList.remove('empty');
+            display.scrollTop = display.scrollHeight;
+
+        } catch (err) {
+            console.error('Error restarting recording for new segment:', err);
+            status.textContent = 'Error starting new segment: ' + err.message;
+            isRecording = false;
+        }
+
+    } catch (err) {
+        console.error('Error saving segment:', err);
+        const status = document.getElementById('recordingStatus');
+        status.textContent = 'Error saving segment: ' + err.message;
     }
 }
 
@@ -717,6 +1159,9 @@ async function startRecording() {
     transcriptionSegments = [];
     recordingStartTime = Date.now();
     audioChunks = [];
+    recordingLengthWarning = false;
+    recordingSegments = []; // Reset segments for new recording
+    currentSegmentNumber = 1;
 
     const recordBtn = document.getElementById('micButton');
     recordBtn.textContent = 'Stop';
@@ -734,12 +1179,35 @@ async function startRecording() {
         if (recordingMode === 'screen_audio') {
             // Screen + Audio mode
             try {
+                // Get screen capture (video only)
                 screenStream = await navigator.mediaDevices.getDisplayMedia({
-                    audio: true,
+                    audio: false,
                     video: true
                 });
-                stream = screenStream;
-                status.textContent = 'Capturing (Screen + Audio)';
+                console.log('Screen capture started');
+
+                // Get microphone audio separately
+                audioStream = await getAudioStream();
+                console.log('Microphone audio started');
+
+                // Combine video from screen and audio from microphone
+                const videoTracks = screenStream.getVideoTracks();
+                const audioTracks = audioStream.getAudioTracks();
+
+                if (videoTracks.length === 0) {
+                    throw new Error('No video track in screen capture');
+                }
+
+                if (audioTracks.length === 0) {
+                    throw new Error('No audio track from microphone');
+                }
+
+                // Create new stream with screen video + microphone audio
+                stream = new MediaStream();
+                stream.addTrack(videoTracks[0]);
+                stream.addTrack(audioTracks[0]);
+
+                status.textContent = 'Capturing (Screen + Microphone)';
                 console.log('Screen + Audio recording started');
             } catch (err) {
                 if (err.name === 'NotAllowedError') {
@@ -754,27 +1222,66 @@ async function startRecording() {
             }
         } else {
             // Microphone-only mode (default)
-            audioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            audioStream = await getAudioStream();
             stream = audioStream;
             status.textContent = 'Listening (Microphone)';
             console.log('Microphone recording started');
         }
 
-        // Extract audio track and create MediaRecorder
-        let audioTrack;
-        if (recordingMode === 'screen_audio' && stream.getAudioTracks().length > 0) {
-            audioTrack = stream.getAudioTracks()[0];
-        } else if (recordingMode === 'microphone') {
-            audioTrack = stream.getAudioTracks()[0];
+        // Verify stream has audio tracks
+        const audioTracks = stream.getAudioTracks();
+        console.log(`Stream has ${audioTracks.length} audio track(s)`);
+
+        if (audioTracks.length === 0) {
+            throw new Error('No audio tracks in stream. Please check your microphone connection.');
         }
 
-        mediaRecorder = new MediaRecorder(stream);
+        // Verify stream is active
+        if (!stream.active) {
+            throw new Error('Audio stream is not active. Please try again.');
+        }
+
+        // Set lower audio bitrate to keep file size under API limit (26MB)
+        const options = {};
+
+        // Try to use lower bitrates for better compression
+        if (MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) {
+            options.mimeType = 'audio/webm;codecs=opus';
+            options.audioBitsPerSecond = 64000; // 64kbps instead of default ~128kbps
+        } else if (MediaRecorder.isTypeSupported('audio/webm')) {
+            options.mimeType = 'audio/webm';
+            options.audioBitsPerSecond = 64000;
+        }
+
+        console.log('Creating MediaRecorder with options:', options);
+
+        try {
+            mediaRecorder = new MediaRecorder(stream, options);
+        } catch (mrErr) {
+            console.error('Failed to create MediaRecorder:', mrErr);
+            throw new Error(`Cannot create MediaRecorder: ${mrErr.message}. Try a different audio device.`);
+        }
 
         mediaRecorder.ondataavailable = (event) => {
-            audioChunks.push(event.data);
+            console.log('ondataavailable called, data size:', event.data.size);
+            if (event.data.size > 0) {
+                audioChunks.push(event.data);
+            }
         };
 
-        mediaRecorder.start();
+        mediaRecorder.onerror = (event) => {
+            console.error('MediaRecorder error:', event.error);
+            status.textContent = 'Recording error: ' + event.error;
+        };
+
+        console.log('Starting MediaRecorder...');
+        try {
+            mediaRecorder.start();
+            console.log('MediaRecorder started successfully');
+        } catch (startErr) {
+            console.error('Failed to start MediaRecorder:', startErr);
+            throw new Error(`Cannot start recording: ${startErr.message}`);
+        }
     } catch (err) {
         console.error('Error starting recording:', err);
         status.textContent = 'Error: ' + err.message;
@@ -856,10 +1363,27 @@ async function stopRecording() {
     const status = document.getElementById('recordingStatus');
     status.classList.remove('recording');
 
+    clearInterval(timerInterval);
+
     try {
-        // Stop MediaRecorder
+        // Stop MediaRecorder and wait for data
         if (mediaRecorder && mediaRecorder.state !== 'inactive') {
-            mediaRecorder.stop();
+            console.log('MediaRecorder state before stop:', mediaRecorder.state);
+
+            // Create a promise that resolves when onstop fires
+            const stopPromise = new Promise((resolve) => {
+                mediaRecorder.onstop = () => {
+                    console.log('MediaRecorder onstop event fired, total chunks:', audioChunks.length);
+                    resolve();
+                };
+
+                mediaRecorder.requestData(); // Flush any buffered data
+                mediaRecorder.stop();
+                console.log('MediaRecorder stop() called');
+            });
+
+            // Wait for the stop event to complete
+            await stopPromise;
         }
 
         // Stop all streams
@@ -876,13 +1400,69 @@ async function stopRecording() {
         console.error('Error stopping recording:', err);
     }
 
-    clearInterval(timerInterval);
-
-    // Trigger Whisper transcription if we have audio data
+    // Handle final segment and transcription
     if (audioChunks.length > 0) {
         const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
-        status.textContent = 'Transcribing...';
-        await sendAudioToWhisper(audioBlob, transcriptionLanguage);
+        const fileSizeMB = audioBlob.size / (1024 * 1024);
+        const maxSizeMB = 25; // Keep under 26MB API limit with some buffer
+
+        console.log(`Audio blob size: ${fileSizeMB.toFixed(2)}MB (limit: ${maxSizeMB}MB)`);
+
+        if (fileSizeMB > maxSizeMB) {
+            status.textContent = `Recording too large (${fileSizeMB.toFixed(1)}MB). Maximum is ${maxSizeMB}MB. Please record a shorter clip.`;
+            console.warn(`File size ${fileSizeMB.toFixed(2)}MB exceeds limit of ${maxSizeMB}MB`);
+            return;
+        }
+
+        status.textContent = 'Transcribing final segment...';
+
+        // Transcribe final segment
+        const finalTranscript = await sendAudioToWhisper(audioBlob, transcriptionLanguage);
+
+        // Save final segment
+        const segmentEndTime = Date.now();
+        const segmentDuration = Math.floor((segmentEndTime - recordingStartTime) / 1000);
+
+        recordingSegments.push({
+            number: currentSegmentNumber,
+            startTime: recordingStartTime,
+            endTime: segmentEndTime,
+            durationSeconds: segmentDuration,
+            transcript: currentTranscript,
+            audioBlob: audioBlob,
+            transcriptionSegments: transcriptionSegments
+        });
+
+        // Combine all segments
+        if (recordingSegments.length > 1) {
+            console.log(`Recording has ${recordingSegments.length} segments. Combining...`);
+
+            // Create combined transcript with segment markers
+            let combinedTranscript = '';
+            recordingSegments.forEach((seg, index) => {
+                combinedTranscript += seg.transcript;
+                if (index < recordingSegments.length - 1) {
+                    combinedTranscript += '\n\n[Segment ' + (index + 1) + ' ended - Segment ' + (index + 2) + ' started]\n\n';
+                }
+            });
+
+            currentTranscript = combinedTranscript;
+
+            const display = document.getElementById('transcriptionDisplay');
+            display.textContent = currentTranscript || '';
+            display.classList.remove('empty');
+            display.scrollTop = display.scrollHeight;
+
+            status.textContent = `✓ Recording complete: ${recordingSegments.length} segments transcribed and combined`;
+        } else {
+            status.textContent = 'Transcription complete';
+        }
+
+        console.log('All segments processed:', {
+            totalSegments: recordingSegments.length,
+            totalDuration: recordingSegments.reduce((sum, seg) => sum + seg.durationSeconds, 0),
+            combinedTranscriptLength: currentTranscript.length
+        });
     } else {
         status.textContent = 'Ready to record';
     }
@@ -901,36 +1481,57 @@ function updateTimer() {
         String(hours).padStart(2, '0') + ':' +
         String(minutes).padStart(2, '0') + ':' +
         String(seconds).padStart(2, '0');
+
+    // Auto-save recording segment at 50 minutes to prevent file size issues
+    if (minutes >= MAX_SEGMENT_DURATION_MINUTES && !recordingLengthWarning && isRecording && !isPaused && audioChunks.length > 0) {
+        console.log('Auto-saving recording segment at', minutes, 'minutes');
+        recordingLengthWarning = true; // Prevent multiple triggers
+        saveRecordingSegment();
+    }
 }
 
 async function saveMeeting() {
     if (currentTranscript.trim() === '') {
-        alert('No transcript to save');
+        await showAlert('No transcript to save');
         return;
     }
 
     if (isRecording || isPaused) {
-        const stopFirst = confirm('Stop recording before saving?');
+        const stopFirst = await showConfirm('Stop recording before saving?');
         if (stopFirst) {
-            stopRecording();
+            await stopRecording();
         } else {
             return;
         }
     }
 
     const wordCount = currentTranscript.trim().split(' ').length;
-    const elapsed = recordingStartTime ? Math.floor((Date.now() - recordingStartTime) / 1000) : 0;
-    const durationMins = Math.floor(elapsed / 60);
-    const durationSecs = elapsed % 60;
+
+    // Calculate total duration from all segments
+    let totalElapsed = 0;
+    if (recordingSegments.length > 0) {
+        totalElapsed = recordingSegments.reduce((sum, seg) => sum + seg.durationSeconds, 0);
+    } else {
+        totalElapsed = recordingStartTime ? Math.floor((Date.now() - recordingStartTime) / 1000) : 0;
+    }
+
+    const durationMins = Math.floor(totalElapsed / 60);
+    const durationSecs = totalElapsed % 60;
 
     const previewText = currentTranscript.trim().substring(0, 100);
     const preview = previewText.length < currentTranscript.trim().length ? previewText + '...' : previewText;
 
-    const confirmSave = confirm(
+    const segmentInfo = recordingSegments.length > 1
+        ? `\nRecording Parts: ${recordingSegments.length}\n`
+        : '';
+
+    const confirmSave = await showConfirm(
         `Save this recording?\n\n` +
         `Duration: ${durationMins}m ${durationSecs}s\n` +
-        `Words: ${wordCount}\n\n` +
-        `Preview: ${preview}`
+        `Words: ${wordCount}\n` +
+        `${segmentInfo}` +
+        `Preview: ${preview}`,
+        'Save Recording'
     );
 
     if (!confirmSave) {
@@ -938,7 +1539,11 @@ async function saveMeeting() {
     }
 
     // Prompt for title
-    const customTitle = prompt('Enter a title for this meeting (or leave empty for auto-generated):');
+    const customTitle = await showPrompt(
+        'Enter a title for this meeting (or leave empty for auto-generated):',
+        '',
+        'Meeting Title'
+    );
 
     let title;
     if (customTitle === null) {
@@ -953,30 +1558,48 @@ async function saveMeeting() {
         title = customTitle.trim();
     }
 
-    const finalElapsed = recordingStartTime ? Math.floor((Date.now() - recordingStartTime) / 1000) : 0;
+    // Prepare segment data for storage
+    const segmentMetadata = recordingSegments.map(seg => ({
+        number: seg.number,
+        duration: seg.durationSeconds,
+        startTime: seg.startTime,
+        endTime: seg.endTime
+    }));
+
+    console.log('Saving meeting with segments:', {
+        title,
+        totalSegments: recordingSegments.length,
+        totalDuration: totalElapsed,
+        segments: segmentMetadata
+    });
 
     // Save to Supabase (includes auto-analysis)
-    await saveMeetingToSupabase(title, currentTranscript.trim(), transcriptionSegments, finalElapsed);
+    // Pass segment metadata along with transcription segments
+    await saveMeetingToSupabase(title, currentTranscript.trim(), transcriptionSegments, totalElapsed, {
+        recordingSegments: segmentMetadata,
+        multiSegmentRecording: recordingSegments.length > 1
+    });
 
-    // Clear recording
+    // Clear recording and segments
     currentTranscript = '';
     transcriptionSegments = [];
+    recordingSegments = [];
+    currentSegmentNumber = 1;
     document.getElementById('transcriptionDisplay').textContent = '';
     document.getElementById('recordingTimer').textContent = '00:00:00';
 
-    alert(`Meeting "${title}" saved and analyzing...`);
+    await showAlert(`Meeting "${title}" saved and analyzing...`, 'Success');
 }
 
-function clearRecording() {
+async function clearRecording() {
     if (isRecording || isPaused) {
         const hasRecording = currentTranscript.trim().length > 0;
 
         if (hasRecording) {
             const wordCount = currentTranscript.trim().split(' ').length;
-            const confirmed = confirm(
-                `You have ${wordCount} words recorded.\n\n` +
-                `Are you sure you want to clear this recording?\n` +
-                `This cannot be undone.`
+            const confirmed = await showConfirm(
+                `You have ${wordCount} words recorded.\n\nAre you sure you want to clear this recording?\nThis cannot be undone.`,
+                'Clear Recording'
             );
 
             if (!confirmed) {
@@ -985,12 +1608,14 @@ function clearRecording() {
         }
 
         // Stop any active recording first
-        stopRecording();
+        await stopRecording();
     }
 
     currentTranscript = '';
     transcriptionSegments = [];
     audioChunks = [];
+    recordingSegments = [];
+    currentSegmentNumber = 1;
     const display = document.getElementById('transcriptionDisplay');
     display.innerHTML = createLiveRecordingEmptyState();
     display.classList.add('empty');
@@ -1034,8 +1659,29 @@ async function fetchAndRenderAnalysis(id) {
         };
         renderAnalysisColumnWithButton(id);
     } else {
+        // Normalize action items to ensure they have the correct structure
+        analysis.action_items = normalizeActionItems(analysis.action_items);
         currentAnalysis = analysis;
         renderAnalysisColumn();
+    }
+}
+
+// Save action items changes to database
+async function saveActionItemsChanges() {
+    if (!currentAnalysis || !currentAnalysis.id) return;
+
+    try {
+        const { error } = await supabase
+            .from('analyses')
+            .update({
+                action_items: currentAnalysis.action_items
+            })
+            .eq('id', currentAnalysis.id);
+
+        if (error) throw error;
+    } catch (error) {
+        console.error('Error saving action items:', error);
+        // Optionally show user feedback
     }
 }
 
@@ -1100,7 +1746,7 @@ async function saveTranscriptEdit() {
 
     const newTranscript = document.getElementById('transcriptEditor').value.trim();
     if (!newTranscript) {
-        alert('Transcript cannot be empty');
+        await showAlert('Transcript cannot be empty', 'Edit Transcript');
         return;
     }
 
@@ -1141,13 +1787,13 @@ async function saveTranscriptEdit() {
         updateEditButtonText();
 
         // Ask if they want to re-analyze
-        const reanalyze = confirm('Transcript updated! Would you like to re-analyze this meeting with the updated transcript?');
+        const reanalyze = await showConfirm('Transcript updated! Would you like to re-analyze this meeting with the updated transcript?', 'Re-analyze Meeting');
         if (reanalyze) {
             reanalyzeMeeting(currentViewingMeetingId);
         }
     } catch (error) {
         console.error('Error saving transcript:', error);
-        alert('Error saving transcript: ' + error.message);
+        await showAlert('Error saving transcript: ' + error.message, 'Error');
     }
 }
 
@@ -1194,7 +1840,15 @@ function closeMeetingTranscript() {
 
     // Show empty state in analysis column
     const analysisBody = getAnalysisBody();
-    analysisBody.innerHTML = `<div class="empty-placeholder">Select a meeting to view AI analysis</div>`;
+    analysisBody.innerHTML = `
+        <div class="empty-placeholder">
+            <div class="empty-state-content">
+                <div style="font-size: 2rem;">📊</div>
+                <div style="font-weight: 500;">Select a recording</div>
+                <div style="font-size: 0.85rem; opacity: 0.7;">to view AI analysis</div>
+            </div>
+        </div>
+    `;
 }
 
 // Save meeting title if changed
@@ -1219,7 +1873,7 @@ async function saveMeetingTitle() {
         renderMeetingHistory();
     } catch (error) {
         console.error('Error saving title:', error);
-        alert('Error saving title: ' + error.message);
+        await showAlert('Error saving title: ' + error.message, 'Error');
     }
 }
 
@@ -1258,7 +1912,7 @@ function startInlineEdit(meetingId, titleDiv) {
                 await updateMeetingTitle(meetingId, newTitle);
             } catch (error) {
                 console.error('Failed to save title:', error);
-                alert('Failed to save title. Please try again.');
+                await showAlert('Failed to save title. Please try again.', 'Error');
             }
         }
 
@@ -1266,10 +1920,10 @@ function startInlineEdit(meetingId, titleDiv) {
     };
 
     input.addEventListener('blur', finishEdit);
-    input.addEventListener('keydown', (e) => {
+    input.addEventListener('keydown', async (e) => {
         if (e.key === 'Enter') {
             e.preventDefault();
-            finishEdit();
+            await finishEdit(e);
         } else if (e.key === 'Escape') {
             e.preventDefault();
             renderMeetingHistory();
@@ -1314,7 +1968,7 @@ async function updateMeetingTitle(meetingId, newTitle) {
         }
     } catch (error) {
         console.error('Error saving title:', error);
-        alert('Error saving title: ' + error.message);
+        await showAlert('Error saving title: ' + error.message, 'Error');
     }
 }
 
@@ -1459,14 +2113,13 @@ function renderAnalysisColumn() {
     analysisBody.className = 'analysis-body';
 
     let actionItemsHtml = '';
-    let checkAllBtn = '';
     if (Array.isArray(currentAnalysis.action_items)) {
-        checkAllBtn = `<button class="check-all-btn" title="Check all action items">✓ Check All</button>`;
         actionItemsHtml = '<ul class="action-items-list">' +
             currentAnalysis.action_items.map((item, index) => `
-                <li class="action-item">
-                    <input type="checkbox" class="action-item-checkbox" data-item-index="${index}" title="Click to mark as complete">
-                    <span class="action-item-text">${escapeHtml(item)}</span>
+                <li class="action-item" data-item-index="${index}">
+                    <input type="checkbox" class="action-item-checkbox" data-item-index="${index}" ${item.completed ? 'checked' : ''} title="Click to mark as complete">
+                    <span class="action-item-text ${item.completed ? 'completed' : ''}">${escapeHtml(item.text)}</span>
+                    <input type="text" class="action-item-assignee" placeholder="Assign to..." value="${escapeHtml(item.assigned_to || '')}" data-item-index="${index}" title="Click to assign this item to someone">
                 </li>
             `).join('') +
             '</ul>';
@@ -1499,10 +2152,7 @@ function renderAnalysisColumn() {
             <p>${escapeHtml(currentAnalysis.summary || '')}</p>
 
             <div class="action-items-section">
-                <div style="display: flex; justify-content: space-between; align-items: center;">
-                    <h3>Action Items</h3>
-                    ${checkAllBtn}
-                </div>
+                <h3>Action Items</h3>
                 ${actionItemsHtml}
             </div>
 
@@ -1532,37 +2182,45 @@ function renderAnalysisColumn() {
     // Set up action item checkboxes
     const actionItemCheckboxes = analysisBody.querySelectorAll('.action-item-checkbox');
     actionItemCheckboxes.forEach(checkbox => {
-        checkbox.addEventListener('change', (e) => {
+        checkbox.addEventListener('change', () => {
             const li = checkbox.closest('.action-item');
+            const itemIndex = parseInt(checkbox.getAttribute('data-item-index'));
+            const textSpan = li.querySelector('.action-item-text');
+
             if (checkbox.checked) {
                 li.classList.add('completed');
+                textSpan.classList.add('completed');
+                if (currentAnalysis.action_items[itemIndex]) {
+                    currentAnalysis.action_items[itemIndex].completed = true;
+                }
             } else {
                 li.classList.remove('completed');
+                textSpan.classList.remove('completed');
+                if (currentAnalysis.action_items[itemIndex]) {
+                    currentAnalysis.action_items[itemIndex].completed = false;
+                }
             }
+
+            // Save to database
+            saveActionItemsChanges();
         });
     });
 
-    // Set up "Check All" button
-    const checkAllButton = analysisBody.querySelector('.check-all-btn');
-    if (checkAllButton) {
-        checkAllButton.addEventListener('click', () => {
-            const allChecked = Array.from(actionItemCheckboxes).every(cb => cb.checked);
+    // Set up action item assignee inputs
+    const assigneeInputs = analysisBody.querySelectorAll('.action-item-assignee');
+    assigneeInputs.forEach(input => {
+        input.addEventListener('change', () => {
+            const itemIndex = parseInt(input.getAttribute('data-item-index'));
+            const assignedTo = input.value.trim();
 
-            actionItemCheckboxes.forEach(checkbox => {
-                checkbox.checked = !allChecked;
-                const li = checkbox.closest('.action-item');
-                if (checkbox.checked) {
-                    li.classList.add('completed');
-                } else {
-                    li.classList.remove('completed');
-                }
-            });
+            if (currentAnalysis.action_items[itemIndex]) {
+                currentAnalysis.action_items[itemIndex].assigned_to = assignedTo || null;
+            }
 
-            // Update button text based on state
-            const hasAnyChecked = Array.from(actionItemCheckboxes).some(cb => cb.checked);
-            checkAllButton.textContent = hasAnyChecked ? '✗ Uncheck All' : '✓ Check All';
+            // Save to database
+            saveActionItemsChanges();
         });
-    }
+    });
 
     // Set up inline edit listener for title
     setupMeetingInfoListeners();
@@ -1647,7 +2305,7 @@ async function saveMeetingTags(meetingId, tags) {
         }
     } catch (error) {
         console.error('Error saving tags:', error);
-        alert('Error saving tags: ' + error.message);
+        await showAlert('Error saving tags: ' + error.message, 'Error');
     }
 }
 
@@ -1793,9 +2451,33 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!checkAuth()) return;
 
     init();
+
+    // Handle window resize with debouncing to prevent breaking
+    let resizeTimeout;
+    window.addEventListener('resize', () => {
+        clearTimeout(resizeTimeout);
+        resizeTimeout = setTimeout(() => {
+            // Re-sync theme on resize to ensure consistency
+            updateThemeButtons();
+
+            // Adjust control panel position if it was dragged
+            const floatingPanel = document.querySelector('.floating-control-panel');
+            if (floatingPanel && floatingPanel.style.left) {
+                // Ensure panel stays within viewport on resize
+                const rect = floatingPanel.getBoundingClientRect();
+                const maxX = window.innerWidth - floatingPanel.offsetWidth;
+                if (rect.left < 0 || rect.right > window.innerWidth) {
+                    resetControlPanelPosition();
+                }
+            }
+        }, 300);
+    });
 });
 
 async function init() {
+    // Clear theme from localStorage - always reset to default on page load
+    localStorage.removeItem('theme');
+
     // Display current user
     if (currentUser) {
         document.getElementById('currentUser').textContent = `Logged in as: ${currentUser.username}`;
@@ -1808,6 +2490,9 @@ async function init() {
         loadTheme();
     }
 
+    // Ensure theme buttons are updated
+    updateThemeButtons();
+
     // Wire up logout button
     document.getElementById('logoutBtn').addEventListener('click', logout);
 
@@ -1815,6 +2500,19 @@ async function init() {
     initRecordingControls();
     loadUserLanguagePreference();
     updateLanguageButtonActive();
+
+    // Enumerate and set up audio devices
+    await enumerateAudioDevices();
+    const audioDeviceSelect = document.getElementById('audioDeviceSelect');
+    if (audioDeviceSelect) {
+        audioDeviceSelect.addEventListener('change', (e) => {
+            selectedAudioDeviceId = e.target.value;
+            console.log('Audio device changed to:', selectedAudioDeviceId);
+        });
+    }
+
+    // Update devices when permissions change or devices are plugged/unplugged
+    navigator.mediaDevices.addEventListener('devicechange', enumerateAudioDevices);
 
     // Load meetings from Supabase
     await loadMeetings();
@@ -1866,9 +2564,6 @@ async function init() {
             renderMeetingHistory();
         });
     }
-
-    // Load saved theme preference
-    loadTheme();
 
     // Wire up control panel toggle button
     const toggleBtn = document.getElementById('toggleControlPanel');

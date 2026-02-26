@@ -2,29 +2,29 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>After the Noise</title>
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
     <header>
-        <div class="header-title">
-            <div>AFTER</div>
-            <div>THE</div>
-            <div>NOISE</div>
-        </div>
-        <div class="recording-controls">
-            <div class="recording-timer" id="recordingTimer">00:00:00</div>
-            <div class="control-buttons">
-                <button id="micButton" class="record-button" title="Start recording">
-                    Record
-                </button>
-                <button id="pauseButton" class="pause-button" title="Pause recording" disabled>
-                    Pause
-                </button>
+        <!-- Section 1: Title + Toggle Button -->
+        <div class="header-section header-title-section">
+            <div class="header-title">
+                <div>AFTER</div>
+                <div>THE</div>
+                <div>NOISE</div>
+            </div>
+            <div class="toggle-control-wrapper">
+                <button id="toggleControlPanel" class="theme-btn control-toggle-btn" title="Click to hide/show floating control panel">🎛️</button>
+                <span class="toggle-hint" id="toggleHint">Hide Controls</span>
             </div>
         </div>
-        <div class="theme-and-user">
+
+        <!-- Section 2: Theme & User -->
+        <div class="header-section theme-and-user">
             <div class="theme-selector">
                 <button id="themeDefault" class="theme-btn theme-btn-default" title="Default theme" data-theme="default">☀️</button>
                 <button id="themeSignal" class="theme-btn theme-btn-signal" title="Signal in Silence theme" data-theme="signal">📡</button>
@@ -45,6 +45,9 @@
                 <div class="kanban-column">
                     <h2 class="column-header">Recording</h2>
                     <div class="recording-status" id="recordingStatus">Ready</div>
+                    <div class="transcription-loader" id="transcriptionLoader">
+                        <div class="transcription-loader-bar"></div>
+                    </div>
                     <div class="transcription-display" id="transcriptionDisplay"></div>
                     <div class="recording-actions">
                         <button id="saveMeetingBtn" class="action-button save-button">Save</button>
@@ -55,14 +58,27 @@
                 <!-- Middle Column: AI Analysis (Phase 2) -->
                 <div class="kanban-column">
                     <h2 class="column-header">Analysis</h2>
-                    <div class="empty-placeholder">Select a recording to view analysis</div>
+                    <div class="empty-placeholder">
+                        <div class="empty-state-content">
+                            <div style="font-size: 2rem;">📊</div>
+                            <div style="font-weight: 500;">Select a recording</div>
+                            <div style="font-size: 0.85rem; opacity: 0.7;">to view AI analysis</div>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Right Column: Meeting History -->
                 <div class="kanban-column">
                     <h2 class="column-header">Archive</h2>
                     <div style="padding: 0.75rem 1rem;">
-                        <input type="text" id="meetingsSearch" class="meetings-search-input" placeholder="Search">
+                        <input type="text" id="meetingsSearch" class="meetings-search-input" placeholder="Search meetings">
+                    </div>
+                    <div class="empty-placeholder" id="archiveEmptyState">
+                        <div class="empty-state-content">
+                            <div style="font-size: 2rem;">📁</div>
+                            <div style="font-weight: 500;">No meetings saved</div>
+                            <div style="font-size: 0.85rem; opacity: 0.7;">Save a recording to add it here</div>
+                        </div>
                     </div>
                     <ul class="meetings-list" id="meetingsList"></ul>
                 </div>
@@ -91,6 +107,106 @@
             </div>
             <div class="modal-footer">
                 <button id="editTranscriptBtn" class="edit-transcript-btn">Edit</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Floating Control Panel at Bottom Center -->
+    <div class="floating-control-panel" title="Drag to move • Double-click to reset position">
+        <div class="control-panel">
+            <!-- Recording Panel: Timer + Buttons -->
+            <div class="recording-panel">
+                <div class="recording-timer" id="recordingTimer">00:00:00</div>
+                <div class="control-buttons">
+                    <button id="micButton" class="record-button" title="Start recording">
+                        Record
+                    </button>
+                    <button id="pauseButton" class="pause-button" title="Pause recording" disabled>
+                        Pause
+                    </button>
+                </div>
+            </div>
+
+            <!-- Divider -->
+            <div class="panel-divider"></div>
+
+            <!-- Capture Settings Panel: Mode + Device + Language -->
+            <div class="capture-settings-panel">
+                <div class="recording-mode-selector">
+                    <button class="mode-btn active" data-mode="microphone" title="Record from microphone only">🎤</button>
+                    <button class="mode-btn" data-mode="screen_audio" title="Record screen + audio (Zoom, Teams, etc)">🖥️</button>
+                </div>
+                <div class="settings-divider"></div>
+                <div class="audio-device-selector">
+                    <label for="audioDeviceSelect" class="device-select-label">🎧 Audio Device</label>
+                    <select id="audioDeviceSelect" class="device-select" title="Select audio input device" aria-label="Audio Device">
+                        <option value="default">Default Device</option>
+                    </select>
+                </div>
+                <div class="settings-divider"></div>
+                <div class="language-selector">
+                    <button class="language-btn active" data-language="en" title="English">🇬🇧</button>
+                    <button class="language-btn" data-language="sv" title="Swedish">🇸🇪</button>
+                    <button class="language-btn" data-language="de" title="German">🇩🇪</button>
+                    <button class="language-btn" data-language="es" title="Spanish">🇪🇸</button>
+                </div>
+            </div>
+        </div>
+        <div class="floating-panel-hint">
+            <small>🎤 Microphone • 🖥️ Screen • 🎧 Device • 🇬🇧 Language • Drag to move</small>
+        </div>
+    </div>
+
+    <!-- Themed Modal Dialogs -->
+    <div id="modalOverlay" class="modal-overlay hidden"></div>
+
+    <!-- Alert Modal -->
+    <div id="alertModal" class="themed-modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="alertTitle">Alert</h3>
+                <button class="modal-close-btn" onclick="closeAlert()">×</button>
+            </div>
+            <div class="modal-body">
+                <p id="alertMessage"></p>
+            </div>
+            <div class="modal-footer">
+                <button class="modal-btn modal-btn-primary" onclick="closeAlert()">OK</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Confirm Modal -->
+    <div id="confirmModal" class="themed-modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="confirmTitle">Confirm</h3>
+                <button class="modal-close-btn" onclick="cancelConfirm()">×</button>
+            </div>
+            <div class="modal-body">
+                <p id="confirmMessage"></p>
+            </div>
+            <div class="modal-footer">
+                <button class="modal-btn modal-btn-secondary" onclick="cancelConfirm()">Cancel</button>
+                <button class="modal-btn modal-btn-primary" onclick="acceptConfirm()">OK</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Prompt Modal -->
+    <div id="promptModal" class="themed-modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="promptTitle">Enter Value</h3>
+                <button class="modal-close-btn" onclick="cancelPrompt()">×</button>
+            </div>
+            <div class="modal-body">
+                <p id="promptMessage"></p>
+                <input type="text" id="promptInput" class="prompt-input" placeholder="Enter value...">
+            </div>
+            <div class="modal-footer">
+                <button class="modal-btn modal-btn-secondary" onclick="cancelPrompt()">Cancel</button>
+                <button class="modal-btn modal-btn-primary" onclick="acceptPrompt()">OK</button>
             </div>
         </div>
     </div>
