@@ -88,15 +88,42 @@ function setupBlog() {
 async function loadBlogPosts() {
     const container = document.getElementById('blogList');
 
-    // Placeholder - will integrate with Supabase
-    container.innerHTML = `
-        <div class="cms-empty">
-            <p>No blog posts yet. Create your first post!</p>
-        </div>
-    `;
+    try {
+        const { data, error } = await supabase.from('blog_posts').select('*').order('created_at', { ascending: false });
 
-    // In future: fetch from supabase
-    // const { data, error } = await supabase.from('blog_posts').select('*');
+        if (error) throw error;
+
+        if (!data || data.length === 0) {
+            container.innerHTML = `
+                <div class="cms-empty">
+                    <p>No blog posts yet. Create your first post!</p>
+                </div>
+            `;
+            return;
+        }
+
+        container.innerHTML = data.map(post => `
+            <div class="cms-item">
+                <div class="cms-item-header">
+                    <h4>${post.title}</h4>
+                    <span class="cms-item-date">${new Date(post.created_at).toLocaleDateString()}</span>
+                </div>
+                <p class="cms-item-slug">Slug: ${post.slug}</p>
+                ${post.excerpt ? `<p class="cms-item-excerpt">${post.excerpt}</p>` : ''}
+                <div class="cms-item-actions">
+                    <button class="cms-item-edit" onclick="editBlogPost('${post.id}')">Edit</button>
+                    <button class="cms-item-delete" onclick="deleteBlogPost('${post.id}')">Delete</button>
+                </div>
+            </div>
+        `).join('');
+    } catch (error) {
+        console.error('Failed to load blog posts:', error);
+        container.innerHTML = `
+            <div class="cms-empty" style="color: #ef4444;">
+                <p>Error loading blog posts: ${error.message}</p>
+            </div>
+        `;
+    }
 }
 
 // Save blog post
@@ -112,8 +139,17 @@ async function saveBlogPost() {
     }
 
     try {
-        // In future: save to Supabase
-        // const { data, error } = await supabase.from('blog_posts').insert([...])
+        const { data, error } = await supabase.from('blog_posts').insert([
+            {
+                title,
+                slug,
+                excerpt,
+                content,
+                created_at: new Date().toISOString()
+            }
+        ]);
+
+        if (error) throw error;
 
         showCmsModal('Success', 'Blog post saved successfully!', 'success');
         document.getElementById('blogForm').classList.add('hidden');
@@ -153,15 +189,43 @@ function setupProjects() {
 async function loadProjects() {
     const container = document.getElementById('projectsList');
 
-    // Placeholder
-    container.innerHTML = `
-        <div class="cms-empty">
-            <p>No projects yet. Create your first project!</p>
-        </div>
-    `;
+    try {
+        const { data, error } = await supabase.from('projects').select('*').order('created_at', { ascending: false });
 
-    // In future: fetch from supabase
-    // const { data, error } = await supabase.from('projects').select('*');
+        if (error) throw error;
+
+        if (!data || data.length === 0) {
+            container.innerHTML = `
+                <div class="cms-empty">
+                    <p>No projects yet. Create your first project!</p>
+                </div>
+            `;
+            return;
+        }
+
+        container.innerHTML = data.map(project => `
+            <div class="cms-item">
+                <div class="cms-item-header">
+                    <h4>${project.title}</h4>
+                    <span class="cms-item-date">${new Date(project.created_at).toLocaleDateString()}</span>
+                </div>
+                <p class="cms-item-description">${project.description}</p>
+                ${project.link ? `<p class="cms-item-link"><a href="${project.link}" target="_blank">View Project →</a></p>` : ''}
+                ${project.tags ? `<p class="cms-item-tags">Tags: ${project.tags}</p>` : ''}
+                <div class="cms-item-actions">
+                    <button class="cms-item-edit" onclick="editProject('${project.id}')">Edit</button>
+                    <button class="cms-item-delete" onclick="deleteProject('${project.id}')">Delete</button>
+                </div>
+            </div>
+        `).join('');
+    } catch (error) {
+        console.error('Failed to load projects:', error);
+        container.innerHTML = `
+            <div class="cms-empty" style="color: #ef4444;">
+                <p>Error loading projects: ${error.message}</p>
+            </div>
+        `;
+    }
 }
 
 // Save project
@@ -177,8 +241,17 @@ async function saveProject() {
     }
 
     try {
-        // In future: save to Supabase
-        // const { data, error } = await supabase.from('projects').insert([...])
+        const { data, error } = await supabase.from('projects').insert([
+            {
+                title,
+                description,
+                link: link || null,
+                tags: tags || null,
+                created_at: new Date().toISOString()
+            }
+        ]);
+
+        if (error) throw error;
 
         showCmsModal('Success', 'Project saved successfully!', 'success');
         document.getElementById('projectForm').classList.add('hidden');
@@ -188,6 +261,46 @@ async function saveProject() {
     } catch (error) {
         showCmsModal('Error', 'Failed to save project: ' + error.message, 'error');
     }
+}
+
+// Delete blog post
+async function deleteBlogPost(id) {
+    if (!confirm('Are you sure you want to delete this blog post?')) return;
+
+    try {
+        const { error } = await supabase.from('blog_posts').delete().eq('id', id);
+        if (error) throw error;
+
+        showCmsModal('Success', 'Blog post deleted successfully!', 'success');
+        await loadBlogPosts();
+    } catch (error) {
+        showCmsModal('Error', 'Failed to delete blog post: ' + error.message, 'error');
+    }
+}
+
+// Edit blog post
+async function editBlogPost(id) {
+    showCmsModal('Info', 'Edit functionality coming soon!', 'success');
+}
+
+// Delete project
+async function deleteProject(id) {
+    if (!confirm('Are you sure you want to delete this project?')) return;
+
+    try {
+        const { error } = await supabase.from('projects').delete().eq('id', id);
+        if (error) throw error;
+
+        showCmsModal('Success', 'Project deleted successfully!', 'success');
+        await loadProjects();
+    } catch (error) {
+        showCmsModal('Error', 'Failed to delete project: ' + error.message, 'error');
+    }
+}
+
+// Edit project
+async function editProject(id) {
+    showCmsModal('Info', 'Edit functionality coming soon!', 'success');
 }
 
 // Show CMS Modal
