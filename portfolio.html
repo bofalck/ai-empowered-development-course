@@ -83,6 +83,14 @@
     <!-- Hidden app frame -->
     <iframe id="appFrame" class="app-frame hidden"></iframe>
 
+    <script type="module">
+        import { restoreSession, isLoggedIn } from './auth.js';
+
+        // Check auth before loading portfolio
+        if (!restoreSession() || !isLoggedIn()) {
+            window.location.href = '/';
+        }
+    </script>
     <script type="module" src="portfolio.js"></script>
 </body>
 </html>
