@@ -63,6 +63,7 @@ function setupBlog() {
     const cancelBtn = blogForm.querySelector('.btn-cancel');
 
     newBlogBtn.addEventListener('click', () => {
+        document.getElementById('blogList').classList.add('hidden');
         blogForm.classList.remove('hidden');
         blogFormElement.reset();
         document.getElementById('blogTitleEditor').innerHTML = '';
@@ -73,6 +74,7 @@ function setupBlog() {
 
     cancelBtn.addEventListener('click', () => {
         blogForm.classList.add('hidden');
+        document.getElementById('blogList').classList.remove('hidden');
     });
 
     blogFormElement.addEventListener('submit', async (e) => {
@@ -346,7 +348,8 @@ async function saveBlogPost() {
         document.getElementById('blogForm').classList.add('hidden');
         document.getElementById('blogForm').querySelector('form').reset();
         document.getElementById('blogContentEditor').innerHTML = '';
-        // Reload blog posts
+        // Show list and reload blog posts
+        document.getElementById('blogList').classList.remove('hidden');
         await loadBlogPosts();
     } catch (error) {
         console.error('Save blog post error:', error);
@@ -362,6 +365,7 @@ function setupProjects() {
     const cancelBtn = projectForm.querySelector('.btn-cancel');
 
     newProjectBtn.addEventListener('click', () => {
+        document.getElementById('projectsList').classList.add('hidden');
         projectForm.classList.remove('hidden');
         projectFormElement.reset();
         document.getElementById('projectTitleEditor').innerHTML = '';
@@ -372,6 +376,7 @@ function setupProjects() {
 
     cancelBtn.addEventListener('click', () => {
         projectForm.classList.add('hidden');
+        document.getElementById('projectsList').classList.remove('hidden');
     });
 
     projectFormElement.addEventListener('submit', async (e) => {
@@ -471,7 +476,8 @@ async function saveProject() {
         document.getElementById('projectForm').classList.add('hidden');
         document.getElementById('projectForm').querySelector('form').reset();
         document.getElementById('projectContentEditor').innerHTML = '';
-        // Reload projects
+        // Show list and reload projects
+        document.getElementById('projectsList').classList.remove('hidden');
         await loadProjects();
     } catch (error) {
         console.error('Save project error:', error);
