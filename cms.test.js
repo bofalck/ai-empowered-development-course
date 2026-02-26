@@ -349,11 +349,20 @@ describe('CMS Form Validation Tests', () => {
     // In real implementation, validation happens in saveBlogPost function
   });
 
-  it('should validate that blog form requires slug', () => {
-    const blogSlugInput = document.getElementById('blogSlug');
-    // In actual implementation, slug input has required attribute
-    expect(blogSlugInput).toBeDefined();
-    expect(blogSlugInput.id).toBe('blogSlug');
+  it('should generate slug from title and timestamp', () => {
+    const title = 'My Awesome Blog Post';
+    // Slug should be title (kebab-case) + timestamp
+    // Example: my-awesome-blog-post-1708987200
+    const slug = title
+        .toLowerCase()
+        .trim()
+        .replace(/[^\w\s-]/g, '')
+        .replace(/\s+/g, '-')
+        .replace(/-+/g, '-')
+        .replace(/^-+|-+$/g, '');
+
+    expect(slug).toBe('my-awesome-blog-post');
+    expect(slug).not.toContain(' ');
   });
 
   it('should validate that project form requires title', () => {

@@ -2,6 +2,20 @@
 import { restoreSession, isAdmin, getTheme } from './auth.js';
 import { supabase } from './supabase-client.js';
 
+// Generate slug from title and timestamp
+function generateSlug(title) {
+    const timestamp = Math.floor(Date.now() / 1000);
+    const titleSlug = title
+        .toLowerCase()
+        .trim()
+        .replace(/[^\w\s-]/g, '') // Remove special characters
+        .replace(/\s+/g, '-')      // Replace spaces with hyphens
+        .replace(/-+/g, '-')       // Replace multiple hyphens with single
+        .replace(/^-+|-+$/g, '');  // Remove leading/trailing hyphens
+
+    return `${titleSlug}-${timestamp}`;
+}
+
 // Initialize CMS
 async function init() {
     // Check auth
@@ -313,7 +327,9 @@ async function saveBlogPost() {
     const title = titleEditor.innerHTML.trim();
     document.getElementById('blogTitle').value = title;
 
-    const slug = document.getElementById('blogSlug').value;
+    // Auto-generate slug from title and timestamp
+    const slug = generateSlug(title);
+
     const excerpt = document.getElementById('blogExcerpt').value;
 
     // Get content from editor
@@ -323,7 +339,7 @@ async function saveBlogPost() {
     // Also save to hidden input for form submission
     document.getElementById('blogContent').value = content;
 
-    if (!title || !slug || !content) {
+    if (!title || !content) {
         showCmsModal('Error', 'Please fill in all required fields', 'error');
         return;
     }
