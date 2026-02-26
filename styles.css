@@ -4510,7 +4510,7 @@ body.theme-prism.theme-dark .recording-timer {
    This preserves the design while maintaining accessibility for assistive technologies */
 button:focus-visible {
     outline: 3px solid var(--color-primary);
-    outline-offset: 2px;
+    outline-offset: 0;
 }
 
 /* Additional cursor clarity for disabled state */
@@ -5149,7 +5149,7 @@ select:focus-visible,
 textarea:focus-visible,
 [tabindex]:focus-visible {
     outline: 3px solid var(--color-primary);
-    outline-offset: 2px;
+    outline-offset: 0;
 }
 
 /* Ensure focus ring is visible in all themes */
