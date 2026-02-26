@@ -28,6 +28,20 @@
     font-style: italic;
 }
 
+@font-face {
+    font-family: 'DrukText-Super';
+    src: url('/assets/DrukText-Super.otf') format('opentype');
+    font-weight: normal;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: 'DrukText-Medium';
+    src: url('/assets/DrukText-Medium.otf') format('opentype');
+    font-weight: normal;
+    font-style: normal;
+}
+
 * {
     margin: 0;
     padding: 0;
@@ -1216,12 +1230,12 @@ h2 {
     letter-spacing: -0.015em;
 }
 
-/* H3-H6 - Druk Medium */
+/* H3-H6 - DrukText Medium */
 h3,
 h4,
 h5,
 h6 {
-    font-family: 'Druk Medium', serif;
+    font-family: 'DrukText-Medium', serif;
 }
 
 h3 {
