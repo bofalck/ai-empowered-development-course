@@ -1630,18 +1630,6 @@ textarea:focus {
     transition: all 200ms ease;
 }
 
-/* Make first column (Recording) more prominent */
-.kanban-column:first-child .column-header {
-    font-weight: 600;
-    color: var(--color-text);
-    font-size: 1rem;
-}
-
-/* Fade empty columns slightly */
-.kanban-column:not(:first-child):has(.empty-placeholder) {
-    opacity: 0.7;
-}
-
 .kanban-column .todoList {
     flex: 1;
     overflow-y: auto;
