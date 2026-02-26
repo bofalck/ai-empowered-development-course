@@ -106,6 +106,18 @@
         </section>
     </main>
 
+    <!-- CMS Modal Overlay -->
+    <div id="cmsOverlay" class="cms-overlay hidden"></div>
+
+    <!-- CMS Modal -->
+    <div id="cmsModal" class="cms-modal hidden">
+        <h4 id="cmsModalTitle">Success</h4>
+        <p id="cmsModalMessage"></p>
+        <div class="cms-modal-actions">
+            <button onclick="closeCmsModal()">OK</button>
+        </div>
+    </div>
+
     <script type="module" src="cms.js"></script>
 </body>
 </html>

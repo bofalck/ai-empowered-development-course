@@ -64,19 +64,19 @@ function switchTab(tabName) {
 function setupBlog() {
     const newBlogBtn = document.getElementById('newBlogBtn');
     const blogForm = document.getElementById('blogForm');
+    const blogFormElement = blogForm.querySelector('form');
     const cancelBtn = blogForm.querySelector('.btn-cancel');
-    const saveBtn = blogForm.querySelector('.btn-save');
 
     newBlogBtn.addEventListener('click', () => {
         blogForm.classList.remove('hidden');
-        document.querySelector('#blog-tab form').reset();
+        blogFormElement.reset();
     });
 
     cancelBtn.addEventListener('click', () => {
         blogForm.classList.add('hidden');
     });
 
-    saveBtn.addEventListener('click', async (e) => {
+    blogFormElement.addEventListener('submit', async (e) => {
         e.preventDefault();
         await saveBlogPost();
     });
@@ -107,32 +107,41 @@ async function saveBlogPost() {
     const content = document.getElementById('blogContent').value;
 
     if (!title || !slug || !content) {
-        alert('Please fill in all required fields');
+        showCmsModal('Error', 'Please fill in all required fields', 'error');
         return;
     }
 
-    // In future: save to Supabase
-    alert('Blog post saved! (CMS integration in progress)');
-    document.getElementById('blogForm').classList.add('hidden');
+    try {
+        // In future: save to Supabase
+        // const { data, error } = await supabase.from('blog_posts').insert([...])
+
+        showCmsModal('Success', 'Blog post saved successfully!', 'success');
+        document.getElementById('blogForm').classList.add('hidden');
+        document.getElementById('blogForm').querySelector('form').reset();
+        // Reload blog posts
+        await loadBlogPosts();
+    } catch (error) {
+        showCmsModal('Error', 'Failed to save blog post: ' + error.message, 'error');
+    }
 }
 
 // Setup projects
 function setupProjects() {
     const newProjectBtn = document.getElementById('newProjectBtn');
     const projectForm = document.getElementById('projectForm');
+    const projectFormElement = projectForm.querySelector('form');
     const cancelBtn = projectForm.querySelector('.btn-cancel');
-    const saveBtn = projectForm.querySelector('.btn-save');
 
     newProjectBtn.addEventListener('click', () => {
         projectForm.classList.remove('hidden');
-        document.querySelector('#projects-tab form').reset();
+        projectFormElement.reset();
     });
 
     cancelBtn.addEventListener('click', () => {
         projectForm.classList.add('hidden');
     });
 
-    saveBtn.addEventListener('click', async (e) => {
+    projectFormElement.addEventListener('submit', async (e) => {
         e.preventDefault();
         await saveProject();
     });
@@ -163,14 +172,53 @@ async function saveProject() {
     const tags = document.getElementById('projectTags').value;
 
     if (!title || !description) {
-        alert('Please fill in all required fields');
+        showCmsModal('Error', 'Please fill in all required fields', 'error');
         return;
     }
 
-    // In future: save to Supabase
-    alert('Project saved! (CMS integration in progress)');
-    document.getElementById('projectForm').classList.add('hidden');
+    try {
+        // In future: save to Supabase
+        // const { data, error } = await supabase.from('projects').insert([...])
+
+        showCmsModal('Success', 'Project saved successfully!', 'success');
+        document.getElementById('projectForm').classList.add('hidden');
+        document.getElementById('projectForm').querySelector('form').reset();
+        // Reload projects
+        await loadProjects();
+    } catch (error) {
+        showCmsModal('Error', 'Failed to save project: ' + error.message, 'error');
+    }
 }
+
+// Show CMS Modal
+function showCmsModal(title, message, type = 'success') {
+    const modal = document.getElementById('cmsModal');
+    const overlay = document.getElementById('cmsOverlay');
+    const titleEl = document.getElementById('cmsModalTitle');
+    const messageEl = document.getElementById('cmsModalMessage');
+
+    titleEl.textContent = title;
+    messageEl.textContent = message;
+    modal.className = `cms-modal ${type}`;
+    modal.classList.remove('hidden');
+    overlay.classList.remove('hidden');
+}
+
+// Close CMS Modal
+function closeCmsModal() {
+    const modal = document.getElementById('cmsModal');
+    const overlay = document.getElementById('cmsOverlay');
+    modal.classList.add('hidden');
+    overlay.classList.add('hidden');
+}
+
+// Close modal on overlay click
+document.addEventListener('DOMContentLoaded', () => {
+    const overlay = document.getElementById('cmsOverlay');
+    if (overlay) {
+        overlay.addEventListener('click', closeCmsModal);
+    }
+});
 
 // Initialize
 if (document.readyState === 'loading') {

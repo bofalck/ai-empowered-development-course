@@ -5775,8 +5775,6 @@ body.theme-prism .empty-placeholder {
 }
 
 .cms-header .header-content {
-    max-width: 1400px;
-    margin: 0 auto;
     padding: 0 var(--spacing-md);
     display: flex;
     justify-content: space-between;
@@ -5817,8 +5815,7 @@ body.theme-prism .empty-placeholder {
 
 /* CMS MAIN */
 .cms-main {
-    max-width: 1400px;
-    margin: 0 auto;
+    width: 100%;
     padding: var(--spacing-lg);
 }
 
@@ -5890,6 +5887,7 @@ body.theme-prism .empty-placeholder {
     border: 1px solid var(--color-divider);
     border-radius: var(--border-radius-md);
     padding: var(--spacing-lg);
+    max-width: 800px;
 }
 
 .cms-form h3 {
@@ -5958,6 +5956,91 @@ body.theme-prism .empty-placeholder {
 
 .cms-form.hidden {
     display: none;
+}
+
+/* CMS MODAL/TOAST */
+.cms-modal {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: var(--color-surface);
+    border: 1px solid var(--color-divider);
+    border-radius: var(--border-radius-md);
+    padding: var(--spacing-lg);
+    z-index: 1000;
+    max-width: 400px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    animation: slideIn 200ms ease;
+}
+
+.cms-modal.hidden {
+    display: none;
+}
+
+.cms-modal.success {
+    border-color: #10b981;
+    background: var(--color-surface);
+}
+
+.cms-modal.error {
+    border-color: #ef4444;
+    background: var(--color-surface);
+}
+
+.cms-modal h4 {
+    margin: 0 0 var(--spacing-md) 0;
+    color: var(--color-text);
+}
+
+.cms-modal p {
+    margin: 0 0 var(--spacing-md) 0;
+    color: var(--color-text-secondary);
+}
+
+.cms-modal-actions {
+    display: flex;
+    gap: var(--spacing-md);
+    justify-content: flex-end;
+}
+
+.cms-modal button {
+    padding: 0.5rem 1rem;
+    background: var(--color-primary);
+    color: white;
+    border: none;
+    border-radius: var(--border-radius-sm);
+    cursor: pointer;
+    font-weight: 500;
+}
+
+.cms-modal button:hover {
+    opacity: 0.9;
+}
+
+.cms-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 999;
+}
+
+.cms-overlay.hidden {
+    display: none;
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translate(-50%, -55%);
+    }
+    to {
+        opacity: 1;
+        transform: translate(-50%, -50%);
+    }
 }
 
 /* RESPONSIVE */
