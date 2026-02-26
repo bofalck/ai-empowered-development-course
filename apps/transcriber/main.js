@@ -182,6 +182,16 @@ async function showPrompt(message, defaultValue = '', title = 'Enter Value') {
 // ===== SESSION MANAGEMENT =====
 
 function getSession() {
+    // Check for parent's authState first (when in iframe)
+    const authState = localStorage.getItem('authState');
+    if (authState) {
+        try {
+            return JSON.parse(authState).user;
+        } catch (e) {
+            // Fall back to transcriber session
+        }
+    }
+    // Fall back to transcriber-specific session
     const data = localStorage.getItem('transcriber_session');
     return data ? JSON.parse(data) : null;
 }
@@ -192,14 +202,25 @@ function clearSession() {
 
 function logout() {
     clearSession();
-    window.location.href = 'login.html';
+    const isInIframe = window.parent !== window;
+    if (isInIframe) {
+        // In iframe - send message to parent to close app
+        window.parent.postMessage({ action: 'closeApp' }, '*');
+    } else {
+        // Not in iframe - redirect to login
+        window.location.href = 'login.html';
+    }
 }
 
 // Check if user is logged in
 function checkAuth() {
     const session = getSession();
     if (!session) {
-        window.location.href = 'login.html';
+        // Only redirect if not in iframe
+        const isInIframe = window.parent !== window;
+        if (!isInIframe) {
+            window.location.href = 'login.html';
+        }
         return false;
     }
     currentUser = session;
