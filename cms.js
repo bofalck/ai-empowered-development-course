@@ -262,7 +262,10 @@ async function saveBlogPost() {
             }
         ]);
 
-        if (error) throw error;
+        if (error) {
+            console.error('Supabase error:', error);
+            throw new Error(error.message || 'Failed to insert blog post');
+        }
 
         showCmsModal('Success', 'Blog post saved successfully!', 'success');
         document.getElementById('blogForm').classList.add('hidden');
@@ -271,6 +274,7 @@ async function saveBlogPost() {
         // Reload blog posts
         await loadBlogPosts();
     } catch (error) {
+        console.error('Save blog post error:', error);
         showCmsModal('Error', 'Failed to save blog post: ' + error.message, 'error');
     }
 }
@@ -376,7 +380,10 @@ async function saveProject() {
             }
         ]);
 
-        if (error) throw error;
+        if (error) {
+            console.error('Supabase error:', error);
+            throw new Error(error.message || 'Failed to insert project');
+        }
 
         showCmsModal('Success', 'Project saved successfully!', 'success');
         document.getElementById('projectForm').classList.add('hidden');
@@ -385,6 +392,7 @@ async function saveProject() {
         // Reload projects
         await loadProjects();
     } catch (error) {
+        console.error('Save project error:', error);
         showCmsModal('Error', 'Failed to save project: ' + error.message, 'error');
     }
 }
