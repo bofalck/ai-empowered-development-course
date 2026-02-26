@@ -5618,7 +5618,7 @@ body.theme-prism .empty-placeholder {
 
 .widgets-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    grid-template-columns: repeat(3, 1fr);
     gap: var(--spacing-lg);
 }
 
@@ -5630,6 +5630,16 @@ body.theme-prism .empty-placeholder {
     transition: all 200ms ease;
     display: flex;
     flex-direction: column;
+    cursor: grab;
+}
+
+.widget.dragging {
+    opacity: 0.5;
+    z-index: 10;
+}
+
+.widget.drag-over {
+    border: 2px dashed var(--color-primary);
 }
 
 .widget:hover {
@@ -5945,9 +5955,15 @@ body.theme-prism .empty-placeholder {
 }
 
 /* RESPONSIVE */
+@media (max-width: 1400px) {
+    .widgets-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
 @media (max-width: 1024px) {
     .widgets-grid {
-        grid-template-columns: 1fr;
+        grid-template-columns: repeat(2, 1fr);
     }
 }
 

@@ -51,6 +51,12 @@ async function init() {
     // Setup app launcher
     setupAppLauncher();
 
+    // Setup drag and drop for widgets
+    setupWidgetDragAndDrop();
+
+    // Restore widget order from localStorage
+    restoreWidgetOrder();
+
     // Show admin CMS link if admin
     if (isAdmin()) {
         setupAdminCMS();
@@ -223,6 +229,94 @@ function setupAdminCMS() {
     cmsLink.className = 'btn-admin-cms';
     cmsLink.textContent = 'CMS';
     header.insertBefore(cmsLink, header.firstChild);
+}
+
+// Setup drag and drop for widgets
+function setupWidgetDragAndDrop() {
+    const widgets = document.querySelectorAll('.widget');
+    let draggedElement = null;
+
+    widgets.forEach(widget => {
+        widget.draggable = true;
+
+        widget.addEventListener('dragstart', (e) => {
+            draggedElement = widget;
+            widget.classList.add('dragging');
+            e.dataTransfer.effectAllowed = 'move';
+            e.dataTransfer.setData('text/html', widget.innerHTML);
+        });
+
+        widget.addEventListener('dragend', () => {
+            widget.classList.remove('dragging');
+            widgets.forEach(w => w.classList.remove('drag-over'));
+            draggedElement = null;
+            saveWidgetOrder();
+        });
+
+        widget.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+            if (widget !== draggedElement) {
+                widget.classList.add('drag-over');
+            }
+        });
+
+        widget.addEventListener('dragleave', () => {
+            widget.classList.remove('drag-over');
+        });
+
+        widget.addEventListener('drop', (e) => {
+            e.preventDefault();
+            if (widget !== draggedElement) {
+                // Swap widgets
+                const grid = document.querySelector('.widgets-grid');
+                const allWidgets = Array.from(grid.querySelectorAll('.widget'));
+                const draggedIndex = allWidgets.indexOf(draggedElement);
+                const targetIndex = allWidgets.indexOf(widget);
+
+                if (draggedIndex < targetIndex) {
+                    widget.parentNode.insertBefore(draggedElement, widget.nextSibling);
+                } else {
+                    widget.parentNode.insertBefore(draggedElement, widget);
+                }
+            }
+            widget.classList.remove('drag-over');
+        });
+    });
+}
+
+// Save widget order to localStorage
+function saveWidgetOrder() {
+    const grid = document.querySelector('.widgets-grid');
+    const order = Array.from(grid.querySelectorAll('.widget')).map(w => w.id);
+    localStorage.setItem('widgetOrder', JSON.stringify(order));
+}
+
+// Restore widget order from localStorage
+function restoreWidgetOrder() {
+    const saved = localStorage.getItem('widgetOrder');
+    if (saved) {
+        try {
+            const order = JSON.parse(saved);
+            const grid = document.querySelector('.widgets-grid');
+            const widgets = new Map();
+
+            // Create a map of widget ID to element
+            grid.querySelectorAll('.widget').forEach(widget => {
+                widgets.set(widget.id, widget);
+            });
+
+            // Reorder widgets
+            order.forEach(id => {
+                const widget = widgets.get(id);
+                if (widget) {
+                    grid.appendChild(widget);
+                }
+            });
+        } catch (e) {
+            console.error('Failed to restore widget order:', e);
+        }
+    }
 }
 
 // Initialize on load
