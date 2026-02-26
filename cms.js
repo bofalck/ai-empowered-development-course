@@ -2,6 +2,18 @@
 import { restoreSession, isAdmin, getTheme } from './auth.js';
 import { supabase } from './supabase-client.js';
 
+// Edit state
+const cmsState = {
+    editingProjectId: null,
+};
+
+// Helper function to extract plain text from HTML
+function extractPlainText(html) {
+    const temp = document.createElement('div');
+    temp.innerHTML = html;
+    return temp.textContent || temp.innerText || '';
+}
+
 // Generate slug from title and timestamp
 function generateSlug(title) {
     const timestamp = Math.floor(Date.now() / 1000);
@@ -296,7 +308,7 @@ async function loadBlogPosts() {
         container.innerHTML = data.map(post => `
             <div class="cms-item">
                 <div class="cms-item-header">
-                    <h4>${post.title}</h4>
+                    <h4>${extractPlainText(post.title)}</h4>
                     <span class="cms-item-date">${new Date(post.created_at).toLocaleDateString()}</span>
                 </div>
                 <p class="cms-item-slug">Slug: ${post.slug}</p>
@@ -381,16 +393,19 @@ function setupProjects() {
     const cancelBtn = projectForm.querySelector('.btn-cancel');
 
     newProjectBtn.addEventListener('click', () => {
+        clearProjectEdit();
         document.getElementById('projectsList').classList.add('hidden');
         projectForm.classList.remove('hidden');
         projectFormElement.reset();
         document.getElementById('projectTitleEditor').innerHTML = '';
         document.getElementById('projectContentEditor').innerHTML = '';
+        document.querySelector('#projectForm h3').textContent = 'New Project';
         setupTitleEditor('project');
         setupContentEditor('project');
     });
 
     cancelBtn.addEventListener('click', () => {
+        clearProjectEdit();
         projectForm.classList.add('hidden');
         document.getElementById('projectsList').classList.remove('hidden');
     });
@@ -437,9 +452,9 @@ async function loadProjects() {
                 <tbody>
                     ${data.map(project => `
                         <tr>
-                            <td class="cms-project-title">${project.title}</td>
+                            <td class="cms-project-title">${extractPlainText(project.title)}</td>
                             <td class="cms-project-description">
-                                <div class="cms-project-description-preview">${project.description}</div>
+                                <div class="cms-project-description-preview">${extractPlainText(project.description)}</div>
                             </td>
                             <td class="cms-project-tags">
                                 ${project.tags ? `<div class="cms-tags-list">${project.tags.split(',').map(tag => `<span class="cms-tag">${tag.trim()}</span>`).join('')}</div>` : '<span class="cms-no-tags">—</span>'}
@@ -466,7 +481,7 @@ async function loadProjects() {
     }
 }
 
-// Save project
+// Save project (create or update)
 async function saveProject() {
     // Get title from editor
     const titleEditor = document.getElementById('projectTitleEditor');
@@ -489,22 +504,36 @@ async function saveProject() {
     }
 
     try {
-        const { data, error } = await supabase.from('projects').insert([
-            {
+        let result;
+        if (cmsState.editingProjectId) {
+            // Update existing project
+            result = await supabase.from('projects').update({
                 title,
                 description,
                 link: link || null,
                 tags: tags || null,
-                created_at: new Date().toISOString()
-            }
-        ]);
-
-        if (error) {
-            console.error('Supabase error:', error);
-            throw new Error(error.message || 'Failed to insert project');
+            }).eq('id', cmsState.editingProjectId);
+        } else {
+            // Create new project
+            result = await supabase.from('projects').insert([
+                {
+                    title,
+                    description,
+                    link: link || null,
+                    tags: tags || null,
+                    created_at: new Date().toISOString()
+                }
+            ]);
         }
 
-        showCmsModal('Success', 'Project saved successfully!', 'success');
+        const { error } = result;
+        if (error) {
+            console.error('Supabase error:', error);
+            throw new Error(error.message || 'Failed to save project');
+        }
+
+        showCmsModal('Success', cmsState.editingProjectId ? 'Project updated successfully!' : 'Project saved successfully!', 'success');
+        clearProjectEdit();
         document.getElementById('projectForm').classList.add('hidden');
         document.getElementById('projectForm').querySelector('form').reset();
         document.getElementById('projectContentEditor').innerHTML = '';
@@ -515,6 +544,12 @@ async function saveProject() {
         console.error('Save project error:', error);
         showCmsModal('Error', 'Failed to save project: ' + error.message, 'error');
     }
+}
+
+// Clear project edit state
+function clearProjectEdit() {
+    cmsState.editingProjectId = null;
+    document.querySelector('#projectForm h3').textContent = 'New Project';
 }
 
 // Delete blog post
@@ -554,7 +589,42 @@ async function deleteProject(id) {
 
 // Edit project
 async function editProject(id) {
-    showCmsModal('Info', 'Edit functionality coming soon!', 'success');
+    try {
+        const { data, error } = await supabase.from('projects').select('*').eq('id', id).single();
+
+        if (error) throw error;
+        if (!data) throw new Error('Project not found');
+
+        // Set edit state
+        cmsState.editingProjectId = id;
+
+        // Populate form with project data
+        document.getElementById('projectTitleEditor').innerHTML = data.title;
+        document.getElementById('projectTitle').value = data.title;
+
+        document.getElementById('projectContentEditor').innerHTML = data.description;
+        document.getElementById('projectDescription').value = data.description;
+
+        document.getElementById('projectLink').value = data.link || '';
+        document.getElementById('projectTags').value = data.tags || '';
+
+        // Update form header and button
+        document.querySelector('#projectForm h3').textContent = 'Edit Project';
+
+        // Show form and hide list
+        document.getElementById('projectsList').classList.add('hidden');
+        document.getElementById('projectForm').classList.remove('hidden');
+
+        // Setup editors
+        setupTitleEditor('project');
+        setupContentEditor('project');
+
+        // Focus on title
+        document.getElementById('projectTitleEditor').focus();
+    } catch (error) {
+        console.error('Edit project error:', error);
+        showCmsModal('Error', 'Failed to load project: ' + error.message, 'error');
+    }
 }
 
 // Show CMS Modal
