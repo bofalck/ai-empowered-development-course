@@ -423,23 +423,39 @@ async function loadProjects() {
             return;
         }
 
-        container.innerHTML = data.map(project => `
-            <div class="cms-item">
-                <div class="cms-item-header">
-                    <h4>${project.title}</h4>
-                    <span class="cms-item-date">${new Date(project.created_at).toLocaleDateString()}</span>
-                </div>
-                <div class="cms-item-preview">
-                    ${project.description}
-                </div>
-                ${project.link ? `<p class="cms-item-link"><a href="${project.link}" target="_blank">View Project →</a></p>` : ''}
-                ${project.tags ? `<p class="cms-item-tags">Tags: ${project.tags}</p>` : ''}
-                <div class="cms-item-actions">
-                    <button class="cms-item-edit" onclick="editProject('${project.id}')">Edit</button>
-                    <button class="cms-item-delete" onclick="deleteProject('${project.id}')">Delete</button>
-                </div>
-            </div>
-        `).join('');
+        container.innerHTML = `
+            <table class="cms-projects-table">
+                <thead>
+                    <tr>
+                        <th>Title</th>
+                        <th>Description</th>
+                        <th>Tags</th>
+                        <th>Link</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${data.map(project => `
+                        <tr>
+                            <td class="cms-project-title">${project.title}</td>
+                            <td class="cms-project-description">
+                                <div class="cms-project-description-preview">${project.description}</div>
+                            </td>
+                            <td class="cms-project-tags">
+                                ${project.tags ? `<div class="cms-tags-list">${project.tags.split(',').map(tag => `<span class="cms-tag">${tag.trim()}</span>`).join('')}</div>` : '<span class="cms-no-tags">—</span>'}
+                            </td>
+                            <td class="cms-project-link">
+                                ${project.link ? `<a href="${project.link}" target="_blank" class="cms-link-icon">🔗</a>` : '<span class="cms-no-link">—</span>'}
+                            </td>
+                            <td class="cms-project-actions">
+                                <button class="cms-item-edit" onclick="editProject('${project.id}')">Edit</button>
+                                <button class="cms-item-delete" onclick="deleteProject('${project.id}')">Delete</button>
+                            </td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+        `;
     } catch (error) {
         console.error('Failed to load projects:', error);
         container.innerHTML = `
