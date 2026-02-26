@@ -5712,6 +5712,18 @@ body.theme-prism .empty-placeholder {
     border-radius: var(--border-radius-sm);
 }
 
+.loading-state {
+    padding: var(--spacing-lg);
+    text-align: center;
+    color: var(--color-text-secondary);
+    animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.6; }
+}
+
 .apps-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));

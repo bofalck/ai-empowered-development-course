@@ -136,14 +136,36 @@ async function loadProjects() {
     const container = document.getElementById('projectsContainer');
 
     try {
+        // Show loading state
+        container.innerHTML = `
+            <div class="loading-state">
+                <p>Loading projects...</p>
+            </div>
+        `;
+
+        console.log('Starting to load projects from Supabase...');
+        console.log('Supabase client:', supabase);
+
         const { data, error } = await supabase
             .from('projects')
             .select('*')
             .order('created_at', { ascending: false });
 
-        if (error) throw error;
+        console.log('Projects query result - Data:', data, 'Error:', error);
+
+        if (error) {
+            console.error('Supabase error details:', {
+                message: error.message,
+                code: error.code,
+                status: error.status,
+                details: error.details,
+                hint: error.hint
+            });
+            throw error;
+        }
 
         if (!data || data.length === 0) {
+            console.log('No projects found in database');
             container.innerHTML = `
                 <div class="empty-state">
                     <p>No projects yet...</p>
@@ -151,6 +173,8 @@ async function loadProjects() {
             `;
             return;
         }
+
+        console.log(`Successfully loaded ${data.length} projects`);
 
         // Render projects as a table
         const tableHTML = `
@@ -188,8 +212,9 @@ async function loadProjects() {
     } catch (error) {
         console.error('Failed to load projects:', error);
         container.innerHTML = `
-            <div class="empty-state">
-                <p>Error loading projects: ${error.message}</p>
+            <div class="empty-state" style="color: #ef4444;">
+                <p>Error loading projects:</p>
+                <p style="font-size: 0.9rem; margin-top: 0.5rem;">${error.message}</p>
             </div>
         `;
     }
