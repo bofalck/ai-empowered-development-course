@@ -136,15 +136,7 @@ async function loadProjects() {
     const container = document.getElementById('projectsContainer');
 
     try {
-        // Show loading state
-        container.innerHTML = `
-            <div class="loading-state">
-                <p>Loading projects...</p>
-            </div>
-        `;
-
         console.log('Starting to load projects from Supabase...');
-        console.log('Supabase client:', supabase);
 
         const { data, error } = await supabase
             .from('projects')
@@ -167,8 +159,8 @@ async function loadProjects() {
         if (!data || data.length === 0) {
             console.log('No projects found in database');
             container.innerHTML = `
-                <div class="empty-state">
-                    <p>No projects yet...</p>
+                <div class="widget-teaser">
+                    <p class="widget-teaser-text">No projects yet. Check back soon!</p>
                 </div>
             `;
             return;
@@ -176,27 +168,12 @@ async function loadProjects() {
 
         console.log(`Successfully loaded ${data.length} projects`);
 
-        // Render projects as a list of clickable items
+        // Render as a compact widget with just a teaser
         const projectsHTML = `
-            <div class="projects-list">
-                ${data.map(project => `
-                    <a href="${project.link || '#'}" ${project.link ? 'target="_blank" rel="noopener noreferrer"' : 'class="project-item-disabled"'} class="project-item">
-                        <div class="project-item-header">
-                            <h3 class="project-item-title">${project.title}</h3>
-                            ${project.link ? '<span class="project-item-external">↗</span>' : ''}
-                        </div>
-                        ${project.description ? `
-                            <p class="project-item-description">${project.description}</p>
-                        ` : ''}
-                        ${project.tags ? `
-                            <div class="project-item-tags">
-                                ${project.tags.split(',').map(tag =>
-                                    `<span class="project-tag">${tag.trim()}</span>`
-                                ).join('')}
-                            </div>
-                        ` : ''}
-                    </a>
-                `).join('')}
+            <div class="widget-teaser">
+                <p class="widget-teaser-count">${data.length} ${data.length === 1 ? 'project' : 'projects'} available</p>
+                <p class="widget-teaser-text">Explore my selected projects and work</p>
+                <a href="#projects" class="widget-teaser-link">View all projects →</a>
             </div>
         `;
 
@@ -204,9 +181,9 @@ async function loadProjects() {
     } catch (error) {
         console.error('Failed to load projects:', error);
         container.innerHTML = `
-            <div class="empty-state" style="color: #ef4444;">
-                <p>Error loading projects:</p>
-                <p style="font-size: 0.9rem; margin-top: 0.5rem;">${error.message}</p>
+            <div class="widget-teaser">
+                <p class="widget-teaser-text">Unable to load projects</p>
+                <a href="#projects" class="widget-teaser-link">Try again →</a>
             </div>
         `;
     }
