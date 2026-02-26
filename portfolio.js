@@ -17,6 +17,13 @@ const appState = {
     currentApp: null,
 };
 
+// Helper function to extract plain text from HTML
+function extractPlainText(html) {
+    const temp = document.createElement('div');
+    temp.innerHTML = html;
+    return temp.textContent || temp.innerText || '';
+}
+
 // Initialize portfolio
 async function init() {
     // Check auth
@@ -168,12 +175,25 @@ async function loadProjects() {
 
         console.log(`Successfully loaded ${data.length} projects`);
 
-        // Render as a compact widget with icon and teaser
+        // Get top 3 most recent projects
+        const topProjects = data.slice(0, 3);
+
+        // Render as a compact widget with preview of recent projects
         const projectsHTML = `
-            <div class="widget-teaser">
-                <div class="widget-teaser-icon">📁</div>
-                <p class="widget-teaser-count">${data.length} ${data.length === 1 ? 'project' : 'projects'}</p>
-                <a href="#projects" class="widget-teaser-button">Explore →</a>
+            <div class="widget-projects-preview">
+                ${topProjects.map(project => `
+                    <div class="project-preview-item">
+                        <h4 class="project-preview-title">${extractPlainText(project.title)}</h4>
+                        ${project.tags ? `
+                            <div class="project-preview-tags">
+                                ${project.tags.split(',').slice(0, 2).map(tag =>
+                                    `<span class="project-preview-tag">${tag.trim()}</span>`
+                                ).join('')}
+                            </div>
+                        ` : ''}
+                    </div>
+                `).join('')}
+                <a href="#projects" class="widget-projects-link">View all ${data.length} projects →</a>
             </div>
         `;
 
