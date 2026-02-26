@@ -30,24 +30,24 @@ After:  ☀️ Filled background (obvious selection)
 
 ---
 
-### 2. Audio Device Select - Visible Label
+### 2. Audio Device Select - ARIA Label
 **Status**: ✅ IMPLEMENTED
 **Date Completed**: February 26, 2026
+**Refined**: February 26, 2026 (removed visible label, kept ARIA)
 
 **What was done:**
-- Added visible label "🎧 Audio Device" above the select element
-- Added `aria-label` for screen reader accessibility
-- Removed emoji duplication from option text
-- Improved semantic HTML with `<label for="audioDeviceSelect">`
+- Added `aria-label="Audio Device"` for screen reader accessibility
+- Kept emoji in option text (🎧 Default Device) for visual clarity
+- Removed visible label to maintain clean UI
+- Improved semantic HTML without visual clutter
 
 **Code locations**:
 - HTML: `index.html` line 128
-- CSS: `styles.css` line 1209
 
-**Accessibility improvements**:
-- Users now understand what the select is for
-- Screen readers announce the label
-- Keyboard users can see context
+**Accessibility approach**:
+- Screen readers announce "Audio Device" (aria-label)
+- Sighted users see emoji indicator (clean design)
+- No unnecessary visible copy
 
 **Testing status**: ✅ All 128 tests passing
 
