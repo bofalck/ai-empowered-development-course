@@ -252,10 +252,14 @@ async function loadProjects() {
 function loadAbout() {
     const container = document.getElementById('aboutContainer');
 
-    // Placeholder
     container.innerHTML = `
-        <div class="empty-state">
-            <p>About section coming soon...</p>
+        <div class="about-content">
+            <div class="about-image">
+                <img src="/assets/profile.jpg" alt="Bobby Falck" />
+            </div>
+            <div class="about-text">
+                <p>Strategic leader with 11+ years shaping digital transformation, AI Enablement, scaling organizations, and aligning design, technology, and business. I build high-performing teams and coach leaders through a style that's playful, safe, and caring, creating environments where people thrive, ideas grow, and outcomes align with company vision.</p>
+            </div>
         </div>
     `;
 }
