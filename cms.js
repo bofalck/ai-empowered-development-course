@@ -563,6 +563,13 @@ function closeCmsModal() {
     overlay.classList.add('hidden');
 }
 
+// Make globally available for inline onclick handlers
+window.closeCmsModal = closeCmsModal;
+window.editBlogPost = editBlogPost;
+window.deleteBlogPost = deleteBlogPost;
+window.editProject = editProject;
+window.deleteProject = deleteProject;
+
 // Close modal on overlay click
 document.addEventListener('DOMContentLoaded', () => {
     const overlay = document.getElementById('cmsOverlay');
