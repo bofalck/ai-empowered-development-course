@@ -37,67 +37,27 @@
                 <form>
                     <div class="form-group">
                         <label>Title</label>
-
-                        <!-- Title Formatting Toolbar -->
                         <div class="editor-toolbar">
-                            <div class="toolbar-group">
-                                <select id="blogTitleHeading" class="toolbar-select">
-                                    <option value="p">Paragraph</option>
-                                    <option value="h1">Heading 1</option>
-                                    <option value="h2">Heading 2</option>
-                                    <option value="h3">Heading 3</option>
-                                    <option value="h4">Heading 4</option>
-                                    <option value="h5">Heading 5</option>
-                                    <option value="h6">Heading 6</option>
-                                </select>
-                            </div>
-
-                            <div class="toolbar-group">
-                                <select id="blogTitleFont" class="toolbar-select">
-                                    <option value="inherit">Font</option>
-                                    <option value="'Segoe UI', Tahoma, Geneva, Verdana, sans-serif">Default</option>
-                                    <option value="'Courier New', Courier, monospace">Monospace</option>
-                                    <option value="Georgia, serif">Serif</option>
-                                    <option value="'Arial Black', Gadget, sans-serif">Arial Black</option>
-                                </select>
-                            </div>
-
-                            <div class="toolbar-group">
-                                <select id="blogTitleSize" class="toolbar-select">
-                                    <option value="">Size</option>
-                                    <option value="1rem">Normal (16px)</option>
-                                    <option value="1.25rem">Large (20px)</option>
-                                    <option value="1.5rem">Extra Large (24px)</option>
-                                    <option value="2rem">2xl (32px)</option>
-                                    <option value="2.5rem">3xl (40px)</option>
-                                </select>
-                            </div>
-
-                            <div class="toolbar-group">
-                                <button type="button" class="toolbar-btn" id="blogTitleBold" title="Bold">
-                                    <strong>B</strong>
-                                </button>
-                                <button type="button" class="toolbar-btn" id="blogTitleItalic" title="Italic">
-                                    <em>I</em>
-                                </button>
-                                <button type="button" class="toolbar-btn" id="blogTitleUnderline" title="Underline">
-                                    <u>U</u>
-                                </button>
-                            </div>
-
-                            <div class="toolbar-group">
-                                <button type="button" class="toolbar-btn" id="blogTitleAccent" title="Accent (Secondary)">
-                                    A
-                                </button>
-                                <button type="button" class="toolbar-btn" id="blogTitleClear" title="Clear Formatting">
-                                    ✕
-                                </button>
-                            </div>
+                            <button type="button" class="toolbar-btn" id="blogTitleBold" title="Bold">
+                                <strong>B</strong>
+                            </button>
                         </div>
-
-                        <!-- Title Editor -->
                         <div id="blogTitleEditor" class="content-editor title-editor" contenteditable="true" required></div>
                         <input type="hidden" id="blogTitle" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Description</label>
+                        <div class="editor-toolbar">
+                            <button type="button" class="toolbar-btn" id="blogDescriptionBold" title="Bold">
+                                <strong>B</strong>
+                            </button>
+                            <button type="button" class="toolbar-btn" id="blogDescriptionItalic" title="Italic">
+                                <em>I</em>
+                            </button>
+                        </div>
+                        <div id="blogDescriptionEditor" class="content-editor description-editor" contenteditable="true"></div>
+                        <input type="hidden" id="blogDescription">
                     </div>
 
                     <div class="form-group">
@@ -203,140 +163,26 @@
                 <form>
                     <div class="form-group">
                         <label>Title</label>
-
-                        <!-- Title Formatting Toolbar -->
                         <div class="editor-toolbar">
-                            <div class="toolbar-group">
-                                <select id="projectTitleHeading" class="toolbar-select">
-                                    <option value="p">Paragraph</option>
-                                    <option value="h1">Heading 1</option>
-                                    <option value="h2">Heading 2</option>
-                                    <option value="h3">Heading 3</option>
-                                    <option value="h4">Heading 4</option>
-                                    <option value="h5">Heading 5</option>
-                                    <option value="h6">Heading 6</option>
-                                </select>
-                            </div>
-
-                            <div class="toolbar-group">
-                                <select id="projectTitleFont" class="toolbar-select">
-                                    <option value="inherit">Font</option>
-                                    <option value="'Segoe UI', Tahoma, Geneva, Verdana, sans-serif">Default</option>
-                                    <option value="'Courier New', Courier, monospace">Monospace</option>
-                                    <option value="Georgia, serif">Serif</option>
-                                    <option value="'Arial Black', Gadget, sans-serif">Arial Black</option>
-                                </select>
-                            </div>
-
-                            <div class="toolbar-group">
-                                <select id="projectTitleSize" class="toolbar-select">
-                                    <option value="">Size</option>
-                                    <option value="1rem">Normal (16px)</option>
-                                    <option value="1.25rem">Large (20px)</option>
-                                    <option value="1.5rem">Extra Large (24px)</option>
-                                    <option value="2rem">2xl (32px)</option>
-                                    <option value="2.5rem">3xl (40px)</option>
-                                </select>
-                            </div>
-
-                            <div class="toolbar-group">
-                                <button type="button" class="toolbar-btn" id="projectTitleBold" title="Bold">
-                                    <strong>B</strong>
-                                </button>
-                                <button type="button" class="toolbar-btn" id="projectTitleItalic" title="Italic">
-                                    <em>I</em>
-                                </button>
-                                <button type="button" class="toolbar-btn" id="projectTitleUnderline" title="Underline">
-                                    <u>U</u>
-                                </button>
-                            </div>
-
-                            <div class="toolbar-group">
-                                <button type="button" class="toolbar-btn" id="projectTitleAccent" title="Accent (Secondary)">
-                                    A
-                                </button>
-                                <button type="button" class="toolbar-btn" id="projectTitleClear" title="Clear Formatting">
-                                    ✕
-                                </button>
-                            </div>
+                            <button type="button" class="toolbar-btn" id="projectTitleBold" title="Bold">
+                                <strong>B</strong>
+                            </button>
                         </div>
-
-                        <!-- Title Editor -->
                         <div id="projectTitleEditor" class="content-editor title-editor" contenteditable="true" required></div>
                         <input type="hidden" id="projectTitle" required>
                     </div>
 
                     <div class="form-group">
                         <label>Description</label>
-
-                        <!-- Formatting Toolbar -->
                         <div class="editor-toolbar">
-                            <div class="toolbar-group">
-                                <select id="projectHeading" class="toolbar-select">
-                                    <option value="p">Paragraph</option>
-                                    <option value="h1">Heading 1</option>
-                                    <option value="h2">Heading 2</option>
-                                    <option value="h3">Heading 3</option>
-                                    <option value="h4">Heading 4</option>
-                                    <option value="h5">Heading 5</option>
-                                    <option value="h6">Heading 6</option>
-                                </select>
-                            </div>
-
-                            <div class="toolbar-group">
-                                <select id="projectFont" class="toolbar-select">
-                                    <option value="inherit">Font</option>
-                                    <option value="'Segoe UI', Tahoma, Geneva, Verdana, sans-serif">Default</option>
-                                    <option value="'Courier New', Courier, monospace">Monospace</option>
-                                    <option value="Georgia, serif">Serif</option>
-                                    <option value="'Arial Black', Gadget, sans-serif">Arial Black</option>
-                                </select>
-                            </div>
-
-                            <div class="toolbar-group">
-                                <select id="projectSize" class="toolbar-select">
-                                    <option value="">Size</option>
-                                    <option value="0.875rem">Small (14px)</option>
-                                    <option value="1rem">Normal (16px)</option>
-                                    <option value="1.125rem">Medium (18px)</option>
-                                    <option value="1.25rem">Large (20px)</option>
-                                    <option value="1.5rem">Extra Large (24px)</option>
-                                </select>
-                            </div>
-
-                            <div class="toolbar-group">
-                                <button type="button" class="toolbar-btn" id="projectBold" title="Bold">
-                                    <strong>B</strong>
-                                </button>
-                                <button type="button" class="toolbar-btn" id="projectItalic" title="Italic">
-                                    <em>I</em>
-                                </button>
-                                <button type="button" class="toolbar-btn" id="projectUnderline" title="Underline">
-                                    <u>U</u>
-                                </button>
-                            </div>
-
-                            <div class="toolbar-group">
-                                <button type="button" class="toolbar-btn" id="projectBullet" title="Bullet List">
-                                    •
-                                </button>
-                                <button type="button" class="toolbar-btn" id="projectNumber" title="Numbered List">
-                                    1.
-                                </button>
-                            </div>
-
-                            <div class="toolbar-group">
-                                <button type="button" class="toolbar-btn" id="projectLink" title="Add Link">
-                                    🔗
-                                </button>
-                                <button type="button" class="toolbar-btn" id="projectClear" title="Clear Formatting">
-                                    ✕
-                                </button>
-                            </div>
+                            <button type="button" class="toolbar-btn" id="projectDescriptionBold" title="Bold">
+                                <strong>B</strong>
+                            </button>
+                            <button type="button" class="toolbar-btn" id="projectDescriptionItalic" title="Italic">
+                                <em>I</em>
+                            </button>
                         </div>
-
-                        <!-- Content Editor -->
-                        <div id="projectContentEditor" class="content-editor" contenteditable="true" required></div>
+                        <div id="projectDescriptionEditor" class="content-editor description-editor" contenteditable="true" required></div>
                         <input type="hidden" id="projectDescription" required>
                     </div>
 

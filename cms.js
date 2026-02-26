@@ -49,6 +49,95 @@ async function init() {
     setupProjects();
 }
 
+// Sanitize pasted content - strip all external formatting
+function sanitizeEditorContent(html, allowedFormatting = ['b', 'strong', 'i', 'em']) {
+    const temp = document.createElement('div');
+    temp.innerHTML = html;
+
+    const allowed = new Set(allowedFormatting.map(tag => tag.toLowerCase()));
+
+    // Remove all attributes and disallowed tags
+    const walk = (node) => {
+        if (node.nodeType === Node.ELEMENT_NODE) {
+            const tagName = node.tagName.toLowerCase();
+            if (!allowed.has(tagName)) {
+                // Unwrap but keep text content
+                while (node.firstChild) {
+                    node.parentNode.insertBefore(node.firstChild, node);
+                }
+                node.parentNode.removeChild(node);
+            } else {
+                // Remove all attributes from allowed tags
+                while (node.attributes.length > 0) {
+                    node.removeAttribute(node.attributes[0].name);
+                }
+                let child = node.firstChild;
+                while (child) {
+                    const next = child.nextSibling;
+                    walk(child);
+                    child = next;
+                }
+            }
+        }
+    };
+
+    walk(temp);
+    return temp.innerHTML;
+}
+
+// Setup editor with proper sanitization
+function setupEditor(editorId, hiddenInputId, allowBold = true, allowItalic = false) {
+    const editor = document.getElementById(editorId);
+    const hiddenInput = document.getElementById(hiddenInputId);
+
+    if (!editor) return;
+
+    // Get toolbar buttons - find all buttons in the preceding toolbar
+    const toolbar = editor.previousElementSibling;
+    const boldBtn = toolbar ? toolbar.querySelector('button[title*="Bold"]') : null;
+    const italicBtn = toolbar ? toolbar.querySelector('button[title*="Italic"]') : null;
+
+    // Bold button
+    if (boldBtn && allowBold) {
+        boldBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            document.execCommand('bold', false, null);
+            editor.focus();
+        });
+    }
+
+    // Italic button
+    if (italicBtn && allowItalic) {
+        italicBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            document.execCommand('italic', false, null);
+            editor.focus();
+        });
+    }
+
+    // Handle paste - sanitize immediately
+    editor.addEventListener('paste', (e) => {
+        e.preventDefault();
+
+        const text = e.clipboardData.getData('text/html') || e.clipboardData.getData('text/plain');
+        const allowedTags = [];
+        if (allowBold) allowedTags.push('b', 'strong');
+        if (allowItalic) allowedTags.push('i', 'em');
+
+        const sanitized = sanitizeEditorContent(text, allowedTags);
+        document.execCommand('insertHTML', false, sanitized);
+    });
+
+    // Sync to hidden input on blur and input
+    editor.addEventListener('blur', () => {
+        hiddenInput.value = editor.innerHTML;
+    });
+
+    editor.addEventListener('input', () => {
+        hiddenInput.value = editor.innerHTML;
+    });
+}
+
 // Apply theme
 function applyTheme() {
     const theme = getTheme();
@@ -89,16 +178,17 @@ function setupBlog() {
     const cancelBtn = blogForm.querySelector('.btn-cancel');
 
     newBlogBtn.addEventListener('click', () => {
+        clearProjectEdit();
         document.getElementById('blogList').classList.add('hidden');
         blogForm.classList.remove('hidden');
         blogFormElement.reset();
         document.getElementById('blogTitleEditor').innerHTML = '';
-        document.getElementById('blogContentEditor').innerHTML = '';
-        setupTitleEditor('blog');
-        setupBlogEditor();
+        document.getElementById('blogDescriptionEditor').innerHTML = '';
+        document.getElementById('blogTitleEditor').focus();
     });
 
     cancelBtn.addEventListener('click', () => {
+        clearProjectEdit();
         blogForm.classList.add('hidden');
         document.getElementById('blogList').classList.remove('hidden');
     });
@@ -108,199 +198,12 @@ function setupBlog() {
         await saveBlogPost();
     });
 
-    setupTitleEditor('blog');
-    setupBlogEditor();
+    // Setup title editor (bold only)
+    setupEditor('blogTitleEditor', 'blogTitle', true, false);
+    // Setup description editor (bold + italic)
+    setupEditor('blogDescriptionEditor', 'blogDescription', true, true);
+
     loadBlogPosts();
-}
-
-// Setup title editor
-function setupTitleEditor(prefix) {
-    const editor = document.getElementById(`${prefix}TitleEditor`);
-    const headingSelect = document.getElementById(`${prefix}TitleHeading`);
-    const fontSelect = document.getElementById(`${prefix}TitleFont`);
-    const sizeSelect = document.getElementById(`${prefix}TitleSize`);
-    const boldBtn = document.getElementById(`${prefix}TitleBold`);
-    const italicBtn = document.getElementById(`${prefix}TitleItalic`);
-    const underlineBtn = document.getElementById(`${prefix}TitleUnderline`);
-    const accentBtn = document.getElementById(`${prefix}TitleAccent`);
-    const clearBtn = document.getElementById(`${prefix}TitleClear`);
-
-    if (!editor) return; // Editor doesn't exist for this prefix
-
-    headingSelect.addEventListener('change', () => {
-        document.execCommand('formatBlock', false, `<${headingSelect.value}>`);
-        editor.focus();
-        headingSelect.value = 'p';
-    });
-
-    fontSelect.addEventListener('change', () => {
-        if (fontSelect.value !== 'inherit') {
-            document.execCommand('fontName', false, fontSelect.value);
-            editor.focus();
-        }
-        fontSelect.value = 'inherit';
-    });
-
-    sizeSelect.addEventListener('change', () => {
-        if (sizeSelect.value) {
-            const selection = window.getSelection();
-            if (selection.rangeCount > 0) {
-                const range = selection.getRangeAt(0);
-                const span = document.createElement('span');
-                span.style.fontSize = sizeSelect.value;
-                range.surroundContents(span);
-                editor.focus();
-            }
-        }
-        sizeSelect.value = '';
-    });
-
-    boldBtn.addEventListener('click', (e) => {
-        e.preventDefault();
-        document.execCommand('bold', false, null);
-        editor.focus();
-    });
-
-    italicBtn.addEventListener('click', (e) => {
-        e.preventDefault();
-        document.execCommand('italic', false, null);
-        editor.focus();
-    });
-
-    underlineBtn.addEventListener('click', (e) => {
-        e.preventDefault();
-        document.execCommand('underline', false, null);
-        editor.focus();
-    });
-
-    if (accentBtn) {
-        accentBtn.addEventListener('click', (e) => {
-            e.preventDefault();
-            const selection = window.getSelection();
-            if (selection.rangeCount > 0 && !selection.isCollapsed) {
-                const range = selection.getRangeAt(0);
-                const span = document.createElement('span');
-                span.setAttribute('data-accent', 'true');
-                span.className = 'title-accent';
-                range.surroundContents(span);
-            }
-            editor.focus();
-        });
-    }
-
-    clearBtn.addEventListener('click', (e) => {
-        e.preventDefault();
-        document.execCommand('removeFormat', false, null);
-        editor.focus();
-    });
-
-    // Sync editor content to hidden input
-    editor.addEventListener('blur', () => {
-        const hiddenField = prefix === 'blog' ? 'blogTitle' : 'projectTitle';
-        document.getElementById(hiddenField).value = editor.innerHTML;
-    });
-}
-
-// Generic content editor setup
-function setupContentEditor(prefix) {
-    const editor = document.getElementById(`${prefix}ContentEditor`);
-    const headingSelect = document.getElementById(`${prefix}Heading`);
-    const fontSelect = document.getElementById(`${prefix}Font`);
-    const sizeSelect = document.getElementById(`${prefix}Size`);
-    const boldBtn = document.getElementById(`${prefix}Bold`);
-    const italicBtn = document.getElementById(`${prefix}Italic`);
-    const underlineBtn = document.getElementById(`${prefix}Underline`);
-    const bulletBtn = document.getElementById(`${prefix}Bullet`);
-    const numberBtn = document.getElementById(`${prefix}Number`);
-    const linkBtn = document.getElementById(`${prefix}Link`);
-    const clearBtn = document.getElementById(`${prefix}Clear`);
-
-    if (!editor) return; // Editor doesn't exist for this prefix
-
-    headingSelect.addEventListener('change', () => {
-        document.execCommand('formatBlock', false, `<${headingSelect.value}>`);
-        editor.focus();
-        headingSelect.value = 'p';
-    });
-
-    fontSelect.addEventListener('change', () => {
-        if (fontSelect.value !== 'inherit') {
-            document.execCommand('fontName', false, fontSelect.value);
-            editor.focus();
-        }
-        fontSelect.value = 'inherit';
-    });
-
-    sizeSelect.addEventListener('change', () => {
-        if (sizeSelect.value) {
-            const selection = window.getSelection();
-            if (selection.rangeCount > 0) {
-                const range = selection.getRangeAt(0);
-                const span = document.createElement('span');
-                span.style.fontSize = sizeSelect.value;
-                range.surroundContents(span);
-                editor.focus();
-            }
-        }
-        sizeSelect.value = '';
-    });
-
-    boldBtn.addEventListener('click', (e) => {
-        e.preventDefault();
-        document.execCommand('bold', false, null);
-        editor.focus();
-    });
-
-    italicBtn.addEventListener('click', (e) => {
-        e.preventDefault();
-        document.execCommand('italic', false, null);
-        editor.focus();
-    });
-
-    underlineBtn.addEventListener('click', (e) => {
-        e.preventDefault();
-        document.execCommand('underline', false, null);
-        editor.focus();
-    });
-
-    bulletBtn.addEventListener('click', (e) => {
-        e.preventDefault();
-        document.execCommand('insertUnorderedList', false, null);
-        editor.focus();
-    });
-
-    numberBtn.addEventListener('click', (e) => {
-        e.preventDefault();
-        document.execCommand('insertOrderedList', false, null);
-        editor.focus();
-    });
-
-    linkBtn.addEventListener('click', (e) => {
-        e.preventDefault();
-        const url = prompt('Enter URL:');
-        if (url) {
-            document.execCommand('createLink', false, url);
-        }
-        editor.focus();
-    });
-
-    clearBtn.addEventListener('click', (e) => {
-        e.preventDefault();
-        document.execCommand('removeFormat', false, null);
-        editor.focus();
-    });
-
-    // Sync editor content to hidden input
-    editor.addEventListener('blur', () => {
-        // For blog: blogContent, for project: projectDescription
-        const hiddenField = prefix === 'blog' ? 'blogContent' : 'projectDescription';
-        document.getElementById(hiddenField).value = editor.innerHTML;
-    });
-}
-
-// Setup blog editor toolbar
-function setupBlogEditor() {
-    setupContentEditor('blog');
 }
 
 // Load blog posts
@@ -360,15 +263,13 @@ async function saveBlogPost() {
 
     const excerpt = document.getElementById('blogExcerpt').value;
 
-    // Get content from editor
-    const editor = document.getElementById('blogContentEditor');
-    const content = editor.innerHTML.trim();
+    // Get description from editor
+    const descriptionEditor = document.getElementById('blogDescriptionEditor');
+    const description = descriptionEditor.innerHTML.trim();
+    document.getElementById('blogDescription').value = description;
 
-    // Also save to hidden input for form submission
-    document.getElementById('blogContent').value = content;
-
-    if (!title || !content) {
-        showCmsModal('Error', 'Please fill in all required fields', 'error');
+    if (!title) {
+        showCmsModal('Error', 'Please fill in the title', 'error');
         return;
     }
 
@@ -378,7 +279,7 @@ async function saveBlogPost() {
                 title,
                 slug,
                 excerpt,
-                content,
+                content: description,
                 created_at: new Date().toISOString()
             }
         ]);
@@ -391,7 +292,8 @@ async function saveBlogPost() {
         showCmsModal('Success', 'Blog post saved successfully!', 'success');
         document.getElementById('blogForm').classList.add('hidden');
         document.getElementById('blogForm').querySelector('form').reset();
-        document.getElementById('blogContentEditor').innerHTML = '';
+        document.getElementById('blogTitleEditor').innerHTML = '';
+        document.getElementById('blogDescriptionEditor').innerHTML = '';
         // Show list and reload blog posts
         document.getElementById('blogList').classList.remove('hidden');
         await loadBlogPosts();
@@ -414,10 +316,9 @@ function setupProjects() {
         projectForm.classList.remove('hidden');
         projectFormElement.reset();
         document.getElementById('projectTitleEditor').innerHTML = '';
-        document.getElementById('projectContentEditor').innerHTML = '';
+        document.getElementById('projectDescriptionEditor').innerHTML = '';
         document.querySelector('#projectForm h3').textContent = 'New Project';
-        setupTitleEditor('project');
-        setupContentEditor('project');
+        document.getElementById('projectTitleEditor').focus();
     });
 
     cancelBtn.addEventListener('click', () => {
@@ -431,8 +332,11 @@ function setupProjects() {
         await saveProject();
     });
 
-    setupTitleEditor('project');
-    setupContentEditor('project');
+    // Setup title editor (bold only)
+    setupEditor('projectTitleEditor', 'projectTitle', true, false);
+    // Setup description editor (bold + italic)
+    setupEditor('projectDescriptionEditor', 'projectDescription', true, true);
+
     loadProjects();
 }
 
@@ -505,17 +409,15 @@ async function saveProject() {
     document.getElementById('projectTitle').value = title;
 
     // Get description from editor
-    const editor = document.getElementById('projectContentEditor');
-    const description = editor.innerHTML.trim();
-
-    // Also save to hidden input
+    const descriptionEditor = document.getElementById('projectDescriptionEditor');
+    const description = descriptionEditor.innerHTML.trim();
     document.getElementById('projectDescription').value = description;
 
     const link = document.getElementById('projectLink').value;
     const tags = document.getElementById('projectTags').value;
 
-    if (!title || !description) {
-        showCmsModal('Error', 'Please fill in all required fields', 'error');
+    if (!title) {
+        showCmsModal('Error', 'Please fill in the title', 'error');
         return;
     }
 
@@ -552,7 +454,8 @@ async function saveProject() {
         clearProjectEdit();
         document.getElementById('projectForm').classList.add('hidden');
         document.getElementById('projectForm').querySelector('form').reset();
-        document.getElementById('projectContentEditor').innerHTML = '';
+        document.getElementById('projectTitleEditor').innerHTML = '';
+        document.getElementById('projectDescriptionEditor').innerHTML = '';
         // Show list and reload projects
         document.getElementById('projectsList').classList.remove('hidden');
         await loadProjects();
@@ -618,7 +521,7 @@ async function editProject(id) {
         document.getElementById('projectTitleEditor').innerHTML = data.title;
         document.getElementById('projectTitle').value = data.title;
 
-        document.getElementById('projectContentEditor').innerHTML = data.description;
+        document.getElementById('projectDescriptionEditor').innerHTML = data.description;
         document.getElementById('projectDescription').value = data.description;
 
         document.getElementById('projectLink').value = data.link || '';
@@ -630,10 +533,6 @@ async function editProject(id) {
         // Show form and hide list
         document.getElementById('projectsList').classList.add('hidden');
         document.getElementById('projectForm').classList.remove('hidden');
-
-        // Setup editors
-        setupTitleEditor('project');
-        setupContentEditor('project');
 
         // Focus on title
         document.getElementById('projectTitleEditor').focus();
