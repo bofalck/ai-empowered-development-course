@@ -24,6 +24,39 @@ function extractPlainText(html) {
     return temp.textContent || temp.innerText || '';
 }
 
+// Helper function to get emoji for project
+function getProjectEmoji(project) {
+    const text = (project.title + ' ' + project.tags + ' ' + project.description).toLowerCase();
+
+    // Project type emojis
+    const emojiMap = {
+        'scania': '🚛',
+        'truck': '🚛',
+        'music': '🎵',
+        'audio': '🎧',
+        'sound': '🎧',
+        'video': '🎬',
+        'film': '🎬',
+        'web': '🌐',
+        'app': '📱',
+        'design': '🎨',
+        'ai': '🤖',
+        'machine': '🤖',
+        'data': '📊',
+        'analytics': '📊',
+        'tools': '🛠️',
+        'portfolio': '📂',
+    };
+
+    for (const [keyword, emoji] of Object.entries(emojiMap)) {
+        if (text.includes(keyword)) {
+            return emoji;
+        }
+    }
+
+    return '✨'; // Default emoji
+}
+
 // Initialize portfolio
 async function init() {
     // Check auth
@@ -183,7 +216,10 @@ async function loadProjects() {
             <div class="widget-projects-preview">
                 ${topProjects.map(project => `
                     <div class="project-preview-item">
-                        <h4 class="project-preview-title">${extractPlainText(project.title)}</h4>
+                        <div class="project-preview-header">
+                            <span class="project-preview-emoji">${getProjectEmoji(project)}</span>
+                            <h4 class="project-preview-title">${extractPlainText(project.title)}</h4>
+                        </div>
                         ${project.tags ? `
                             <div class="project-preview-tags">
                                 ${project.tags.split(',').slice(0, 2).map(tag =>

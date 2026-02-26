@@ -5823,13 +5823,32 @@ body.theme-prism .empty-placeholder {
     background: var(--color-background);
     border-left: 3px solid var(--color-primary);
     border-radius: var(--border-radius-sm);
+    transition: all 200ms ease;
+}
+
+.project-preview-item:hover {
+    background: var(--color-surface);
+}
+
+.project-preview-header {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    margin-bottom: var(--spacing-xs);
+}
+
+.project-preview-emoji {
+    font-size: 1.75rem;
+    line-height: 1;
+    flex-shrink: 0;
 }
 
 .project-preview-title {
-    margin: 0 0 var(--spacing-xs) 0;
+    margin: 0;
     font-size: 1rem;
     font-weight: 600;
     color: var(--color-text);
+    flex: 1;
 }
 
 .project-preview-tags {
