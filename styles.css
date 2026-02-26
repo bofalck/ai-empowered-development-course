@@ -504,6 +504,24 @@ body.theme-dark .language-btn.active:hover {
     background-color: #9B8F89;
 }
 
+/* Dark Theme: Color-Independent Indicators */
+body.theme-dark .mode-btn.active,
+body.theme-dark .language-btn.active,
+body.theme-dark .theme-btn.active {
+    border-width: 2px;
+    font-weight: 600;
+}
+
+body.theme-dark .pause-button:disabled {
+    border-style: dashed;
+    border-width: 2px;
+}
+
+body.theme-dark .record-button.recording {
+    border-width: 3px;
+    box-shadow: inset 0 0 0 2px #1C1B19;
+}
+
 body.theme-dark .settings-divider {
     background-color: var(--color-divider);
 }
@@ -834,6 +852,24 @@ body.theme-prism .language-btn.active {
 
 body.theme-prism .language-btn.active:hover {
     box-shadow: var(--shadow-3), var(--glow);
+}
+
+/* Prism Theme: Color-Independent Indicators */
+body.theme-prism .mode-btn.active,
+body.theme-prism .language-btn.active,
+body.theme-prism .theme-btn.active {
+    border-width: 2px;
+    font-weight: 600;
+}
+
+body.theme-prism .pause-button:disabled {
+    border-style: dashed;
+    border-width: 2px;
+}
+
+body.theme-prism .record-button.recording {
+    border-width: 3px;
+    box-shadow: inset 0 0 0 2px rgba(155, 140, 255, 0.3);
 }
 
 body.theme-prism .settings-divider {
@@ -1692,7 +1728,9 @@ textarea:focus {
 .record-button.recording {
     background-color: #5A5856;
     border-color: #8B6B6B;
+    border-width: 3px;
     animation: gentlePulse 2s ease-in-out infinite;
+    box-shadow: inset 0 0 0 2px #3F3D3A;
 }
 
 .record-button.recording:hover {
@@ -2088,11 +2126,16 @@ body.theme-prism .currently-viewing-title:hover {
 
 /* Empty placeholder */
 .empty-placeholder {
-    display: flex;
+    display: none;
     align-items: center;
     justify-content: center;
     flex: 1;
     color: #9ca3af;
+}
+
+/* Archive column empty state - controlled by JavaScript */
+#archiveEmptyState {
+    display: none;
 }
 
 .empty-state-content {
@@ -2702,6 +2745,24 @@ body.theme-signal .empty-state-content p:first-of-type {
 
 body.theme-signal .empty-state-content p:last-of-type {
     color: var(--color-text-secondary);
+}
+
+/* Signal Theme: Color-Independent Indicators */
+body.theme-signal .mode-btn.active,
+body.theme-signal .language-btn.active,
+body.theme-signal .theme-btn.active {
+    border-width: 2px;
+    font-weight: 600;
+}
+
+body.theme-signal .pause-button:disabled {
+    border-style: dashed;
+    border-width: 2px;
+}
+
+body.theme-signal .record-button.recording {
+    border-width: 3px;
+    box-shadow: inset 0 0 0 2px var(--color-background);
 }
 
 .modal-close {
@@ -4210,6 +4271,183 @@ select:focus,
 .cancel-edit-btn:focus,
 .save-edit-btn:focus {
     outline: none;
+}
+
+/* ========================================
+   ACCESSIBILITY: Color-Independent Indicators
+   For Colorblind Users (Protanopia, Deuteranopia, Tritanopia)
+   ======================================== */
+
+/* ACTIVE STATES: Border + Content Indicators */
+.mode-btn.active::before,
+.language-btn.active::before,
+.theme-btn.active::before {
+    content: '✓';
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    font-size: 1.2rem;
+    font-weight: 700;
+    background: var(--color-primary);
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+}
+
+.mode-btn.active,
+.language-btn.active,
+.theme-btn.active {
+    position: relative;
+    border-width: 2px;
+    border-style: solid;
+    font-weight: 600;
+}
+
+/* RECORDING STATE: Pulsing Badge + Text Label */
+.record-button.recording::before {
+    content: '🔴';
+    display: inline-block;
+    margin-right: 0.5rem;
+    animation: recordingPulse 1.5s ease-in-out infinite;
+    font-size: 1.2rem;
+}
+
+@keyframes recordingPulse {
+    0%, 100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+    50% {
+        opacity: 0.5;
+        transform: scale(1.2);
+    }
+}
+
+.recording-status.recording::before {
+    content: '🔴 ';
+    margin-right: 0.25rem;
+    font-weight: 700;
+}
+
+.recording-status.recording {
+    border-left: 4px solid currentColor;
+    padding-left: 0.75rem;
+    text-align: left;
+    font-weight: 600;
+}
+
+/* DISABLED STATES: Dashed Border + Diagonal Pattern */
+.pause-button:disabled,
+.record-button:disabled,
+.action-button:disabled {
+    border-style: dashed;
+    border-width: 2px;
+    opacity: 0.6;
+    position: relative;
+    cursor: not-allowed;
+}
+
+.pause-button:disabled::after,
+.record-button:disabled::after,
+.action-button:disabled::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: repeating-linear-gradient(
+        45deg,
+        transparent,
+        transparent 10px,
+        currentColor 10px,
+        currentColor 11px
+    );
+    opacity: 0.1;
+    pointer-events: none;
+    border-radius: inherit;
+}
+
+/* ERROR STATES: Icon Prefix + Dashed Border */
+.alert-message,
+.error-message,
+[role="alert"].error {
+    border-left: 4px dashed currentColor;
+    padding-left: 0.75rem;
+    margin-left: 0;
+    font-weight: 500;
+}
+
+.alert-message::before,
+.error-message::before,
+[role="alert"].error::before {
+    content: '❌ ';
+    margin-right: 0.5rem;
+    font-weight: 700;
+    font-size: 1.1rem;
+}
+
+/* SUCCESS STATES: Icon Prefix + Border Accent */
+.success-message,
+[role="status"].success,
+.confirmation-message {
+    border-left: 4px solid currentColor;
+    padding-left: 0.75rem;
+    margin-left: 0;
+    font-weight: 500;
+}
+
+.success-message::before,
+[role="status"].success::before,
+.confirmation-message::before {
+    content: '✅ ';
+    margin-right: 0.5rem;
+    font-weight: 700;
+    font-size: 1.1rem;
+}
+
+/* HOVER STATES: Border + Shadow Enhancement */
+.mode-btn:hover:not(.active),
+.language-btn:hover:not(.active),
+.theme-btn:hover:not(.active),
+.action-button:hover,
+.save-button:hover,
+.clear-button:hover {
+    border-width: 2px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15), inset 0 0 0 1px currentColor;
+}
+
+.record-button:hover:not(.recording),
+.pause-button:hover:not(:disabled) {
+    border-width: 2px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15), inset 0 0 0 1px currentColor;
+}
+
+/* MEETING ITEM SELECTED STATE */
+.meeting-item.selected {
+    border-left-width: 4px;
+    border-left-style: solid;
+    padding-left: calc(1rem - 4px);
+    font-weight: 600;
+}
+
+.meeting-item.selected::before {
+    content: '📌 ';
+    margin-right: 0.5rem;
+}
+
+/* Focus Indicators (Enhanced for Accessibility) */
+.mode-btn:focus,
+.language-btn:focus,
+.theme-btn:focus,
+.action-button:focus,
+.save-button:focus,
+.clear-button:focus,
+.record-button:focus,
+.pause-button:focus {
+    outline: 3px solid currentColor;
+    outline-offset: 2px;
 }
 
 /* ========================================

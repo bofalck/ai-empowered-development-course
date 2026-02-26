@@ -434,10 +434,10 @@ function getAnalysisBody() {
         return body;
     }
 
-    // Create analysis body and remove empty placeholder
-    const emptyPlaceholder = column.querySelector('.empty-placeholder');
+    // Hide empty placeholder when analysis is displayed
+    const emptyPlaceholder = column.querySelector('#analysisEmptyState');
     if (emptyPlaceholder) {
-        emptyPlaceholder.remove();
+        emptyPlaceholder.style.display = 'none';
     }
 
     const div = document.createElement('div');
@@ -2022,13 +2022,22 @@ function showMeetingMenu(meetingId, buttonElement) {
 
 function renderMeetingHistory() {
     const list = document.getElementById('meetingsList');
+    const emptyState = document.getElementById('archiveEmptyState');
     list.innerHTML = '';
 
     const meetings = getFilteredMeetings();
 
     if (meetings.length === 0) {
-        list.innerHTML = '<li style="padding: 1rem; text-align: center; color: #9ca3af;">No meetings found</li>';
+        // Show empty state only when there are no meetings
+        if (emptyState) {
+            emptyState.style.display = 'flex';
+        }
         return;
+    }
+
+    // Hide empty state when meetings exist
+    if (emptyState) {
+        emptyState.style.display = 'none';
     }
 
     meetings.forEach(meeting => {
@@ -2101,13 +2110,27 @@ function renderMeetingHistory() {
 
 // Render analysis in the middle column
 function renderAnalysisColumn() {
-    const analysisBody = getAnalysisBody();
+    const column = getAnalysisColumn();
+    const emptyState = column.querySelector('#analysisEmptyState');
 
     if (!currentAnalysis) {
-        analysisBody.className = 'analysis-body';
-        analysisBody.innerHTML = createKeyInsightsEmptyState();
+        // Show empty state when no analysis is available
+        if (emptyState) {
+            emptyState.style.display = 'flex';
+        }
+        // Remove analysis body if it exists
+        const existingBody = column.querySelector('.analysis-body');
+        if (existingBody) {
+            existingBody.remove();
+        }
         return;
     }
+
+    // Hide empty state and get/create analysis body
+    if (emptyState) {
+        emptyState.style.display = 'none';
+    }
+    const analysisBody = getAnalysisBody();
 
     // Ensure analysis body has correct class
     analysisBody.className = 'analysis-body';

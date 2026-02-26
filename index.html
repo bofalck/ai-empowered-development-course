@@ -58,7 +58,7 @@
                 <!-- Middle Column: AI Analysis (Phase 2) -->
                 <div class="kanban-column">
                     <h2 class="column-header">Analysis</h2>
-                    <div class="empty-placeholder">
+                    <div id="analysisEmptyState" class="empty-placeholder" style="display: flex;">
                         <div class="empty-state-content">
                             <div style="font-size: 2rem;">📊</div>
                             <div style="font-weight: 500;">Select a recording</div>
@@ -160,14 +160,14 @@
     <div id="modalOverlay" class="modal-overlay hidden"></div>
 
     <!-- Alert Modal -->
-    <div id="alertModal" class="themed-modal hidden">
+    <div id="alertModal" class="themed-modal hidden" role="alertdialog" aria-labelledby="alertTitle" aria-describedby="alertMessage">
         <div class="modal-content">
             <div class="modal-header">
                 <h3 id="alertTitle">Alert</h3>
-                <button class="modal-close-btn" onclick="closeAlert()">×</button>
+                <button class="modal-close-btn" onclick="closeAlert()" aria-label="Close alert dialog">×</button>
             </div>
             <div class="modal-body">
-                <p id="alertMessage"></p>
+                <p id="alertMessage" role="status"></p>
             </div>
             <div class="modal-footer">
                 <button class="modal-btn modal-btn-primary" onclick="closeAlert()">OK</button>

@@ -1,0 +1,631 @@
+/*
+ * BEM Button Component System
+ * ============================
+ *
+ * A scalable, maintainable button component library consolidating 20+ button types
+ * into a cohesive BEM-based structure with theme support.
+ *
+ * Structure: .btn (Block) + --modifier (Modifier)
+ * Example: <button class="btn btn--primary btn--lg">Save</button>
+ *
+ * Variants:
+ *   - --primary: Main actions (Save, Record, Confirm)
+ *   - --secondary: Cancel/Clear/Alternative actions
+ *   - --icon: Icon-only buttons (Theme, Mode, Language)
+ *   - --success: Confirmatory actions
+ *   - --danger: Destructive actions
+ *   - --warning: Caution/Alert actions
+ *   - --text: Minimal text-only buttons
+ *   - --ghost: Links-style buttons
+ *
+ * Sizes:
+ *   - --sm: 36px (small)
+ *   - --md: 44px (medium, default)
+ *   - --lg: 52px (large)
+ *   - --xl: 60px (extra large)
+ *
+ * Widths:
+ *   - --block: Full width
+ *   - --square: Equal width and height
+ */
+
+/* ============================================================================
+   BASE BUTTON COMPONENT
+   ============================================================================ */
+
+.btn {
+    /* Display & Layout */
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    /* Sizing - Medium is default */
+    min-height: 44px;
+    padding: 0.75rem 1rem;
+
+    /* Styling */
+    background-color: var(--color-surface);
+    color: var(--color-text);
+    border: 1px solid var(--color-divider);
+    border-radius: var(--border-radius-sm);
+
+    /* Typography */
+    font-family: inherit;
+    font-size: 0.95rem;
+    font-weight: 500;
+    line-height: 1.5;
+
+    /* Interaction */
+    cursor: pointer;
+    transition: all 200ms ease;
+
+    /* Reset browser defaults */
+    appearance: none;
+    -webkit-appearance: none;
+
+    /* Text interaction */
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+/* Focus state - keyboard only */
+.btn:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+}
+
+/* Disabled state */
+.btn:disabled,
+.btn[disabled] {
+    cursor: not-allowed;
+    opacity: 0.4;
+}
+
+/* ============================================================================
+   VARIANT: PRIMARY
+   ============================================================================ */
+
+.btn--primary {
+    background-color: var(--color-primary);
+    color: white;
+    border-color: var(--color-primary);
+}
+
+.btn--primary:hover:not(:disabled) {
+    background-color: #5A6478;
+    border-color: var(--color-text);
+}
+
+.btn--primary:active:not(:disabled) {
+    background-color: #3F3D3A;
+}
+
+/* ============================================================================
+   VARIANT: SECONDARY
+   ============================================================================ */
+
+.btn--secondary {
+    background-color: var(--color-surface);
+    color: var(--color-text);
+    border-color: var(--color-divider);
+}
+
+.btn--secondary:hover:not(:disabled) {
+    background-color: var(--color-divider);
+    border-color: var(--color-text);
+}
+
+.btn--secondary:active:not(:disabled) {
+    background-color: #D9D7D0;
+}
+
+/* ============================================================================
+   VARIANT: ICON
+   ============================================================================ */
+
+.btn--icon {
+    min-height: 48px;
+    min-width: 48px;
+    padding: 0.5rem 0.75rem;
+    background-color: transparent;
+    color: var(--color-text);
+    border: 1px solid var(--color-divider);
+    font-size: 1.2rem;
+}
+
+.btn--icon:hover:not(:disabled) {
+    background-color: var(--color-surface);
+    border-color: var(--color-text);
+}
+
+.btn--icon:active:not(:disabled),
+.btn--icon.active {
+    background-color: var(--color-primary);
+    border-color: var(--color-primary);
+    color: white;
+}
+
+.btn--icon.active:hover {
+    background-color: #5A6478;
+}
+
+/* ============================================================================
+   VARIANT: GHOST
+   ============================================================================ */
+
+.btn--ghost {
+    background-color: transparent;
+    border: none;
+    color: var(--color-primary);
+}
+
+.btn--ghost:hover:not(:disabled) {
+    opacity: 0.8;
+    text-decoration: underline;
+}
+
+.btn--ghost:active:not(:disabled) {
+    opacity: 0.6;
+}
+
+/* ============================================================================
+   VARIANT: DANGER
+   ============================================================================ */
+
+.btn--danger {
+    background-color: #ef4444;
+    color: white;
+    border-color: #ef4444;
+}
+
+.btn--danger:hover:not(:disabled) {
+    background-color: #dc2626;
+    border-color: #991b1b;
+}
+
+.btn--danger:active:not(:disabled) {
+    background-color: #b91c1c;
+}
+
+/* ============================================================================
+   VARIANT: SUCCESS
+   ============================================================================ */
+
+.btn--success {
+    background-color: #10b981;
+    color: white;
+    border-color: #10b981;
+}
+
+.btn--success:hover:not(:disabled) {
+    background-color: #059669;
+    border-color: #047857;
+}
+
+.btn--success:active:not(:disabled) {
+    background-color: #047857;
+}
+
+/* ============================================================================
+   VARIANT: WARNING
+   ============================================================================ */
+
+.btn--warning {
+    background-color: #f59e0b;
+    color: white;
+    border-color: #f59e0b;
+}
+
+.btn--warning:hover:not(:disabled) {
+    background-color: #d97706;
+    border-color: #b45309;
+}
+
+.btn--warning:active:not(:disabled) {
+    background-color: #b45309;
+}
+
+/* ============================================================================
+   VARIANT: TEXT
+   ============================================================================ */
+
+.btn--text {
+    background-color: transparent;
+    color: var(--color-text);
+    border: 1px solid var(--color-divider);
+}
+
+.btn--text:hover:not(:disabled) {
+    border-color: var(--color-text);
+    background-color: rgba(43, 42, 40, 0.04);
+}
+
+.btn--text:active:not(:disabled) {
+    background-color: rgba(43, 42, 40, 0.08);
+}
+
+/* ============================================================================
+   SIZE MODIFIERS
+   ============================================================================ */
+
+/* Small */
+.btn--sm {
+    min-height: 36px;
+    padding: 0.375rem 0.75rem;
+    font-size: 0.85rem;
+}
+
+.btn--sm.btn--icon {
+    min-width: 36px;
+    font-size: 1rem;
+}
+
+/* Medium (default) - explicitly defined for clarity */
+.btn--md {
+    min-height: 44px;
+    padding: 0.75rem 1rem;
+    font-size: 0.95rem;
+}
+
+.btn--md.btn--icon {
+    min-width: 48px;
+    font-size: 1.2rem;
+}
+
+/* Large */
+.btn--lg {
+    min-height: 52px;
+    padding: 0.75rem 1.5rem;
+    font-size: 1rem;
+    flex: 1;
+}
+
+.btn--lg.btn--icon {
+    min-width: 52px;
+    font-size: 1.5rem;
+}
+
+/* Extra Large */
+.btn--xl {
+    min-height: 60px;
+    padding: 1rem 2rem;
+    font-size: 1.1rem;
+}
+
+.btn--xl.btn--icon {
+    min-width: 60px;
+    font-size: 1.6rem;
+}
+
+/* ============================================================================
+   WIDTH MODIFIERS
+   ============================================================================ */
+
+/* Full width button */
+.btn--block {
+    width: 100%;
+    display: flex;
+}
+
+/* Square button (width = height) */
+.btn--square {
+    aspect-ratio: 1;
+    padding: 0;
+    width: var(--btn-size, 44px);
+}
+
+/* ============================================================================
+   BUTTON GROUPS
+   ============================================================================ */
+
+.btn-group {
+    display: flex;
+    gap: var(--spacing-xs, 0.5rem);
+    align-items: center;
+}
+
+.btn-group--compact {
+    gap: 0;
+}
+
+.btn-group--compact .btn {
+    border-radius: 0;
+    border-right-width: 0;
+}
+
+.btn-group--compact .btn:first-child {
+    border-top-left-radius: var(--border-radius-sm);
+    border-bottom-left-radius: var(--border-radius-sm);
+}
+
+.btn-group--compact .btn:last-child {
+    border-right-width: 1px;
+    border-top-right-radius: var(--border-radius-sm);
+    border-bottom-right-radius: var(--border-radius-sm);
+}
+
+.btn-group--vertical {
+    flex-direction: column;
+}
+
+.btn-group--vertical .btn {
+    width: 100%;
+}
+
+/* ============================================================================
+   DARK THEME OVERRIDES
+   ============================================================================ */
+
+body.theme-dark .btn--icon {
+    background-color: transparent;
+    border-color: #3A3935;
+    color: #F2F0EB;
+}
+
+body.theme-dark .btn--icon:hover:not(:disabled) {
+    background-color: #2A2825;
+    border-color: #F2F0EB;
+}
+
+body.theme-dark .btn--icon.active,
+body.theme-dark .btn--icon:active:not(:disabled) {
+    background-color: var(--color-primary);
+    border-color: var(--color-primary);
+    color: #F7F6F3;
+}
+
+body.theme-dark .btn--text {
+    color: #F2F0EB;
+    border-color: #3A3935;
+}
+
+body.theme-dark .btn--text:hover:not(:disabled) {
+    border-color: #F2F0EB;
+    background-color: rgba(242, 240, 235, 0.1);
+}
+
+body.theme-dark .btn--secondary {
+    background-color: #2A2825;
+    color: #F2F0EB;
+    border-color: #3A3935;
+}
+
+body.theme-dark .btn--secondary:hover:not(:disabled) {
+    background-color: #3A3935;
+    border-color: #F2F0EB;
+}
+
+body.theme-dark .btn--secondary:active:not(:disabled) {
+    background-color: #4A4945;
+}
+
+body.theme-dark .btn--primary {
+    background-color: var(--color-primary);
+    color: #F7F6F3;
+}
+
+body.theme-dark .btn--primary:hover:not(:disabled) {
+    background-color: #5A6478;
+}
+
+body.theme-dark .btn--primary:active:not(:disabled) {
+    background-color: #3F3D3A;
+}
+
+/* ============================================================================
+   PRISM THEME OVERRIDES
+   ============================================================================ */
+
+body.theme-prism .btn--primary {
+    background: linear-gradient(135deg, #FF4FD8 0%, #9A6BFF 100%);
+    border-color: transparent;
+    box-shadow: var(--shadow-2, 0 4px 12px rgba(0, 0, 0, 0.15));
+}
+
+body.theme-prism .btn--primary:hover:not(:disabled) {
+    box-shadow: var(--shadow-3, 0 8px 20px rgba(0, 0, 0, 0.2)), var(--glow, 0 0 20px rgba(255, 79, 216, 0.3));
+}
+
+body.theme-prism .btn--primary:active:not(:disabled) {
+    background: linear-gradient(135deg, #E63CB0 0%, #8B5FFF 100%);
+}
+
+body.theme-prism .btn--icon {
+    background-color: transparent;
+    border-color: rgba(155, 140, 255, 0.2);
+    color: var(--color-text);
+}
+
+body.theme-prism .btn--icon:hover:not(:disabled) {
+    background-color: var(--soft-surface-1, rgba(155, 140, 255, 0.05));
+    border-color: rgba(155, 140, 255, 0.4);
+}
+
+body.theme-prism .btn--icon.active,
+body.theme-prism .btn--icon:active:not(:disabled) {
+    background: linear-gradient(135deg, #FF4FD8 0%, #9A6BFF 100%);
+    border-color: transparent;
+    color: white;
+    box-shadow: var(--shadow-2, 0 4px 12px rgba(0, 0, 0, 0.15));
+}
+
+body.theme-prism .btn--secondary {
+    background-color: var(--soft-surface-1, rgba(155, 140, 255, 0.05));
+    border-color: rgba(155, 140, 255, 0.2);
+    color: var(--color-text);
+}
+
+body.theme-prism .btn--secondary:hover:not(:disabled) {
+    background-color: var(--soft-surface-2, rgba(155, 140, 255, 0.1));
+    border-color: rgba(155, 140, 255, 0.4);
+}
+
+body.theme-prism .btn--secondary:active:not(:disabled) {
+    background-color: var(--soft-surface-3, rgba(155, 140, 255, 0.15));
+}
+
+body.theme-prism .btn--text {
+    color: var(--color-text);
+    border-color: rgba(155, 140, 255, 0.2);
+}
+
+body.theme-prism .btn--text:hover:not(:disabled) {
+    border-color: rgba(155, 140, 255, 0.4);
+    background-color: rgba(155, 140, 255, 0.05);
+}
+
+/* ============================================================================
+   SIGNAL THEME OVERRIDES
+   ============================================================================ */
+
+body.theme-signal .btn--primary {
+    background-color: #E10600;
+    border: 2px solid #E10600;
+    color: #FFFFFF;
+    box-shadow: 2px 2px 0px #111111;
+}
+
+body.theme-signal .btn--primary:hover:not(:disabled) {
+    box-shadow: 3px 3px 0px #111111;
+    background-color: #B80500;
+}
+
+body.theme-signal .btn--primary:active:not(:disabled) {
+    background-color: #8B0400;
+    box-shadow: 1px 1px 0px #111111;
+}
+
+body.theme-signal .btn--secondary {
+    background-color: transparent;
+    border: 2px solid #E10600;
+    color: #E10600;
+    box-shadow: 2px 2px 0px #111111;
+}
+
+body.theme-signal .btn--secondary:hover:not(:disabled) {
+    background-color: #FFF5F5;
+    box-shadow: 3px 3px 0px #111111;
+}
+
+body.theme-signal .btn--secondary:active:not(:disabled) {
+    background-color: #FFEBEB;
+    box-shadow: 1px 1px 0px #111111;
+}
+
+body.theme-signal .btn--icon {
+    border: 2px solid #E10600;
+    background-color: transparent;
+    color: var(--color-text);
+}
+
+body.theme-signal .btn--icon:hover:not(:disabled) {
+    background-color: #FFF5F5;
+    border-color: #E10600;
+}
+
+body.theme-signal .btn--icon.active,
+body.theme-signal .btn--icon:active:not(:disabled) {
+    background-color: #E10600;
+    border-color: #E10600;
+    color: #FFFFFF;
+}
+
+body.theme-signal .btn--text {
+    border: 2px solid #E10600;
+    color: var(--color-text);
+}
+
+body.theme-signal .btn--text:hover:not(:disabled) {
+    background-color: #FFF5F5;
+}
+
+/* ============================================================================
+   SIGNAL + DARK THEME OVERRIDES
+   ============================================================================ */
+
+body.theme-signal.theme-dark .btn--primary {
+    background-color: #E10600;
+    border: 2px solid #E10600;
+}
+
+body.theme-signal.theme-dark .btn--secondary {
+    background-color: #1A1A1A;
+    border: 2px solid #E10600;
+    color: #FFFFFF;
+}
+
+body.theme-signal.theme-dark .btn--secondary:hover:not(:disabled) {
+    background-color: #333333;
+}
+
+body.theme-signal.theme-dark .btn--icon {
+    border: 2px solid #E10600;
+    color: #F2F0EB;
+}
+
+body.theme-signal.theme-dark .btn--icon:hover:not(:disabled) {
+    background-color: #2A2825;
+}
+
+body.theme-signal.theme-dark .btn--icon.active {
+    background-color: #E10600;
+    color: #FFFFFF;
+}
+
+/* ============================================================================
+   UTILITY & LOADING STATE (Future extension)
+   ============================================================================ */
+
+.btn.loading {
+    pointer-events: none;
+    opacity: 0.7;
+}
+
+.btn.loading::before {
+    content: '';
+    display: inline-block;
+    width: 1em;
+    height: 1em;
+    margin-right: 0.5em;
+    border: 2px solid currentColor;
+    border-right-color: transparent;
+    border-radius: 50%;
+    animation: spinLoader 0.75s linear infinite;
+}
+
+@keyframes spinLoader {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* ============================================================================
+   RESPONSIVE ADJUSTMENTS
+   ============================================================================ */
+
+@media (max-width: 640px) {
+    /* Increase minimum button height on mobile for better tap targets */
+    .btn {
+        min-height: 48px;
+    }
+
+    /* Stack button groups vertically on small screens */
+    .btn-group:not(.btn-group--vertical) {
+        flex-direction: column;
+        width: 100%;
+    }
+
+    .btn-group:not(.btn-group--vertical) .btn {
+        width: 100%;
+    }
+
+    /* Full-width buttons on mobile */
+    .btn--block {
+        width: 100%;
+    }
+
+    /* Adjust padding for smaller screens */
+    .btn--lg {
+        padding: 0.75rem 1rem;
+    }
+}
