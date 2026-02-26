@@ -51,8 +51,77 @@
                     </div>
 
                     <div class="form-group">
-                        <label for="blogContent">Content</label>
-                        <textarea id="blogContent" rows="10" required></textarea>
+                        <label>Content</label>
+
+                        <!-- Formatting Toolbar -->
+                        <div class="editor-toolbar">
+                            <div class="toolbar-group">
+                                <select id="blogHeading" class="toolbar-select">
+                                    <option value="p">Paragraph</option>
+                                    <option value="h1">Heading 1</option>
+                                    <option value="h2">Heading 2</option>
+                                    <option value="h3">Heading 3</option>
+                                    <option value="h4">Heading 4</option>
+                                    <option value="h5">Heading 5</option>
+                                    <option value="h6">Heading 6</option>
+                                </select>
+                            </div>
+
+                            <div class="toolbar-group">
+                                <select id="blogFont" class="toolbar-select">
+                                    <option value="inherit">Font</option>
+                                    <option value="'Segoe UI', Tahoma, Geneva, Verdana, sans-serif">Default</option>
+                                    <option value="'Courier New', Courier, monospace">Monospace</option>
+                                    <option value="Georgia, serif">Serif</option>
+                                    <option value="'Arial Black', Gadget, sans-serif">Arial Black</option>
+                                </select>
+                            </div>
+
+                            <div class="toolbar-group">
+                                <select id="blogSize" class="toolbar-select">
+                                    <option value="">Size</option>
+                                    <option value="0.875rem">Small (14px)</option>
+                                    <option value="1rem">Normal (16px)</option>
+                                    <option value="1.125rem">Medium (18px)</option>
+                                    <option value="1.25rem">Large (20px)</option>
+                                    <option value="1.5rem">Extra Large (24px)</option>
+                                </select>
+                            </div>
+
+                            <div class="toolbar-group">
+                                <button type="button" class="toolbar-btn" id="blogBold" title="Bold">
+                                    <strong>B</strong>
+                                </button>
+                                <button type="button" class="toolbar-btn" id="blogItalic" title="Italic">
+                                    <em>I</em>
+                                </button>
+                                <button type="button" class="toolbar-btn" id="blogUnderline" title="Underline">
+                                    <u>U</u>
+                                </button>
+                            </div>
+
+                            <div class="toolbar-group">
+                                <button type="button" class="toolbar-btn" id="blogBullet" title="Bullet List">
+                                    •
+                                </button>
+                                <button type="button" class="toolbar-btn" id="blogNumber" title="Numbered List">
+                                    1.
+                                </button>
+                            </div>
+
+                            <div class="toolbar-group">
+                                <button type="button" class="toolbar-btn" id="blogLink" title="Add Link">
+                                    🔗
+                                </button>
+                                <button type="button" class="toolbar-btn" id="blogClear" title="Clear Formatting">
+                                    ✕
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Content Editor -->
+                        <div id="blogContentEditor" class="content-editor" contenteditable="true" required></div>
+                        <input type="hidden" id="blogContent" required>
                     </div>
 
                     <div class="form-actions">

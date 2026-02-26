@@ -70,6 +70,7 @@ function setupBlog() {
     newBlogBtn.addEventListener('click', () => {
         blogForm.classList.remove('hidden');
         blogFormElement.reset();
+        setupBlogEditor();
     });
 
     cancelBtn.addEventListener('click', () => {
@@ -81,7 +82,101 @@ function setupBlog() {
         await saveBlogPost();
     });
 
+    setupBlogEditor();
     loadBlogPosts();
+}
+
+// Setup blog editor toolbar
+function setupBlogEditor() {
+    const editor = document.getElementById('blogContentEditor');
+    const headingSelect = document.getElementById('blogHeading');
+    const fontSelect = document.getElementById('blogFont');
+    const sizeSelect = document.getElementById('blogSize');
+    const boldBtn = document.getElementById('blogBold');
+    const italicBtn = document.getElementById('blogItalic');
+    const underlineBtn = document.getElementById('blogUnderline');
+    const bulletBtn = document.getElementById('blogBullet');
+    const numberBtn = document.getElementById('blogNumber');
+    const linkBtn = document.getElementById('blogLink');
+    const clearBtn = document.getElementById('blogClear');
+
+    headingSelect.addEventListener('change', () => {
+        document.execCommand('formatBlock', false, `<${headingSelect.value}>`);
+        editor.focus();
+        headingSelect.value = 'p';
+    });
+
+    fontSelect.addEventListener('change', () => {
+        if (fontSelect.value !== 'inherit') {
+            document.execCommand('fontName', false, fontSelect.value);
+            editor.focus();
+        }
+        fontSelect.value = 'inherit';
+    });
+
+    sizeSelect.addEventListener('change', () => {
+        if (sizeSelect.value) {
+            const selection = window.getSelection();
+            if (selection.rangeCount > 0) {
+                const range = selection.getRangeAt(0);
+                const span = document.createElement('span');
+                span.style.fontSize = sizeSelect.value;
+                range.surroundContents(span);
+                editor.focus();
+            }
+        }
+        sizeSelect.value = '';
+    });
+
+    boldBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        document.execCommand('bold', false, null);
+        editor.focus();
+    });
+
+    italicBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        document.execCommand('italic', false, null);
+        editor.focus();
+    });
+
+    underlineBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        document.execCommand('underline', false, null);
+        editor.focus();
+    });
+
+    bulletBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        document.execCommand('insertUnorderedList', false, null);
+        editor.focus();
+    });
+
+    numberBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        document.execCommand('insertOrderedList', false, null);
+        editor.focus();
+    });
+
+    linkBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        const url = prompt('Enter URL:');
+        if (url) {
+            document.execCommand('createLink', false, url);
+        }
+        editor.focus();
+    });
+
+    clearBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        document.execCommand('removeFormat', false, null);
+        editor.focus();
+    });
+
+    // Sync editor content to hidden input
+    editor.addEventListener('blur', () => {
+        document.getElementById('blogContent').value = editor.innerHTML;
+    });
 }
 
 // Load blog posts
@@ -110,6 +205,9 @@ async function loadBlogPosts() {
                 </div>
                 <p class="cms-item-slug">Slug: ${post.slug}</p>
                 ${post.excerpt ? `<p class="cms-item-excerpt">${post.excerpt}</p>` : ''}
+                <div class="cms-item-preview">
+                    ${post.content}
+                </div>
                 <div class="cms-item-actions">
                     <button class="cms-item-edit" onclick="editBlogPost('${post.id}')">Edit</button>
                     <button class="cms-item-delete" onclick="deleteBlogPost('${post.id}')">Delete</button>
@@ -131,7 +229,13 @@ async function saveBlogPost() {
     const title = document.getElementById('blogTitle').value;
     const slug = document.getElementById('blogSlug').value;
     const excerpt = document.getElementById('blogExcerpt').value;
-    const content = document.getElementById('blogContent').value;
+
+    // Get content from editor
+    const editor = document.getElementById('blogContentEditor');
+    const content = editor.innerHTML.trim();
+
+    // Also save to hidden input for form submission
+    document.getElementById('blogContent').value = content;
 
     if (!title || !slug || !content) {
         showCmsModal('Error', 'Please fill in all required fields', 'error');
@@ -154,6 +258,7 @@ async function saveBlogPost() {
         showCmsModal('Success', 'Blog post saved successfully!', 'success');
         document.getElementById('blogForm').classList.add('hidden');
         document.getElementById('blogForm').querySelector('form').reset();
+        document.getElementById('blogContentEditor').innerHTML = '';
         // Reload blog posts
         await loadBlogPosts();
     } catch (error) {
