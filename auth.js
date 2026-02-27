@@ -138,22 +138,31 @@ function init() {
     const isInIframe = window.parent !== window;
 
     if (!isInIframe) {
-        // If already logged in, redirect to portfolio
-        if (restoreSession()) {
-            if (window.location.pathname === '/' || window.location.pathname === '/index.html') {
+        const pathname = window.location.pathname;
+        const isLoggedIn = restoreSession();
+
+        // Public pages that don't require authentication (login pages and public portfolio)
+        const isPublicPage = pathname === '/' ||
+                            pathname === '/index.html' ||
+                            pathname === '/login.html' ||
+                            pathname === '/admin/' ||
+                            pathname === '/admin/index.html' ||
+                            pathname === '/projects.html' ||
+                            pathname === '/blog.html' ||
+                            pathname === '/portfolio.html';
+
+        if (isLoggedIn) {
+            // User is logged in - redirect home to portfolio
+            if (pathname === '/' || pathname === '/index.html') {
                 window.location.href = '/portfolio.html';
             }
+            // Let them access any page including admin pages
         } else {
-            // Not logged in - allow public collection pages (projects, blog)
-            const pathname = window.location.pathname;
-            const isPublicPage = pathname === '/' ||
-                                pathname === '/index.html' ||
-                                pathname === '/projects.html' ||
-                                pathname === '/blog.html' ||
-                                pathname === '/portfolio.html';
-
-            if (!isPublicPage) {
-                // Redirect to home for any other protected pages
+            // User is NOT logged in
+            if (isPublicPage) {
+                // Allow public pages without login
+            } else {
+                // Redirect protected pages to login
                 window.location.href = '/';
             }
         }
