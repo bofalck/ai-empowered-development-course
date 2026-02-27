@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>After The Noise - Portfolio</title>
     <link rel="stylesheet" href="styles.css">
+    <script src="https://mcp.figma.com/mcp/html-to-design/capture.js" async></script>
 </head>
 <body>
     <header class="portfolio-header">
@@ -14,6 +15,12 @@
                 <span>The</span>
                 <span>Noise</span>
             </h1>
+            <nav class="header-nav">
+                <a href="/" class="nav-link">Home</a>
+                <a href="/projects.html" class="nav-link">Projects</a>
+                <a href="/blog.html" class="nav-link">Blog</a>
+                <a href="/admin/" class="nav-link">Admin</a>
+            </nav>
             <div class="header-actions">
                 <div class="theme-selector" id="themeSelector">
                     <button class="theme-btn" data-theme="default" title="Default theme">☀️</button>
@@ -21,7 +28,9 @@
                     <button class="theme-btn" data-theme="dark" title="Dark theme">🌙</button>
                     <button class="theme-btn" data-theme="prism" title="Prism theme">🦄</button>
                 </div>
-                <button id="logoutBtn" class="btn-logout">Sign Out</button>
+                <div id="authActions">
+                    <button id="logoutBtn" class="btn-logout" style="display: none;">Sign Out</button>
+                </div>
             </div>
         </div>
     </header>
@@ -85,10 +94,12 @@
     <script type="module">
         import { restoreSession, isLoggedIn } from './auth.js';
 
-        // Check auth before loading portfolio
-        if (!restoreSession() || !isLoggedIn()) {
-            window.location.href = '/';
-        }
+        // Restore session if it exists
+        restoreSession();
+
+        // Show logout button only if logged in
+        const isLogged = isLoggedIn();
+        document.getElementById('logoutBtn').style.display = isLogged ? 'block' : 'none';
     </script>
     <script type="module" src="portfolio.js"></script>
 </body>
