@@ -5994,9 +5994,11 @@ body.theme-prism .empty-placeholder {
     border-left: 3px solid var(--color-primary);
     border-radius: var(--border-radius-sm);
     transition: all 200ms ease;
-    display: block;
+    display: flex;
+    flex-direction: column;
     text-decoration: none;
     color: inherit;
+    min-height: 140px;
 }
 
 .project-preview-link {
@@ -6060,6 +6062,8 @@ body.theme-prism .empty-placeholder {
     display: flex;
     flex-wrap: wrap;
     gap: 0.375rem;
+    margin-top: auto;
+    padding-top: var(--spacing-xs);
 }
 
 .project-preview-tag {
@@ -6104,9 +6108,11 @@ body.theme-prism .empty-placeholder {
     border-left: 3px solid var(--color-primary);
     border-radius: var(--border-radius-sm);
     transition: all 200ms ease;
-    display: block;
+    display: flex;
+    flex-direction: column;
     text-decoration: none;
     color: inherit;
+    min-height: 140px;
 }
 
 .blog-preview-link {
