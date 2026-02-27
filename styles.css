@@ -5723,6 +5723,8 @@ body.theme-prism .empty-placeholder {
     display: flex;
     flex-direction: column;
     cursor: grab;
+    height: auto;
+    min-height: auto;
 }
 
 .widget.dragging {
