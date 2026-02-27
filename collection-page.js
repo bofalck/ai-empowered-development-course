@@ -38,10 +38,15 @@ export async function initializePage(type) {
 
     // If viewing a detail page for a specific item
     if (detailId) {
+        console.log('=== DETAIL VIEW ===');
+        console.log('Looking for item with ID:', detailId);
+        console.log('Available items:', allItems.map(i => ({ id: i.id, title: i.title })));
         const item = allItems.find(i => i.id === detailId);
+        console.log('Found item:', item);
         if (item) {
             renderDetailView(item);
         } else {
+            console.warn('Item not found, showing empty state');
             showEmptyState();
         }
         return;
@@ -225,13 +230,27 @@ function renderBlogCard(post) {
  * @param {Object} item - The item to display in detail
  */
 function renderDetailView(item) {
+    console.log('=== RENDER DETAIL VIEW ===');
+    console.log('pageType:', pageType);
+    console.log('item:', item);
+
     const gridId = pageType === 'projects' ? 'projectsGrid' : 'blogGrid';
     const filterBar = document.getElementById('filterBar');
     const collectionHeader = document.querySelector('.collection-header');
 
+    console.log('gridId:', gridId);
+    console.log('filterBar found:', !!filterBar);
+    console.log('collectionHeader found:', !!collectionHeader);
+
     // Hide filter bar and collection header in detail view
-    if (filterBar) filterBar.style.display = 'none';
-    if (collectionHeader) collectionHeader.style.display = 'none';
+    if (filterBar) {
+        filterBar.style.display = 'none';
+        console.log('Hiding filterBar');
+    }
+    if (collectionHeader) {
+        collectionHeader.style.display = 'none';
+        console.log('Hiding collectionHeader');
+    }
 
     const grid = document.getElementById(gridId);
     let detailHTML;
@@ -283,7 +302,10 @@ function renderDetailView(item) {
         `;
     }
 
+    console.log('Setting grid HTML for grid:', gridId);
+    console.log('HTML length:', detailHTML.length);
     grid.innerHTML = detailHTML;
+    console.log('Detail view rendered successfully');
 }
 
 /**
