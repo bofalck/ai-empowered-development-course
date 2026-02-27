@@ -24,31 +24,24 @@ export async function initializePage(type) {
     // Check for detail view (query param id)
     const params = new URLSearchParams(window.location.search);
     const detailId = params.get('id');
-    console.log('Collection page init - type:', type, 'detailId:', detailId);
 
     // Fetch data from Supabase
     const items = await fetchCollectionData(type);
-    console.log('Fetched items:', items);
 
     if (!items || items.length === 0) {
-        console.log('No items found');
         showEmptyState();
         return;
     }
 
     // Store and sort items
     allItems = sortChronological(items);
-    console.log('All items sorted:', allItems);
 
     // If viewing a detail page for a specific item
     if (detailId) {
-        console.log('Looking for item with id:', detailId);
         const item = allItems.find(i => i.id === detailId);
-        console.log('Found item:', item);
         if (item) {
             renderDetailView(item);
         } else {
-            console.log('Item not found');
             showEmptyState();
         }
         return;
@@ -69,6 +62,7 @@ export async function initializePage(type) {
  */
 async function fetchCollectionData(tableType) {
     const tableName = tableType === 'projects' ? 'projects' : 'blog_posts';
+    const gridId = tableType === 'projects' ? 'projectsGrid' : 'blogGrid';
 
     try {
         const { data, error } = await supabase
@@ -77,13 +71,34 @@ async function fetchCollectionData(tableType) {
             .order('created_at', { ascending: false });
 
         if (error) {
-            console.error(`Error fetching ${tableName}:`, error);
+            console.error(`Supabase error fetching ${tableName}:`, {
+                message: error.message,
+                status: error.status,
+                code: error.code
+            });
+            // Show error to user
+            const grid = document.getElementById(gridId);
+            if (grid) {
+                grid.innerHTML = `
+                    <div class="empty-state">
+                        <p>Error loading ${tableType}: ${error.message}</p>
+                    </div>
+                `;
+            }
             return null;
         }
 
         return data;
     } catch (error) {
         console.error(`Failed to fetch ${tableName}:`, error);
+        const grid = document.getElementById(gridId);
+        if (grid) {
+            grid.innerHTML = `
+                <div class="empty-state">
+                    <p>Error loading ${tableType}: ${error.message}</p>
+                </div>
+            `;
+        }
         return null;
     }
 }

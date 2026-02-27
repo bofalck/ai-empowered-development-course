@@ -270,16 +270,13 @@ async function loadProjects() {
 
         // Get top 3 most recent projects
         const topProjects = data.slice(0, 3);
-        console.log('Top projects:', topProjects);
 
         // Render as a compact widget with preview of recent projects
         const projectsHTML = `
             <div class="widget-projects-preview">
                 ${topProjects.map(project => {
-                    const projectUrl = `/projects.html?id=${project.id}`;
-                    console.log('Creating project link:', projectUrl);
                     return `
-                        <a href="${projectUrl}" class="project-preview-item project-preview-link">
+                        <a href="/projects.html?id=${project.id}" class="project-preview-item project-preview-link">
                             <div class="project-preview-header">
                                 <span class="project-preview-emoji">${getProjectEmoji(project)}</span>
                                 <h4 class="project-preview-title">${extractPlainText(project.title)}</h4>
