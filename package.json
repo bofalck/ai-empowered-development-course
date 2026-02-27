@@ -14,7 +14,8 @@
     "lint": "npm run lint:js && npm run lint:css",
     "lint:js": "eslint app.js",
     "lint:css": "stylelint styles.css",
-    "lint:fix": "eslint app.js --fix && stylelint styles.css --fix"
+    "lint:fix": "eslint app.js --fix && stylelint styles.css --fix",
+    "figma:sync": "node figma-sync.js"
   },
   "keywords": [
     "todo",
