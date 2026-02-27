@@ -1,0 +1,58 @@
+{
+  "name": "Portfolio Design System",
+  "description": "Bobby Falck Portfolio Design Tokens",
+  "exportedAt": "2026-02-27T08:59:42.563Z",
+  "tokens": {
+    "colors": {
+      "background": "#F7F6F3",
+      "surface": "#ECEAE5",
+      "divider": "#E2E0DB",
+      "text": "#2B2A28",
+      "text-secondary": "#3A3936",
+      "primary": "#4A5568",
+      "secondary": "#6B7A8B",
+      "border-light": "#E2E0DB",
+      "border-medium": "#D9D7D0",
+      "input-bg": "#ECEAE5",
+      "panel-bg": "#ECEAE5",
+      "surface-hover": "#D9D7D0",
+      "surface-active": "#D9D7D0",
+      "text-primary": "#2B2A28",
+      "text-secondary-dark": "#3A3936",
+      "text-tertiary": "#3A3936",
+      "text-muted": "#3A3936",
+      "primary-hover": "#3A3936",
+      "primary-active": "#3A3936",
+      "recording-bg": "#DC2626",
+      "recording-border": "#B91C1C",
+      "recording-hover": "#DC2626",
+      "recording-red": "#DC2626",
+      "recording-indicator": "#DC2626",
+      "cancel-btn": "#6B7280",
+      "cancel-hover": "#4B5563",
+      "clear-hover": "#D9D7D0",
+      "clear-active": "#9CA3AF",
+      "accent-blue": "#3B82F6",
+      "white": "#FFFFFF",
+      "surface-light": "#F5EFFF",
+      "input-hover": "#F5F0FF",
+      "lavender-hover": "#AB7CFF",
+      "text-muted-light": "#9D8BAA"
+    },
+    "typography": {},
+    "spacing": {
+      "xs": "0.5rem",
+      "sm": "1rem",
+      "md": "1.5rem",
+      "lg": "2rem",
+      "xl": "2.5rem",
+      "xxl": "3rem"
+    },
+    "borderRadius": {
+      "sm": "8px",
+      "md": "12px",
+      "lg": "16px"
+    },
+    "shadows": {}
+  }
+}

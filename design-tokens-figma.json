@@ -1,0 +1,207 @@
+{
+  "colors": [
+    {
+      "name": "color/background",
+      "value": "#F7F6F3",
+      "type": "color"
+    },
+    {
+      "name": "color/surface",
+      "value": "#ECEAE5",
+      "type": "color"
+    },
+    {
+      "name": "color/divider",
+      "value": "#E2E0DB",
+      "type": "color"
+    },
+    {
+      "name": "color/text",
+      "value": "#2B2A28",
+      "type": "color"
+    },
+    {
+      "name": "color/text-secondary",
+      "value": "#3A3936",
+      "type": "color"
+    },
+    {
+      "name": "color/primary",
+      "value": "#4A5568",
+      "type": "color"
+    },
+    {
+      "name": "color/secondary",
+      "value": "#6B7A8B",
+      "type": "color"
+    },
+    {
+      "name": "color/border-light",
+      "value": "#E2E0DB",
+      "type": "color"
+    },
+    {
+      "name": "color/border-medium",
+      "value": "#D9D7D0",
+      "type": "color"
+    },
+    {
+      "name": "color/input-bg",
+      "value": "#ECEAE5",
+      "type": "color"
+    },
+    {
+      "name": "color/panel-bg",
+      "value": "#ECEAE5",
+      "type": "color"
+    },
+    {
+      "name": "color/surface-hover",
+      "value": "#D9D7D0",
+      "type": "color"
+    },
+    {
+      "name": "color/surface-active",
+      "value": "#D9D7D0",
+      "type": "color"
+    },
+    {
+      "name": "color/text-primary",
+      "value": "#2B2A28",
+      "type": "color"
+    },
+    {
+      "name": "color/text-secondary-dark",
+      "value": "#3A3936",
+      "type": "color"
+    },
+    {
+      "name": "color/text-tertiary",
+      "value": "#3A3936",
+      "type": "color"
+    },
+    {
+      "name": "color/text-muted",
+      "value": "#3A3936",
+      "type": "color"
+    },
+    {
+      "name": "color/primary-hover",
+      "value": "#3A3936",
+      "type": "color"
+    },
+    {
+      "name": "color/primary-active",
+      "value": "#3A3936",
+      "type": "color"
+    },
+    {
+      "name": "color/recording-bg",
+      "value": "#DC2626",
+      "type": "color"
+    },
+    {
+      "name": "color/recording-border",
+      "value": "#B91C1C",
+      "type": "color"
+    },
+    {
+      "name": "color/recording-hover",
+      "value": "#DC2626",
+      "type": "color"
+    },
+    {
+      "name": "color/recording-red",
+      "value": "#DC2626",
+      "type": "color"
+    },
+    {
+      "name": "color/recording-indicator",
+      "value": "#DC2626",
+      "type": "color"
+    },
+    {
+      "name": "color/cancel-btn",
+      "value": "#6B7280",
+      "type": "color"
+    },
+    {
+      "name": "color/cancel-hover",
+      "value": "#4B5563",
+      "type": "color"
+    },
+    {
+      "name": "color/clear-hover",
+      "value": "#D9D7D0",
+      "type": "color"
+    },
+    {
+      "name": "color/clear-active",
+      "value": "#9CA3AF",
+      "type": "color"
+    },
+    {
+      "name": "color/accent-blue",
+      "value": "#3B82F6",
+      "type": "color"
+    },
+    {
+      "name": "color/white",
+      "value": "#FFFFFF",
+      "type": "color"
+    },
+    {
+      "name": "color/surface-light",
+      "value": "#F5EFFF",
+      "type": "color"
+    },
+    {
+      "name": "color/input-hover",
+      "value": "#F5F0FF",
+      "type": "color"
+    },
+    {
+      "name": "color/lavender-hover",
+      "value": "#AB7CFF",
+      "type": "color"
+    },
+    {
+      "name": "color/text-muted-light",
+      "value": "#9D8BAA",
+      "type": "color"
+    }
+  ],
+  "typography": [],
+  "spacing": [
+    {
+      "name": "spacing/xs",
+      "value": "0.5rem",
+      "type": "spacing"
+    },
+    {
+      "name": "spacing/sm",
+      "value": "1rem",
+      "type": "spacing"
+    },
+    {
+      "name": "spacing/md",
+      "value": "1.5rem",
+      "type": "spacing"
+    },
+    {
+      "name": "spacing/lg",
+      "value": "2rem",
+      "type": "spacing"
+    },
+    {
+      "name": "spacing/xl",
+      "value": "2.5rem",
+      "type": "spacing"
+    },
+    {
+      "name": "spacing/xxl",
+      "value": "3rem",
+      "type": "spacing"
+    }
+  ]
+}
