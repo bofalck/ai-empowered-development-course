@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Projects - After The Noise</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header class="portfolio-header">
+        <div class="header-content">
+            <h1 class="site-title">
+                <span>After</span>
+                <span>The</span>
+                <span>Noise</span>
+            </h1>
+            <div class="header-actions">
+                <div class="theme-selector" id="themeSelector">
+                    <button class="theme-btn" data-theme="default" title="Default theme">☀️</button>
+                    <button class="theme-btn" data-theme="signal" title="Signal theme">📡</button>
+                    <button class="theme-btn" data-theme="dark" title="Dark theme">🌙</button>
+                    <button class="theme-btn" data-theme="prism" title="Prism theme">🦄</button>
+                </div>
+                <div id="authActions">
+                    <button id="logoutBtn" class="btn-logout" style="display: none;">Sign Out</button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="portfolio-main">
+        <div class="collection-page">
+            <div class="collection-header">
+                <h1>Projects</h1>
+                <a href="/" class="back-link">← Back to Portfolio</a>
+            </div>
+
+            <div id="filterBar" class="filter-bar"></div>
+
+            <div id="projectsGrid" class="items-grid">
+                <div class="empty-state">
+                    <p>Loading projects...</p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script type="module">
+        import { getTheme, setTheme } from './auth.js';
+
+        // Apply theme
+        function applyTheme() {
+            const theme = getTheme();
+            document.body.className = `theme-${theme}`;
+            updateThemeButtons(theme);
+        }
+
+        // Setup theme switcher
+        function setupThemeSwitcher() {
+            const themeButtons = document.querySelectorAll('#themeSelector .theme-btn');
+            themeButtons.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const theme = btn.getAttribute('data-theme');
+                    setTheme(theme);
+                    applyTheme();
+                });
+            });
+        }
+
+        // Update theme buttons
+        function updateThemeButtons(currentTheme) {
+            const themeButtons = document.querySelectorAll('#themeSelector .theme-btn');
+            themeButtons.forEach(btn => {
+                if (btn.getAttribute('data-theme') === currentTheme) {
+                    btn.classList.add('active');
+                } else {
+                    btn.classList.remove('active');
+                }
+            });
+        }
+
+        // Initialize
+        applyTheme();
+        setupThemeSwitcher();
+    </script>
+    <script type="module" src="projects-page.js"></script>
+</body>
+</html>

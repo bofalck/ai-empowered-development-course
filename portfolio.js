@@ -59,11 +59,8 @@ function getProjectEmoji(project) {
 
 // Initialize portfolio
 async function init() {
-    // Check auth
-    if (!restoreSession() || !isLoggedIn()) {
-        window.location.href = '/';
-        return;
-    }
+    // Restore session if exists (optional for public portfolio)
+    restoreSession();
 
     // Apply theme
     applyTheme();
@@ -160,15 +157,76 @@ function setupNavigation() {
 async function loadBlog() {
     const container = document.getElementById('blogContainer');
 
-    // Placeholder for now - will connect to Supabase
-    container.innerHTML = `
-        <div class="empty-state">
-            <p>Blog coming soon...</p>
-        </div>
-    `;
+    try {
+        console.log('Starting to load blog posts from Supabase...');
 
-    // In future: fetch from supabase
-    // const { data, error } = await supabase.from('blog_posts').select('*');
+        const { data, error } = await supabase
+            .from('blog_posts')
+            .select('*')
+            .order('created_at', { ascending: false });
+
+        console.log('Blog posts query result - Data:', data, 'Error:', error);
+
+        if (error) {
+            console.error('Supabase error details:', {
+                message: error.message,
+                code: error.code,
+                status: error.status,
+                details: error.details,
+                hint: error.hint
+            });
+            throw error;
+        }
+
+        if (!data || data.length === 0) {
+            console.log('No blog posts found in database');
+            container.innerHTML = `
+                <div class="widget-teaser">
+                    <p class="widget-teaser-text">No blog posts yet. Check back soon!</p>
+                </div>
+            `;
+            return;
+        }
+
+        console.log(`Successfully loaded ${data.length} blog posts`);
+
+        // Get top 3 most recent blog posts
+        const topPosts = data.slice(0, 3);
+
+        // Render as a compact widget with preview of recent posts
+        const blogHTML = `
+            <div class="widget-blog-preview">
+                ${topPosts.map(post => `
+                    <div class="blog-preview-item">
+                        <div class="blog-preview-header">
+                            <time class="blog-preview-date">${formatDate(post.created_at)}</time>
+                            <h4 class="blog-preview-title">${extractPlainText(post.title)}</h4>
+                        </div>
+                        ${post.excerpt ? `
+                            <div class="blog-preview-excerpt">${extractPlainText(post.excerpt)}</div>
+                        ` : ''}
+                    </div>
+                `).join('')}
+                <a href="/blog.html" class="widget-blog-link">View all ${data.length} posts →</a>
+            </div>
+        `;
+
+        container.innerHTML = blogHTML;
+    } catch (error) {
+        console.error('Failed to load blog posts:', error);
+        container.innerHTML = `
+            <div class="widget-teaser">
+                <p class="widget-teaser-text">Unable to load blog posts</p>
+            </div>
+        `;
+    }
+}
+
+// Format date to readable string
+function formatDate(dateString) {
+    const date = new Date(dateString);
+    const options = { year: 'numeric', month: 'short', day: 'numeric' };
+    return date.toLocaleDateString('en-US', options);
 }
 
 // Load projects from Supabase
@@ -232,7 +290,7 @@ async function loadProjects() {
                         ` : ''}
                     </div>
                 `).join('')}
-                <a href="#projects" class="widget-projects-link">View all ${data.length} projects →</a>
+                <a href="/projects.html" class="widget-projects-link">View all ${data.length} projects →</a>
             </div>
         `;
 
@@ -255,10 +313,22 @@ function loadAbout() {
     container.innerHTML = `
         <div class="about-content">
             <div class="about-image">
-                <img src="/assets/bobby_olivia.jpg" alt="Bobby Falck" />
+                <img src="/assets/bobby.png" alt="Bobby Falck" />
             </div>
-            <div class="about-text">
+            <div class="about-text-content">
+                <h3 class="about-greeting">Hi, I'm Bobby <span class="waving-hand">👋</span></h3>
                 <p>Strategic leader with 11+ years shaping digital transformation, AI Enablement, scaling organizations, and aligning design, technology, and business. I build high-performing teams and coach leaders through a style that's playful, safe, and caring, creating environments where people thrive, ideas grow, and outcomes align with company vision.</p>
+            </div>
+            <div class="about-social-links">
+                <a href="https://www.linkedin.com/in/bobby-falck/" target="_blank" rel="noopener noreferrer" class="social-link" title="LinkedIn" aria-label="Visit LinkedIn profile">
+                    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14zm-.5 15.5v-5.3a3.26 3.26 0 0 0-3.26-3.26c-.85 0-1.84.52-2.32 1.39v-1.2h-2.5v8.5h2.5v-4.34c0-.77.62-1.4 1.4-1.4.77 0 1.4.63 1.4 1.4v4.34h2.5zM6.88 8.56a1.68 1.68 0 0 0 1.68-1.68c0-.93-.75-1.69-1.68-1.69-.93 0-1.69.76-1.69 1.69 0 .93.76 1.68 1.69 1.68zm1.39 9.94v-8.5H5.5v8.5h2.77z"/></svg>
+                </a>
+                <a href="https://www.instagram.com/samuraii_bob/" target="_blank" rel="noopener noreferrer" class="social-link" title="Instagram" aria-label="Visit Instagram profile">
+                    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.07 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zM5.838 12a6.162 6.162 0 1 1 12.324 0 6.162 6.162 0 0 1-12.324 0zM12 16a4 4 0 1 1 0-8 4 4 0 0 1 0 8zm4.965-10.322a1.44 1.44 0 1 1 2.881.001 1.44 1.44 0 0 1-2.881-.001z"/></svg>
+                </a>
+                <a href="https://medium.com/@bofalck" target="_blank" rel="noopener noreferrer" class="social-link" title="Medium" aria-label="Visit Medium profile">
+                    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M13.54 12a6.8 6.8 0 01-6.77 6.82A6.8 6.8 0 010 12a6.8 6.8 0 016.77-6.82A6.8 6.8 0 0113.54 12zM20.96 12c0 3.54-1.51 6.42-3.38 6.42-1.87 0-3.39-2.88-3.39-6.42s1.52-6.42 3.39-6.42c1.87 0 3.38 2.88 3.38 6.42M24 12c0 3.17-.53 5.75-1.19 5.75-.66 0-1.19-2.58-1.19-5.75s.53-5.75 1.19-5.75c.66 0 1.19 2.58 1.19 5.75z"/></svg>
+                </a>
             </div>
         </div>
     `;
