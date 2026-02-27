@@ -144,8 +144,16 @@ function init() {
                 window.location.href = '/portfolio.html';
             }
         } else {
-            // Not logged in, show login form
-            if (window.location.pathname !== '/' && window.location.pathname !== '/index.html') {
+            // Not logged in - allow public collection pages (projects, blog)
+            const pathname = window.location.pathname;
+            const isPublicPage = pathname === '/' ||
+                                pathname === '/index.html' ||
+                                pathname === '/projects.html' ||
+                                pathname === '/blog.html' ||
+                                pathname === '/portfolio.html';
+
+            if (!isPublicPage) {
+                // Redirect to home for any other protected pages
                 window.location.href = '/';
             }
         }
