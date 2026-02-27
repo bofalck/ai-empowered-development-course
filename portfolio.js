@@ -196,17 +196,20 @@ async function loadBlog() {
         // Render as a compact widget with preview of recent posts
         const blogHTML = `
             <div class="widget-blog-preview">
-                ${topPosts.map(post => `
-                    <div class="blog-preview-item">
-                        <div class="blog-preview-header">
-                            <time class="blog-preview-date">${formatDate(post.created_at)}</time>
-                            <h4 class="blog-preview-title">${extractPlainText(post.title)}</h4>
-                        </div>
-                        ${post.excerpt ? `
-                            <div class="blog-preview-excerpt">${extractPlainText(post.excerpt)}</div>
-                        ` : ''}
-                    </div>
-                `).join('')}
+                ${topPosts.map(post => {
+                    const postLink = post.slug ? `/blog/${post.slug}.html` : '/blog.html';
+                    return `
+                        <a href="${postLink}" class="blog-preview-item blog-preview-link">
+                            <div class="blog-preview-header">
+                                <time class="blog-preview-date">${formatDate(post.created_at)}</time>
+                                <h4 class="blog-preview-title">${extractPlainText(post.title)}</h4>
+                            </div>
+                            ${post.excerpt ? `
+                                <div class="blog-preview-excerpt">${extractPlainText(post.excerpt)}</div>
+                            ` : ''}
+                        </a>
+                    `;
+                }).join('')}
                 <a href="/blog.html" class="widget-blog-link">View all ${data.length} posts →</a>
             </div>
         `;
@@ -272,24 +275,28 @@ async function loadProjects() {
         // Render as a compact widget with preview of recent projects
         const projectsHTML = `
             <div class="widget-projects-preview">
-                ${topProjects.map(project => `
-                    <div class="project-preview-item">
-                        <div class="project-preview-header">
-                            <span class="project-preview-emoji">${getProjectEmoji(project)}</span>
-                            <h4 class="project-preview-title">${extractPlainText(project.title)}</h4>
-                        </div>
-                        ${project.description ? `
-                            <div class="project-preview-description">${extractPlainText(project.description)}</div>
-                        ` : ''}
-                        ${project.tags ? `
-                            <div class="project-preview-tags">
-                                ${project.tags.split(',').slice(0, 2).map(tag =>
-                                    `<span class="project-preview-tag">${tag.trim()}</span>`
-                                ).join('')}
+                ${topProjects.map(project => {
+                    const projectLink = project.link || '/projects.html';
+                    const linkTarget = project.link ? 'target="_blank" rel="noopener noreferrer"' : '';
+                    return `
+                        <a href="${projectLink}" ${linkTarget} class="project-preview-item project-preview-link">
+                            <div class="project-preview-header">
+                                <span class="project-preview-emoji">${getProjectEmoji(project)}</span>
+                                <h4 class="project-preview-title">${extractPlainText(project.title)}</h4>
                             </div>
-                        ` : ''}
-                    </div>
-                `).join('')}
+                            ${project.description ? `
+                                <div class="project-preview-description">${extractPlainText(project.description)}</div>
+                            ` : ''}
+                            ${project.tags ? `
+                                <div class="project-preview-tags">
+                                    ${project.tags.split(',').slice(0, 2).map(tag =>
+                                        `<span class="project-preview-tag">${tag.trim()}</span>`
+                                    ).join('')}
+                                </div>
+                            ` : ''}
+                        </a>
+                    `;
+                }).join('')}
                 <a href="/projects.html" class="widget-projects-link">View all ${data.length} projects →</a>
             </div>
         `;
