@@ -24,24 +24,31 @@ export async function initializePage(type) {
     // Check for detail view (query param id)
     const params = new URLSearchParams(window.location.search);
     const detailId = params.get('id');
+    console.log('Collection page init - type:', type, 'detailId:', detailId);
 
     // Fetch data from Supabase
     const items = await fetchCollectionData(type);
+    console.log('Fetched items:', items);
 
     if (!items || items.length === 0) {
+        console.log('No items found');
         showEmptyState();
         return;
     }
 
     // Store and sort items
     allItems = sortChronological(items);
+    console.log('All items sorted:', allItems);
 
     // If viewing a detail page for a specific item
     if (detailId) {
+        console.log('Looking for item with id:', detailId);
         const item = allItems.find(i => i.id === detailId);
+        console.log('Found item:', item);
         if (item) {
             renderDetailView(item);
         } else {
+            console.log('Item not found');
             showEmptyState();
         }
         return;
