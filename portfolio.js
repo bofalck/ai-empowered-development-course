@@ -86,11 +86,11 @@ async function init() {
     // Setup app launcher
     setupAppLauncher();
 
-    // Setup drag and drop for widgets
-    setupWidgetDragAndDrop();
+    // Drag and drop disabled for masonry layout
+    // setupWidgetDragAndDrop();
 
-    // Restore widget order from localStorage
-    restoreWidgetOrder();
+    // Widget order locked for masonry layout
+    // restoreWidgetOrder();
 
     // Show admin CMS link if admin
     if (isAdmin()) {

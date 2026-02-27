@@ -5712,6 +5712,8 @@ body.theme-prism .empty-placeholder {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
     gap: var(--spacing-lg);
+    grid-auto-flow: dense;
+    grid-auto-rows: max-content;
 }
 
 .widget {
@@ -5722,19 +5724,10 @@ body.theme-prism .empty-placeholder {
     transition: all 200ms ease;
     display: flex;
     flex-direction: column;
-    cursor: grab;
     height: auto;
     min-height: auto;
 }
 
-.widget.dragging {
-    opacity: 0.5;
-    z-index: 10;
-}
-
-.widget.drag-over {
-    border: 2px dashed var(--color-primary);
-}
 
 .widget:hover {
     border-color: var(--color-primary);
@@ -6867,12 +6860,16 @@ body.theme-prism .empty-placeholder {
 @media (max-width: 1400px) {
     .widgets-grid {
         grid-template-columns: repeat(2, 1fr);
+        grid-auto-flow: dense;
+        grid-auto-rows: max-content;
     }
 }
 
 @media (max-width: 1024px) {
     .widgets-grid {
         grid-template-columns: repeat(2, 1fr);
+        grid-auto-flow: dense;
+        grid-auto-rows: max-content;
     }
 }
 
@@ -6884,6 +6881,7 @@ body.theme-prism .empty-placeholder {
     .widgets-grid {
         grid-template-columns: 1fr;
         gap: var(--spacing-md);
+        grid-auto-flow: row;
     }
 
     .widget {
