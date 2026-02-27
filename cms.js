@@ -152,13 +152,19 @@ function setupFullEditor(editorId, hiddenInputId) {
     const editor = document.getElementById(editorId);
     const hiddenInput = document.getElementById(hiddenInputId);
 
-    if (!editor) return;
+    if (!editor) {
+        console.error('Editor not found:', editorId);
+        return;
+    }
 
     const toolbar = editor.previousElementSibling;
     const prefix = editorId.replace('Editor', '').replace('Content', '').replace('Editor', '');
 
+    console.log('Setting up editor:', editorId, 'prefix:', prefix, 'toolbar found:', !!toolbar);
+
     // Heading select
     const headingSelect = toolbar ? toolbar.querySelector(`#${prefix}Heading`) : null;
+    console.log('Heading select found:', !!headingSelect, 'looking for:', `#${prefix}Heading`);
     if (headingSelect) {
         headingSelect.addEventListener('change', (e) => {
             document.execCommand('formatBlock', false, `<${e.target.value}>`);
@@ -168,8 +174,10 @@ function setupFullEditor(editorId, hiddenInputId) {
 
     // Font select
     const fontSelect = toolbar ? toolbar.querySelector(`#${prefix}Font`) : null;
+    console.log('Font select found:', !!fontSelect);
     if (fontSelect) {
         fontSelect.addEventListener('change', (e) => {
+            console.log('Font changed to:', e.target.value);
             if (e.target.value !== 'inherit') {
                 document.execCommand('fontName', false, e.target.value);
             }
@@ -179,8 +187,10 @@ function setupFullEditor(editorId, hiddenInputId) {
 
     // Size select
     const sizeSelect = toolbar ? toolbar.querySelector(`#${prefix}Size`) : null;
+    console.log('Size select found:', !!sizeSelect);
     if (sizeSelect) {
         sizeSelect.addEventListener('change', (e) => {
+            console.log('Size changed to:', e.target.value);
             if (e.target.value) {
                 document.execCommand('fontSize', false, '7');
                 const selections = editor.querySelectorAll('span[style*="font-size"]');
