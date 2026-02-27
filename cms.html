@@ -5,6 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>After The Noise - CMS</title>
     <link rel="stylesheet" href="styles.css">
+    <!-- Quill Rich Text Editor -->
+    <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
+    <script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
 </head>
 <body>
     <header class="cms-header">
@@ -46,105 +49,27 @@
                 <form>
                     <div class="form-group">
                         <label>Title</label>
-                        <div class="editor-toolbar">
-                            <button type="button" class="toolbar-btn" id="blogTitleBold" title="Bold">
-                                <strong>B</strong>
-                            </button>
-                        </div>
-                        <div id="blogTitleEditor" class="content-editor title-editor" contenteditable="true" required></div>
-                        <input type="hidden" id="blogTitle" required>
+                        <input type="text" id="blogTitle" placeholder="Enter blog post title" required>
                     </div>
 
                     <div class="form-group">
                         <label>Description</label>
-                        <div class="editor-toolbar">
-                            <button type="button" class="toolbar-btn" id="blogDescriptionBold" title="Bold">
-                                <strong>B</strong>
-                            </button>
-                            <button type="button" class="toolbar-btn" id="blogDescriptionItalic" title="Italic">
-                                <em>I</em>
-                            </button>
-                        </div>
-                        <div id="blogDescriptionEditor" class="content-editor description-editor" contenteditable="true"></div>
-                        <input type="hidden" id="blogDescription">
+                        <input type="text" id="blogDescription" placeholder="Enter blog post description" required>
                     </div>
 
                     <div class="form-group">
                         <label for="blogExcerpt">Excerpt</label>
-                        <textarea id="blogExcerpt" rows="3"></textarea>
+                        <textarea id="blogExcerpt" rows="3" placeholder="Enter blog post excerpt"></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Tags (comma-separated)</label>
+                        <input type="text" id="blogTags" placeholder="e.g., design, development, tutorial">
                     </div>
 
                     <div class="form-group">
                         <label>Content</label>
-
-                        <!-- Formatting Toolbar -->
-                        <div class="editor-toolbar">
-                            <div class="toolbar-group">
-                                <select id="blogHeading" class="toolbar-select">
-                                    <option value="p">Paragraph</option>
-                                    <option value="h1">Heading 1</option>
-                                    <option value="h2">Heading 2</option>
-                                    <option value="h3">Heading 3</option>
-                                    <option value="h4">Heading 4</option>
-                                    <option value="h5">Heading 5</option>
-                                    <option value="h6">Heading 6</option>
-                                </select>
-                            </div>
-
-                            <div class="toolbar-group">
-                                <select id="blogFont" class="toolbar-select">
-                                    <option value="inherit">Font</option>
-                                    <option value="'Segoe UI', Tahoma, Geneva, Verdana, sans-serif">Default</option>
-                                    <option value="'Courier New', Courier, monospace">Monospace</option>
-                                    <option value="Georgia, serif">Serif</option>
-                                    <option value="'Arial Black', Gadget, sans-serif">Arial Black</option>
-                                </select>
-                            </div>
-
-                            <div class="toolbar-group">
-                                <select id="blogSize" class="toolbar-select">
-                                    <option value="">Size</option>
-                                    <option value="0.875rem">Small (14px)</option>
-                                    <option value="1rem">Normal (16px)</option>
-                                    <option value="1.125rem">Medium (18px)</option>
-                                    <option value="1.25rem">Large (20px)</option>
-                                    <option value="1.5rem">Extra Large (24px)</option>
-                                </select>
-                            </div>
-
-                            <div class="toolbar-group">
-                                <button type="button" class="toolbar-btn" id="blogBold" title="Bold">
-                                    <strong>B</strong>
-                                </button>
-                                <button type="button" class="toolbar-btn" id="blogItalic" title="Italic">
-                                    <em>I</em>
-                                </button>
-                                <button type="button" class="toolbar-btn" id="blogUnderline" title="Underline">
-                                    <u>U</u>
-                                </button>
-                            </div>
-
-                            <div class="toolbar-group">
-                                <button type="button" class="toolbar-btn" id="blogBullet" title="Bullet List">
-                                    •
-                                </button>
-                                <button type="button" class="toolbar-btn" id="blogNumber" title="Numbered List">
-                                    1.
-                                </button>
-                            </div>
-
-                            <div class="toolbar-group">
-                                <button type="button" class="toolbar-btn" id="blogLink" title="Add Link">
-                                    🔗
-                                </button>
-                                <button type="button" class="toolbar-btn" id="blogClear" title="Clear Formatting">
-                                    ✕
-                                </button>
-                            </div>
-                        </div>
-
-                        <!-- Content Editor -->
-                        <div id="blogContentEditor" class="content-editor" contenteditable="true" required></div>
+                        <div id="blogContentEditor" style="height: 400px;"></div>
                         <input type="hidden" id="blogContent" required>
                     </div>
 
@@ -172,37 +97,23 @@
                 <form>
                     <div class="form-group">
                         <label>Title</label>
-                        <div class="editor-toolbar">
-                            <button type="button" class="toolbar-btn" id="projectTitleBold" title="Bold">
-                                <strong>B</strong>
-                            </button>
-                        </div>
-                        <div id="projectTitleEditor" class="content-editor title-editor" contenteditable="true" required></div>
-                        <input type="hidden" id="projectTitle" required>
+                        <input type="text" id="projectTitle" placeholder="Enter project title" required>
                     </div>
 
                     <div class="form-group">
                         <label>Description</label>
-                        <div class="editor-toolbar">
-                            <button type="button" class="toolbar-btn" id="projectDescriptionBold" title="Bold">
-                                <strong>B</strong>
-                            </button>
-                            <button type="button" class="toolbar-btn" id="projectDescriptionItalic" title="Italic">
-                                <em>I</em>
-                            </button>
-                        </div>
-                        <div id="projectDescriptionEditor" class="content-editor description-editor" contenteditable="true" required></div>
+                        <div id="projectDescriptionEditor" style="height: 200px;"></div>
                         <input type="hidden" id="projectDescription" required>
                     </div>
 
                     <div class="form-group">
                         <label for="projectLink">Project Link</label>
-                        <input type="url" id="projectLink">
+                        <input type="url" id="projectLink" placeholder="https://example.com">
                     </div>
 
                     <div class="form-group">
                         <label for="projectTags">Tags (comma-separated)</label>
-                        <input type="text" id="projectTags">
+                        <input type="text" id="projectTags" placeholder="e.g., web, design, react">
                     </div>
 
                     <div class="form-actions">

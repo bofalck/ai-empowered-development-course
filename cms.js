@@ -28,6 +28,10 @@ function generateSlug(title) {
     return `${titleSlug}-${timestamp}`;
 }
 
+// Quill editors global
+let blogContentEditor = null;
+let projectDescriptionEditor = null;
+
 // Initialize CMS
 async function init() {
     // Check auth
@@ -100,194 +104,8 @@ function sanitizeEditorContent(html, allowedTags = ['b', 'strong', 'i', 'em', 'u
 }
 
 // Setup simple editor (title, description) with limited formatting
-function setupSimpleEditor(editorId, hiddenInputId, allowBold = true, allowItalic = false) {
-    const editor = document.getElementById(editorId);
-    const hiddenInput = document.getElementById(hiddenInputId);
-
-    if (!editor) return;
-
-    const toolbar = editor.previousElementSibling;
-    const boldBtn = toolbar ? toolbar.querySelector('button[title*="Bold"]') : null;
-    const italicBtn = toolbar ? toolbar.querySelector('button[title*="Italic"]') : null;
-
-    if (boldBtn && allowBold) {
-        boldBtn.addEventListener('click', (e) => {
-            e.preventDefault();
-            document.execCommand('bold', false, null);
-            editor.focus();
-        });
-    }
-
-    if (italicBtn && allowItalic) {
-        italicBtn.addEventListener('click', (e) => {
-            e.preventDefault();
-            document.execCommand('italic', false, null);
-            editor.focus();
-        });
-    }
-
-    // Handle paste - sanitize immediately
-    editor.addEventListener('paste', (e) => {
-        e.preventDefault();
-        const text = e.clipboardData.getData('text/html') || e.clipboardData.getData('text/plain');
-        const allowedTags = [];
-        if (allowBold) allowedTags.push('b', 'strong');
-        if (allowItalic) allowedTags.push('i', 'em');
-        const sanitized = sanitizeEditorContent(text, allowedTags);
-        document.execCommand('insertHTML', false, sanitized);
-    });
-
-    // Sync to hidden input
-    editor.addEventListener('blur', () => {
-        hiddenInput.value = editor.innerHTML;
-    });
-
-    editor.addEventListener('input', () => {
-        hiddenInput.value = editor.innerHTML;
-    });
-}
-
-// Setup full editor for content with all formatting options
-function setupFullEditor(editorId, hiddenInputId) {
-    const editor = document.getElementById(editorId);
-    const hiddenInput = document.getElementById(hiddenInputId);
-
-    if (!editor) {
-        console.error('Editor not found:', editorId);
-        return;
-    }
-
-    const toolbar = editor.previousElementSibling;
-    const prefix = editorId.replace('Editor', '').replace('Content', '').replace('Editor', '');
-
-    console.log('Setting up editor:', editorId, 'prefix:', prefix, 'toolbar found:', !!toolbar);
-
-    // Heading select
-    const headingSelect = toolbar ? toolbar.querySelector(`#${prefix}Heading`) : null;
-    console.log('Heading select found:', !!headingSelect, 'looking for:', `#${prefix}Heading`);
-    if (headingSelect) {
-        headingSelect.addEventListener('change', (e) => {
-            document.execCommand('formatBlock', false, `<${e.target.value}>`);
-            editor.focus();
-        });
-    }
-
-    // Font select
-    const fontSelect = toolbar ? toolbar.querySelector(`#${prefix}Font`) : null;
-    console.log('Font select found:', !!fontSelect);
-    if (fontSelect) {
-        fontSelect.addEventListener('change', (e) => {
-            console.log('Font changed to:', e.target.value);
-            if (e.target.value !== 'inherit') {
-                document.execCommand('fontName', false, e.target.value);
-            }
-            editor.focus();
-        });
-    }
-
-    // Size select
-    const sizeSelect = toolbar ? toolbar.querySelector(`#${prefix}Size`) : null;
-    console.log('Size select found:', !!sizeSelect);
-    if (sizeSelect) {
-        sizeSelect.addEventListener('change', (e) => {
-            console.log('Size changed to:', e.target.value);
-            if (e.target.value) {
-                document.execCommand('fontSize', false, '7');
-                const selections = editor.querySelectorAll('span[style*="font-size"]');
-                selections.forEach(s => s.style.fontSize = e.target.value);
-            }
-            editor.focus();
-        });
-    }
-
-    // Text formatting buttons
-    const boldBtn = toolbar ? toolbar.querySelector(`#${prefix}Bold`) : null;
-    if (boldBtn) {
-        boldBtn.addEventListener('click', (e) => {
-            e.preventDefault();
-            document.execCommand('bold', false, null);
-            editor.focus();
-        });
-    }
-
-    const italicBtn = toolbar ? toolbar.querySelector(`#${prefix}Italic`) : null;
-    if (italicBtn) {
-        italicBtn.addEventListener('click', (e) => {
-            e.preventDefault();
-            document.execCommand('italic', false, null);
-            editor.focus();
-        });
-    }
-
-    const underlineBtn = toolbar ? toolbar.querySelector(`#${prefix}Underline`) : null;
-    if (underlineBtn) {
-        underlineBtn.addEventListener('click', (e) => {
-            e.preventDefault();
-            document.execCommand('underline', false, null);
-            editor.focus();
-        });
-    }
-
-    // List buttons
-    const bulletBtn = toolbar ? toolbar.querySelector(`#${prefix}Bullet`) : null;
-    if (bulletBtn) {
-        bulletBtn.addEventListener('click', (e) => {
-            e.preventDefault();
-            document.execCommand('insertUnorderedList', false, null);
-            editor.focus();
-        });
-    }
-
-    const numberBtn = toolbar ? toolbar.querySelector(`#${prefix}Number`) : null;
-    if (numberBtn) {
-        numberBtn.addEventListener('click', (e) => {
-            e.preventDefault();
-            document.execCommand('insertOrderedList', false, null);
-            editor.focus();
-        });
-    }
-
-    // Link button
-    const linkBtn = toolbar ? toolbar.querySelector(`#${prefix}Link`) : null;
-    if (linkBtn) {
-        linkBtn.addEventListener('click', (e) => {
-            e.preventDefault();
-            const url = prompt('Enter URL:');
-            if (url) {
-                document.execCommand('createLink', false, url);
-            }
-            editor.focus();
-        });
-    }
-
-    // Clear formatting button
-    const clearBtn = toolbar ? toolbar.querySelector(`#${prefix}Clear`) : null;
-    if (clearBtn) {
-        clearBtn.addEventListener('click', (e) => {
-            e.preventDefault();
-            document.execCommand('removeFormat', false, null);
-            editor.focus();
-        });
-    }
-
-    // Handle paste - sanitize to allowed tags only
-    editor.addEventListener('paste', (e) => {
-        e.preventDefault();
-        const text = e.clipboardData.getData('text/html') || e.clipboardData.getData('text/plain');
-        const allowedTags = ['b', 'strong', 'i', 'em', 'u', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'ul', 'ol', 'li', 'a'];
-        const sanitized = sanitizeEditorContent(text, allowedTags);
-        document.execCommand('insertHTML', false, sanitized);
-    });
-
-    // Sync to hidden input
-    editor.addEventListener('blur', () => {
-        hiddenInput.value = editor.innerHTML;
-    });
-
-    editor.addEventListener('input', () => {
-        hiddenInput.value = editor.innerHTML;
-    });
-}
+// Old editor functions - replaced by Quill
+// (setupSimpleEditor and setupFullEditor removed - now using Quill)
 
 // Apply theme
 function applyTheme() {
@@ -358,10 +176,13 @@ function setupBlog() {
         document.getElementById('blogList').classList.add('hidden');
         blogForm.classList.remove('hidden');
         blogFormElement.reset();
-        document.getElementById('blogTitleEditor').innerHTML = '';
-        document.getElementById('blogDescriptionEditor').innerHTML = '';
-        document.getElementById('blogContentEditor').innerHTML = '';
-        document.getElementById('blogTitleEditor').focus();
+
+        // Clear Quill editor
+        if (blogContentEditor) {
+            blogContentEditor.setContents([]);
+        }
+
+        document.getElementById('blogTitle').focus();
     });
 
     cancelBtn.addEventListener('click', () => {
@@ -375,10 +196,26 @@ function setupBlog() {
         await saveBlogPost();
     });
 
-    // Setup editors
-    setupSimpleEditor('blogTitleEditor', 'blogTitle', true, false);
-    setupSimpleEditor('blogDescriptionEditor', 'blogDescription', true, true);
-    setupFullEditor('blogContentEditor', 'blogContent');
+    // Initialize Quill editor for blog content
+    blogContentEditor = new Quill('#blogContentEditor', {
+        theme: 'snow',
+        placeholder: 'Write your blog post content here...',
+        modules: {
+            toolbar: [
+                [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
+                ['bold', 'italic', 'underline', 'strike'],
+                ['blockquote', 'code-block'],
+                [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                ['link', 'image'],
+                ['clean']
+            ]
+        }
+    });
+
+    // Sync Quill content to hidden input
+    blogContentEditor.on('text-change', () => {
+        document.getElementById('blogContent').value = blogContentEditor.root.innerHTML;
+    });
 
     loadBlogPosts();
 }
@@ -430,28 +267,20 @@ async function loadBlogPosts() {
 
 // Save blog post
 async function saveBlogPost() {
-    // Get title from editor
-    const titleEditor = document.getElementById('blogTitleEditor');
-    const title = titleEditor.innerHTML.trim();
-    document.getElementById('blogTitle').value = title;
+    // Get form values
+    const title = document.getElementById('blogTitle').value.trim();
+    const description = document.getElementById('blogDescription').value.trim();
+    const excerpt = document.getElementById('blogExcerpt').value.trim();
+    const tags = document.getElementById('blogTags').value.trim();
+
+    // Get content from Quill editor
+    const content = blogContentEditor ? blogContentEditor.root.innerHTML.trim() : '';
 
     // Auto-generate slug from title and timestamp
     const slug = generateSlug(title);
 
-    const excerpt = document.getElementById('blogExcerpt').value;
-
-    // Get description from editor
-    const descriptionEditor = document.getElementById('blogDescriptionEditor');
-    const description = descriptionEditor.innerHTML.trim();
-    document.getElementById('blogDescription').value = description;
-
-    // Get content from editor
-    const contentEditor = document.getElementById('blogContentEditor');
-    const content = contentEditor.innerHTML.trim();
-    document.getElementById('blogContent').value = content;
-
-    if (!title) {
-        showCmsModal('Error', 'Please fill in the title', 'error');
+    if (!title || !description || !content) {
+        showCmsModal('Error', 'Please fill in Title, Description, and Content', 'error');
         return;
     }
 
@@ -463,6 +292,7 @@ async function saveBlogPost() {
                 excerpt,
                 description,
                 content,
+                tags,
                 created_at: new Date().toISOString()
             }
         ]);
@@ -475,9 +305,9 @@ async function saveBlogPost() {
         showCmsModal('Success', 'Blog post saved successfully!', 'success');
         document.getElementById('blogForm').classList.add('hidden');
         document.getElementById('blogForm').querySelector('form').reset();
-        document.getElementById('blogTitleEditor').innerHTML = '';
-        document.getElementById('blogDescriptionEditor').innerHTML = '';
-        document.getElementById('blogContentEditor').innerHTML = '';
+        if (blogContentEditor) {
+            blogContentEditor.setContents([]);
+        }
         // Show list and reload blog posts
         document.getElementById('blogList').classList.remove('hidden');
         await loadBlogPosts();
@@ -499,10 +329,14 @@ function setupProjects() {
         document.getElementById('projectsList').classList.add('hidden');
         projectForm.classList.remove('hidden');
         projectFormElement.reset();
-        document.getElementById('projectTitleEditor').innerHTML = '';
-        document.getElementById('projectDescriptionEditor').innerHTML = '';
+
+        // Clear Quill editor
+        if (projectDescriptionEditor) {
+            projectDescriptionEditor.setContents([]);
+        }
+
         document.querySelector('#projectForm h3').textContent = 'New Project';
-        document.getElementById('projectTitleEditor').focus();
+        document.getElementById('projectTitle').focus();
     });
 
     cancelBtn.addEventListener('click', () => {
@@ -516,9 +350,24 @@ function setupProjects() {
         await saveProject();
     });
 
-    // Setup editors
-    setupSimpleEditor('projectTitleEditor', 'projectTitle', true, false);
-    setupSimpleEditor('projectDescriptionEditor', 'projectDescription', true, true);
+    // Initialize Quill editor for project description
+    projectDescriptionEditor = new Quill('#projectDescriptionEditor', {
+        theme: 'snow',
+        placeholder: 'Write your project description here...',
+        modules: {
+            toolbar: [
+                ['bold', 'italic', 'underline'],
+                [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                ['link'],
+                ['clean']
+            ]
+        }
+    });
+
+    // Sync Quill content to hidden input
+    projectDescriptionEditor.on('text-change', () => {
+        document.getElementById('projectDescription').value = projectDescriptionEditor.root.innerHTML;
+    });
 
     loadProjects();
 }
@@ -586,21 +435,14 @@ async function loadProjects() {
 
 // Save project (create or update)
 async function saveProject() {
-    // Get title from editor
-    const titleEditor = document.getElementById('projectTitleEditor');
-    const title = titleEditor.innerHTML.trim();
-    document.getElementById('projectTitle').value = title;
+    // Get form values
+    const title = document.getElementById('projectTitle').value.trim();
+    const description = projectDescriptionEditor ? projectDescriptionEditor.root.innerHTML.trim() : '';
+    const link = document.getElementById('projectLink').value.trim();
+    const tags = document.getElementById('projectTags').value.trim();
 
-    // Get description from editor
-    const descriptionEditor = document.getElementById('projectDescriptionEditor');
-    const description = descriptionEditor.innerHTML.trim();
-    document.getElementById('projectDescription').value = description;
-
-    const link = document.getElementById('projectLink').value;
-    const tags = document.getElementById('projectTags').value;
-
-    if (!title) {
-        showCmsModal('Error', 'Please fill in the title', 'error');
+    if (!title || !description) {
+        showCmsModal('Error', 'Please fill in Title and Description', 'error');
         return;
     }
 
@@ -637,8 +479,9 @@ async function saveProject() {
         clearProjectEdit();
         document.getElementById('projectForm').classList.add('hidden');
         document.getElementById('projectForm').querySelector('form').reset();
-        document.getElementById('projectTitleEditor').innerHTML = '';
-        document.getElementById('projectDescriptionEditor').innerHTML = '';
+        if (projectDescriptionEditor) {
+            projectDescriptionEditor.setContents([]);
+        }
         // Show list and reload projects
         document.getElementById('projectsList').classList.remove('hidden');
         await loadProjects();
