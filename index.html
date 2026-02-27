@@ -5,35 +5,101 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>After The Noise - Portfolio</title>
     <link rel="stylesheet" href="styles.css">
+    <script src="https://mcp.figma.com/mcp/html-to-design/capture.js" async></script>
 </head>
-<body class="login-page">
-    <div class="login-container">
-        <div class="login-card">
-            <h1>After The Noise</h1>
-            <p class="subtitle">Portfolio & Projects</p>
-
-            <form id="loginForm">
-                <div class="form-group">
-                    <label for="email">Email</label>
-                    <input type="email" id="email" name="email" required>
+<body>
+    <header class="portfolio-header">
+        <div class="header-content">
+            <h1 class="site-title">
+                <span>After</span>
+                <span>The</span>
+                <span>Noise</span>
+            </h1>
+            <nav class="header-nav">
+                <a href="/" class="nav-link">Home</a>
+                <a href="/projects.html" class="nav-link">Projects</a>
+                <a href="/blog.html" class="nav-link">Blog</a>
+            </nav>
+            <div class="header-actions">
+                <div class="theme-selector" id="themeSelector">
+                    <button class="theme-btn" data-theme="default" title="Default theme">☀️</button>
+                    <button class="theme-btn" data-theme="signal" title="Signal theme">📡</button>
+                    <button class="theme-btn" data-theme="dark" title="Dark theme">🌙</button>
+                    <button class="theme-btn" data-theme="prism" title="Prism theme">🦄</button>
                 </div>
-
-                <div class="form-group">
-                    <label for="password">Password</label>
-                    <input type="password" id="password" name="password" required>
+                <div id="authActions">
+                    <button id="logoutBtn" class="btn-logout" style="display: none;">Sign Out</button>
                 </div>
-
-                <button type="submit" class="btn-login">Sign In</button>
-            </form>
-
-            <div class="login-divider">or</div>
-
-            <button id="guestBtn" class="btn-guest">Continue as Guest</button>
-
-            <p class="login-hint">Demo: Use any email/password for guest, admin credentials for full access</p>
+            </div>
         </div>
-    </div>
+    </header>
 
-    <script type="module" src="auth.js"></script>
+    <main class="portfolio-main">
+        <div class="widgets-grid">
+            <!-- Blog Widget -->
+            <section id="blog" class="widget widget-blog">
+                <div class="widget-header">
+                    <h2>Blog</h2>
+                </div>
+                <div id="blogContainer" class="widget-content"></div>
+            </section>
+
+            <!-- Projects Widget -->
+            <section id="projects" class="widget widget-projects">
+                <div class="widget-header">
+                    <h2>Selected Projects</h2>
+                </div>
+                <div id="projectsContainer" class="widget-content"></div>
+            </section>
+
+            <!-- About Widget -->
+            <section id="about" class="widget widget-about">
+                <div class="widget-header">
+                    <h2>About Me</h2>
+                </div>
+                <div id="aboutContainer" class="widget-content"></div>
+            </section>
+
+            <!-- CV Widget -->
+            <section id="cv" class="widget widget-cv">
+                <div class="widget-header">
+                    <h2>CV</h2>
+                </div>
+                <div id="cvContainer" class="widget-content"></div>
+            </section>
+
+            <!-- Transcriber Application Widget -->
+            <section id="transcriber" class="widget widget-transcriber">
+                <div class="widget-header">
+                    <div class="widget-title-wrapper">
+                        <h2>Transcriber</h2>
+                        <span class="widget-badge">Application</span>
+                    </div>
+                </div>
+                <div class="widget-content">
+                    <div class="app-card" id="transcriberApp">
+                        <div class="app-icon">📝</div>
+                        <p>Record, transcribe, and analyze meetings</p>
+                        <button class="btn-launch">Launch App</button>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <!-- Hidden app frame -->
+    <iframe id="appFrame" class="app-frame hidden"></iframe>
+
+    <script type="module">
+        import { restoreSession, isLoggedIn } from './auth.js';
+
+        // Restore session if it exists
+        restoreSession();
+
+        // Show logout button only if logged in
+        const isLogged = isLoggedIn();
+        document.getElementById('logoutBtn').style.display = isLogged ? 'block' : 'none';
+    </script>
+    <script type="module" src="portfolio.js"></script>
 </body>
 </html>

@@ -197,9 +197,8 @@ async function loadBlog() {
         const blogHTML = `
             <div class="widget-blog-preview">
                 ${topPosts.map(post => {
-                    const postLink = post.slug ? `/blog/${post.slug}.html` : '/blog.html';
                     return `
-                        <a href="${postLink}" class="blog-preview-item blog-preview-link">
+                        <a href="/blog.html?id=${post.id}" class="blog-preview-item blog-preview-link">
                             <div class="blog-preview-header">
                                 <time class="blog-preview-date">${formatDate(post.created_at)}</time>
                                 <h4 class="blog-preview-title">${extractPlainText(post.title)}</h4>
@@ -276,10 +275,8 @@ async function loadProjects() {
         const projectsHTML = `
             <div class="widget-projects-preview">
                 ${topProjects.map(project => {
-                    const projectLink = project.link || '/projects.html';
-                    const linkTarget = project.link ? 'target="_blank" rel="noopener noreferrer"' : '';
                     return `
-                        <a href="${projectLink}" ${linkTarget} class="project-preview-item project-preview-link">
+                        <a href="/projects.html?id=${project.id}" class="project-preview-item project-preview-link">
                             <div class="project-preview-header">
                                 <span class="project-preview-emoji">${getProjectEmoji(project)}</span>
                                 <h4 class="project-preview-title">${extractPlainText(project.title)}</h4>

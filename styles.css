@@ -5665,6 +5665,29 @@ body.theme-prism .empty-placeholder {
     text-transform: uppercase;
 }
 
+.header-nav {
+    display: flex;
+    gap: var(--spacing-lg);
+    flex: 1;
+    justify-content: center;
+}
+
+.header-nav .nav-link {
+    color: var(--color-text);
+    text-decoration: none;
+    font-weight: 500;
+    font-size: 0.95rem;
+    cursor: pointer;
+    transition: color 200ms ease;
+    padding: 0.5rem 1rem;
+    border-radius: var(--border-radius-sm);
+}
+
+.header-nav .nav-link:hover {
+    color: var(--color-primary);
+    background-color: var(--color-background);
+}
+
 .portfolio-nav {
     display: flex;
     gap: var(--spacing-lg);
@@ -7289,6 +7312,86 @@ body.theme-prism .card:hover {
     }
 }
 
+/* Detail View */
+.detail-view {
+    max-width: 900px;
+    margin: 0 auto;
+}
+
+.detail-header {
+    margin-bottom: var(--spacing-lg);
+}
+
+.detail-content {
+    padding: var(--spacing-lg);
+    background-color: var(--color-surface);
+    border: 1px solid var(--color-divider);
+    border-radius: var(--border-radius-lg);
+}
+
+.detail-emoji {
+    font-size: 4rem;
+    margin-bottom: var(--spacing-md);
+    display: block;
+}
+
+.detail-title {
+    font-size: 2.5rem;
+    font-weight: bold;
+    color: var(--color-text);
+    margin: 0 0 var(--spacing-lg) 0;
+    line-height: 1.4;
+}
+
+.detail-date {
+    display: block;
+    font-size: 0.95rem;
+    color: var(--color-text-secondary);
+    margin-bottom: var(--spacing-md);
+}
+
+.detail-excerpt,
+.detail-description {
+    font-size: 1.1rem;
+    color: var(--color-text-secondary);
+    margin: 0 0 var(--spacing-lg) 0;
+    line-height: 1.8;
+}
+
+.detail-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacing-sm);
+    margin: var(--spacing-lg) 0;
+}
+
+.detail-tags .tag {
+    padding: 0.5rem 1rem;
+}
+
+.detail-body {
+    font-size: 1rem;
+    line-height: 1.8;
+    color: var(--color-text);
+    margin: var(--spacing-lg) 0;
+}
+
+.detail-link {
+    display: inline-block;
+    margin-top: var(--spacing-lg);
+    padding: 0.75rem 1.5rem;
+    background-color: var(--color-primary);
+    color: white;
+    text-decoration: none;
+    border-radius: var(--border-radius-md);
+    font-weight: 500;
+    transition: opacity 0.2s ease;
+}
+
+.detail-link:hover {
+    opacity: 0.8;
+}
+
 @media (max-width: 768px) {
     .items-grid {
         grid-template-columns: 1fr;
@@ -7324,5 +7427,13 @@ body.theme-prism .card:hover {
 
     .card-emoji {
         font-size: 2rem;
+    }
+
+    .detail-title {
+        font-size: 1.75rem;
+    }
+
+    .detail-content {
+        padding: var(--spacing-md);
     }
 }

@@ -21,6 +21,10 @@ let pageType = null; // 'projects' or 'blog'
 export async function initializePage(type) {
     pageType = type;
 
+    // Check for detail view (query param id)
+    const params = new URLSearchParams(window.location.search);
+    const detailId = params.get('id');
+
     // Fetch data from Supabase
     const items = await fetchCollectionData(type);
 
@@ -32,6 +36,18 @@ export async function initializePage(type) {
     // Store and sort items
     allItems = sortChronological(items);
 
+    // If viewing a detail page for a specific item
+    if (detailId) {
+        const item = allItems.find(i => i.id === detailId);
+        if (item) {
+            renderDetailView(item);
+        } else {
+            showEmptyState();
+        }
+        return;
+    }
+
+    // Otherwise show collection grid
     // Render filter bar
     renderFilterBar();
 
@@ -180,6 +196,72 @@ function renderBlogCard(post) {
             ${post.slug ? `<a href="/blog/${post.slug}.html" class="card-link">Read More →</a>` : ''}
         </div>
     `;
+}
+
+/**
+ * Render detail view for a single item
+ * @param {Object} item - The item to display in detail
+ */
+function renderDetailView(item) {
+    const gridId = pageType === 'projects' ? 'projectsGrid' : 'blogGrid';
+    const filterBar = document.getElementById('filterBar');
+    const collectionHeader = document.querySelector('.collection-header');
+
+    // Hide filter bar and collection header in detail view
+    if (filterBar) filterBar.style.display = 'none';
+    if (collectionHeader) collectionHeader.style.display = 'none';
+
+    const grid = document.getElementById(gridId);
+    let detailHTML;
+
+    if (pageType === 'projects') {
+        const emoji = getProjectEmoji(item);
+        const title = extractPlainText(item.title);
+        const description = extractPlainText(item.description || '');
+        const tags = item.tags ? item.tags.split(',').map(tag =>
+            `<span class="tag">${tag.trim()}</span>`
+        ).join('') : '';
+
+        detailHTML = `
+            <div class="detail-view">
+                <div class="detail-header">
+                    <a href="/projects.html" class="back-link">← Back to Projects</a>
+                </div>
+                <div class="detail-content project-detail">
+                    <div class="detail-emoji">${emoji}</div>
+                    <h1 class="detail-title">${title}</h1>
+                    ${description ? `<div class="detail-description">${description}</div>` : ''}
+                    ${tags ? `<div class="detail-tags">${tags}</div>` : ''}
+                    ${item.link ? `<a href="${item.link}" target="_blank" rel="noopener noreferrer" class="detail-link">View Project →</a>` : ''}
+                </div>
+            </div>
+        `;
+    } else {
+        const date = formatDate(item.created_at);
+        const title = extractPlainText(item.title);
+        const excerpt = extractPlainText(item.excerpt || '');
+        const content = extractPlainText(item.content || item.description || '');
+        const tags = item.tags ? item.tags.split(',').map(tag =>
+            `<span class="tag">${tag.trim()}</span>`
+        ).join('') : '';
+
+        detailHTML = `
+            <div class="detail-view">
+                <div class="detail-header">
+                    <a href="/blog.html" class="back-link">← Back to Blog</a>
+                </div>
+                <div class="detail-content blog-detail">
+                    <time class="detail-date">${date}</time>
+                    <h1 class="detail-title">${title}</h1>
+                    ${excerpt ? `<p class="detail-excerpt">${excerpt}</p>` : ''}
+                    ${tags ? `<div class="detail-tags">${tags}</div>` : ''}
+                    ${content ? `<div class="detail-body">${content}</div>` : ''}
+                </div>
+            </div>
+        `;
+    }
+
+    grid.innerHTML = detailHTML;
 }
 
 /**
