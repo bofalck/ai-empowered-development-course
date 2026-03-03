@@ -11,3 +11,4 @@ powerpoint/
 .claude/
 .env
 .env.local
+.vercel

@@ -14,15 +14,14 @@
                 <span>The</span>
                 <span>Noise</span>
             </h1>
-            <nav class="header-nav">
+            <nav class="header-nav desktop-only">
                 <a href="/" class="nav-link">Home</a>
                 <a href="/projects.html" class="nav-link">Projects</a>
                 <a href="/blog.html" class="nav-link">Blog</a>
-                <a href="/admin/" class="nav-link">Admin</a>
             </nav>
-            <div class="header-actions">
+            <div class="header-actions desktop-only">
                 <div class="theme-selector" id="themeSelector">
-                    <button class="theme-btn" data-theme="default" title="Default theme">☀️</button>
+                    <button class="theme-btn" data-theme="anime" title="Anime theme">🖋️</button>
                     <button class="theme-btn" data-theme="signal" title="Signal theme">📡</button>
                     <button class="theme-btn" data-theme="dark" title="Dark theme">🌙</button>
                     <button class="theme-btn" data-theme="prism" title="Prism theme">🦄</button>
@@ -30,6 +29,32 @@
                 <div id="authActions">
                     <button id="logoutBtn" class="btn-logout" style="display: none;">Sign Out</button>
                 </div>
+            </div>
+            <button class="hamburger-btn" id="hamburgerBtn" aria-label="Open menu" aria-expanded="false">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+        </div>
+        <div class="mobile-menu" id="mobileMenu">
+            <div class="mobile-menu-inner">
+                <nav class="mobile-nav" id="mobileNav">
+                    <a href="/" class="nav-link">Home</a>
+                    <a href="/projects.html" class="nav-link">Projects</a>
+                    <a href="/blog.html" class="nav-link">Blog</a>
+                </nav>
+                <div class="mobile-menu-divider"></div>
+                <div class="mobile-theme-section">
+                    <span class="mobile-menu-label">Theme</span>
+                    <div class="theme-selector">
+                        <button class="theme-btn" data-theme="anime" title="Anime theme">🖋️</button>
+                        <button class="theme-btn" data-theme="signal" title="Signal theme">📡</button>
+                        <button class="theme-btn" data-theme="dark" title="Dark theme">🌙</button>
+                        <button class="theme-btn" data-theme="prism" title="Prism theme">🦄</button>
+                    </div>
+                </div>
+                <div class="mobile-menu-divider"></div>
+                <div class="mobile-auth" id="mobileAuthActions"></div>
             </div>
         </div>
     </header>
@@ -52,40 +77,7 @@
     </main>
 
     <script type="module">
-        import { getTheme, setTheme } from './auth.js';
-
-        // Apply theme
-        function applyTheme() {
-            const theme = getTheme();
-            document.body.className = `theme-${theme}`;
-            updateThemeButtons(theme);
-        }
-
-        // Setup theme switcher
-        function setupThemeSwitcher() {
-            const themeButtons = document.querySelectorAll('#themeSelector .theme-btn');
-            themeButtons.forEach(btn => {
-                btn.addEventListener('click', () => {
-                    const theme = btn.getAttribute('data-theme');
-                    setTheme(theme);
-                    applyTheme();
-                });
-            });
-        }
-
-        // Update theme buttons
-        function updateThemeButtons(currentTheme) {
-            const themeButtons = document.querySelectorAll('#themeSelector .theme-btn');
-            themeButtons.forEach(btn => {
-                if (btn.getAttribute('data-theme') === currentTheme) {
-                    btn.classList.add('active');
-                } else {
-                    btn.classList.remove('active');
-                }
-            });
-        }
-
-        // Initialize
+        import { applyTheme, setupThemeSwitcher } from './auth.js';
         applyTheme();
         setupThemeSwitcher();
     </script>

@@ -10,7 +10,6 @@
 </head>
 <body>
     <div class="login-container">
-        <!-- Login Panel -->
         <div id="loginPanel" class="panel active">
             <div class="panel-content">
                 <div class="header-title">
@@ -22,79 +21,86 @@
 
                 <form id="loginForm" class="form">
                     <div class="form-group">
-                        <label for="loginUsername">Username</label>
-                        <input type="text" id="loginUsername" placeholder="Enter your username" required>
+                        <label for="loginEmail">Email</label>
+                        <input type="email" id="loginEmail" placeholder="admin@example.com" autocomplete="email" required>
                     </div>
 
                     <div class="form-group">
                         <label for="loginPassword">Password</label>
-                        <input type="password" id="loginPassword" placeholder="Enter your password" required>
+                        <input type="password" id="loginPassword" placeholder="Enter your password" autocomplete="current-password" required>
                     </div>
 
                     <div class="form-group">
                         <label>Theme</label>
                         <div class="theme-selector-login">
-                            <button type="button" class="theme-btn-login" data-theme="default" title="Default theme">☀️</button>
+                            <button type="button" class="theme-btn-login" data-theme="anime" title="Anime theme">🖋️</button>
                             <button type="button" class="theme-btn-login" data-theme="signal" title="Signal in Silence theme">📡</button>
                             <button type="button" class="theme-btn-login" data-theme="dark" title="Dark theme">🌙</button>
                             <button type="button" class="theme-btn-login" data-theme="prism" title="PrismPulse theme">🦄</button>
                         </div>
                     </div>
 
-                    <button type="submit" class="btn btn-primary">Continue</button>
+                    <button type="submit" id="submitBtn" class="btn btn-primary">Sign In</button>
                 </form>
-
-                <div class="divider">or</div>
-
-                <button id="showAdminBtn" class="btn btn-secondary">Add User</button>
 
                 <div id="loginError" class="error-message hidden"></div>
             </div>
         </div>
-
-        <!-- Admin Panel -->
-        <div id="adminPanel" class="panel">
-            <div class="panel-content">
-                <div class="admin-header">
-                    <h2>Add New User</h2>
-                    <button id="backToLoginBtn" class="btn-back" title="Back to login">&times;</button>
-                </div>
-
-                <form id="addUserForm" class="form">
-                    <div class="form-group">
-                        <label for="newUsername">Username</label>
-                        <input type="text" id="newUsername" placeholder="Username" required>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="newPassword">Password</label>
-                        <input type="password" id="newPassword" placeholder="Password" required>
-                    </div>
-
-                    <div class="form-group">
-                        <label>Theme</label>
-                        <div class="theme-selector-admin">
-                            <button type="button" class="theme-btn-admin" data-theme="default" title="Default theme">☀️</button>
-                            <button type="button" class="theme-btn-admin" data-theme="signal" title="Signal in Silence theme">📡</button>
-                            <button type="button" class="theme-btn-admin" data-theme="dark" title="Dark theme">🌙</button>
-                            <button type="button" class="theme-btn-admin" data-theme="prism" title="PrismPulse theme">🦄</button>
-                        </div>
-                    </div>
-
-                    <button type="submit" class="btn btn-primary">Create</button>
-                </form>
-
-                <div id="adminMessage" class="success-message hidden"></div>
-                <div id="adminError" class="error-message hidden"></div>
-
-                <div class="users-list">
-                    <h3>Users</h3>
-                    <ul id="usersList" class="users-ul"></ul>
-                </div>
-            </div>
-        </div>
     </div>
 
-    <script src="login.js"></script>
+    <script type="module">
+        import { loginAdmin, applyTheme, setTheme } from './auth.js';
+
+        // Apply saved theme to login page body classes
+        const savedTheme = localStorage.getItem('theme') || 'anime';
+        applyLoginTheme(savedTheme);
+
+        // Theme selector
+        document.querySelectorAll('.theme-btn-login').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const theme = btn.getAttribute('data-theme');
+                applyLoginTheme(theme);
+                setTheme(theme);
+            });
+        });
+
+        function applyLoginTheme(theme) {
+            document.body.className = document.body.className
+                .replace(/theme-\w+/g, '')
+                .trim();
+            if (theme !== 'anime') {
+                document.body.classList.add(`theme-${theme}`);
+            }
+            document.querySelectorAll('.theme-btn-login').forEach(btn => {
+                btn.classList.toggle('active', btn.getAttribute('data-theme') === theme);
+            });
+        }
+
+        // Login form
+        const form = document.getElementById('loginForm');
+        const errorEl = document.getElementById('loginError');
+        const submitBtn = document.getElementById('submitBtn');
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            errorEl.classList.add('hidden');
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Signing in…';
+
+            const email = document.getElementById('loginEmail').value.trim();
+            const password = document.getElementById('loginPassword').value;
+
+            const result = await loginAdmin(email, password);
+
+            if (result.success) {
+                window.location.href = '/portfolio.html';
+            } else {
+                errorEl.textContent = result.error || 'Invalid email or password';
+                errorEl.classList.remove('hidden');
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Sign In';
+            }
+        });
+    </script>
 </body>
 </html>

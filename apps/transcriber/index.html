@@ -53,6 +53,9 @@
                     <div class="recording-actions">
                         <button id="saveMeetingBtn" class="action-button save-button">Save</button>
                         <button id="clearBtn" class="action-button clear-button">Clear</button>
+                        <div id="guestModeNotice" class="guest-mode-notice" style="display: none;">
+                            📝 Guest mode - recordings are temporary
+                        </div>
                     </div>
                 </div>
 
@@ -115,24 +118,8 @@
     <!-- Floating Control Panel at Bottom Center -->
     <div class="floating-control-panel" title="Drag to move • Double-click to reset position">
         <div class="control-panel">
-            <!-- Recording Panel: Timer + Buttons -->
-            <div class="recording-panel">
-                <div class="recording-timer" id="recordingTimer">00:00:00</div>
-                <div class="control-buttons">
-                    <button id="micButton" class="record-button" title="Start recording">
-                        Record
-                    </button>
-                    <button id="pauseButton" class="pause-button" title="Pause recording" disabled>
-                        Pause
-                    </button>
-                </div>
-            </div>
-
-            <!-- Divider -->
-            <div class="panel-divider"></div>
-
-            <!-- Capture Settings Panel: Mode + Device + Language -->
-            <div class="capture-settings-panel">
+            <!-- Settings panel: revealed by ⋯ button -->
+            <div class="capture-settings-panel" id="settingsPanel">
                 <div class="recording-mode-selector">
                     <button class="mode-btn active" data-mode="microphone" title="Record from microphone only">🎤</button>
                     <button class="mode-btn" data-mode="screen_audio" title="Record screen + audio (Zoom, Teams, etc)">🖥️</button>
@@ -151,9 +138,16 @@
                     <button class="language-btn" data-language="es" title="Spanish">🇪🇸</button>
                 </div>
             </div>
-        </div>
-        <div class="floating-panel-hint">
-            <small>🎤 Microphone • 🖥️ Screen • 🎧 Device • 🇬🇧 Language • Drag to move</small>
+
+            <!-- Primary row: Timer + Record + Pause + ⋯ -->
+            <div class="recording-panel">
+                <div class="recording-timer" id="recordingTimer">00:00:00</div>
+                <div class="control-buttons">
+                    <button id="micButton" class="record-button" title="Start recording">Record</button>
+                    <button id="pauseButton" class="pause-button" title="Pause recording" disabled>Pause</button>
+                </div>
+                <button class="settings-toggle-btn" id="settingsToggleBtn" title="Settings">⋯</button>
+            </div>
         </div>
     </div>
 
@@ -165,13 +159,13 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h3 id="alertTitle">Alert</h3>
-                <button class="modal-close-btn" onclick="closeAlert()" aria-label="Close alert dialog">×</button>
+                <button class="modal-close-btn" aria-label="Close alert dialog">×</button>
             </div>
             <div class="modal-body">
                 <p id="alertMessage" role="status"></p>
             </div>
             <div class="modal-footer">
-                <button class="modal-btn modal-btn-primary" onclick="closeAlert()">OK</button>
+                <button class="modal-btn modal-btn-primary">OK</button>
             </div>
         </div>
     </div>
@@ -181,14 +175,14 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h3 id="confirmTitle">Confirm</h3>
-                <button class="modal-close-btn" onclick="cancelConfirm()">×</button>
+                <button class="modal-close-btn">×</button>
             </div>
             <div class="modal-body">
                 <p id="confirmMessage"></p>
             </div>
             <div class="modal-footer">
-                <button class="modal-btn modal-btn-secondary" onclick="cancelConfirm()">Cancel</button>
-                <button class="modal-btn modal-btn-primary" onclick="acceptConfirm()">OK</button>
+                <button class="modal-btn modal-btn-secondary">Cancel</button>
+                <button class="modal-btn modal-btn-primary">OK</button>
             </div>
         </div>
     </div>
@@ -198,15 +192,15 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h3 id="promptTitle">Enter Value</h3>
-                <button class="modal-close-btn" onclick="cancelPrompt()">×</button>
+                <button class="modal-close-btn">×</button>
             </div>
             <div class="modal-body">
                 <p id="promptMessage"></p>
                 <input type="text" id="promptInput" class="prompt-input" placeholder="Enter value...">
             </div>
             <div class="modal-footer">
-                <button class="modal-btn modal-btn-secondary" onclick="cancelPrompt()">Cancel</button>
-                <button class="modal-btn modal-btn-primary" onclick="acceptPrompt()">OK</button>
+                <button class="modal-btn modal-btn-secondary">Cancel</button>
+                <button class="modal-btn modal-btn-primary">OK</button>
             </div>
         </div>
     </div>

@@ -1,16 +1,12 @@
 // Global authentication system for After The Noise portfolio
 import { supabase } from './supabase-client.js';
 
-// Admin credentials (in production, use proper auth)
-const ADMIN_EMAIL = 'admin@afterthenoise.com';
-const ADMIN_PASSWORD = 'admin123';
-
-// Auth state management
+// Auth state - runtime only, not persisted manually (Supabase handles its own storage)
 const authState = {
     user: null,
     isAdmin: false,
     isGuest: false,
-    theme: localStorage.getItem('theme') || 'default',
+    theme: localStorage.getItem('theme') || 'signal',
 };
 
 // Get current user
@@ -45,134 +41,220 @@ export function setTheme(theme) {
     document.body.className = document.body.className.replace(/theme-\w+/, `theme-${theme}`);
 }
 
-// Login as admin
-export async function loginAdmin(email, password) {
-    if (email === ADMIN_EMAIL && password === ADMIN_PASSWORD) {
-        authState.user = {
-            id: 'admin',
-            email: email,
-            role: 'admin',
-        };
-        authState.isAdmin = true;
-        authState.isGuest = false;
-        localStorage.setItem('authState', JSON.stringify(authState));
-        return { success: true };
-    }
-    return { success: false, error: 'Invalid credentials' };
+// Apply stored theme to current page
+export function applyTheme() {
+    document.body.className = document.body.className.replace(/theme-\w+/, '') + ` theme-${authState.theme}`;
+    updateThemeButtons(authState.theme);
 }
 
-// Login as guest
+// Update active button indicator
+export function updateThemeButtons(currentTheme) {
+    document.querySelectorAll('.theme-btn[data-theme]').forEach(btn => {
+        btn.classList.toggle('active', btn.getAttribute('data-theme') === currentTheme);
+    });
+}
+
+// Wire up theme buttons — call once per page after DOM ready
+export function setupThemeSwitcher() {
+    document.querySelectorAll('.theme-btn[data-theme]').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const theme = btn.getAttribute('data-theme');
+            setTheme(theme);
+            updateThemeButtons(theme);
+        });
+    });
+}
+
+// Wire up hamburger menu toggle
+function setupHamburger() {
+    const btn = document.getElementById('hamburgerBtn');
+    const menu = document.getElementById('mobileMenu');
+    if (!btn || !menu) return;
+
+    btn.addEventListener('click', () => {
+        const isOpen = menu.classList.toggle('open');
+        btn.classList.toggle('open', isOpen);
+        btn.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+    });
+
+    // Close on nav link click
+    menu.querySelectorAll('.nav-link').forEach(link => {
+        link.addEventListener('click', () => {
+            menu.classList.remove('open');
+            btn.classList.remove('open');
+            btn.setAttribute('aria-expanded', 'false');
+        });
+    });
+
+    // Close on outside click
+    document.addEventListener('click', (e) => {
+        if (!btn.contains(e.target) && !menu.contains(e.target)) {
+            menu.classList.remove('open');
+            btn.classList.remove('open');
+            btn.setAttribute('aria-expanded', 'false');
+        }
+    });
+}
+
+// Login as admin via Supabase Auth
+export async function loginAdmin(email, password) {
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) return { success: false, error: error.message };
+    authState.user = data.user;
+    authState.isAdmin = true;
+    authState.isGuest = false;
+    return { success: true };
+}
+
+// Login as guest (local session only, no server auth)
 export function loginGuest() {
-    authState.user = {
+    const guestUser = {
         id: 'guest_' + Date.now(),
-        email: 'guest@afterthenoise.com',
+        email: 'guest@local',
         role: 'guest',
     };
+    authState.user = guestUser;
     authState.isGuest = true;
     authState.isAdmin = false;
-    localStorage.setItem('authState', JSON.stringify(authState));
+    localStorage.setItem('guestSession', JSON.stringify(guestUser));
     return { success: true };
 }
 
 // Logout
 export function logout() {
+    if (authState.isAdmin) {
+        supabase.auth.signOut(); // fire and forget — page navigates away anyway
+    }
+    localStorage.removeItem('guestSession');
     authState.user = null;
     authState.isAdmin = false;
     authState.isGuest = false;
-    localStorage.removeItem('authState');
     window.location.href = '/';
 }
 
-// Restore session
-export function restoreSession() {
-    const saved = localStorage.getItem('authState');
-    if (saved) {
+// Restore session from Supabase (admin) or localStorage (guest)
+export async function restoreSession() {
+    // Check Supabase session first
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session?.user) {
+        authState.user = session.user;
+        authState.isAdmin = true;
+        authState.isGuest = false;
+        return true;
+    }
+
+    // Fall back to guest session
+    const savedGuest = localStorage.getItem('guestSession');
+    if (savedGuest) {
         try {
-            const restored = JSON.parse(saved);
-            Object.assign(authState, restored);
+            authState.user = JSON.parse(savedGuest);
+            authState.isGuest = true;
+            authState.isAdmin = false;
             return true;
         } catch (e) {
-            console.error('Failed to restore session:', e);
-            return false;
+            localStorage.removeItem('guestSession');
         }
     }
+
     return false;
 }
 
-// Apply theme
-function applyTheme() {
-    document.body.className = `theme-${authState.theme}`;
-}
-
-// Handle login form
-function setupLoginForm() {
-    const form = document.getElementById('loginForm');
-    const guestBtn = document.getElementById('guestBtn');
-
-    if (form) {
-        form.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const email = document.getElementById('email').value;
-            const password = document.getElementById('password').value;
-
-            const result = await loginAdmin(email, password);
-            if (result.success) {
-                window.location.href = '/portfolio.html';
-            } else {
-                alert(result.error);
-            }
-        });
-    }
-
-    if (guestBtn) {
-        guestBtn.addEventListener('click', () => {
-            loginGuest();
-            window.location.href = '/portfolio.html';
-        });
-    }
-}
-
 // Initialize
-function init() {
+async function init() {
     // Skip redirect logic if running in iframe (app context)
     const isInIframe = window.parent !== window;
 
     if (!isInIframe) {
         const pathname = window.location.pathname;
-        const isLoggedIn = restoreSession();
+        const loggedIn = await restoreSession();
 
-        // Public pages that don't require authentication (login pages and public portfolio)
-        const isPublicPage = pathname === '/' ||
-                            pathname === '/index.html' ||
-                            pathname === '/login.html' ||
-                            pathname === '/admin/' ||
-                            pathname === '/admin/index.html' ||
-                            pathname === '/projects.html' ||
-                            pathname === '/blog.html' ||
-                            pathname === '/portfolio.html';
+        // Public pages that don't require authentication
+        const isPublicPage = [
+            '/',
+            '/index.html',
+            '/login.html',
+            '/projects.html',
+            '/project.html',
+            '/blog.html',
+            '/post.html',
+            '/portfolio.html',
+        ].includes(pathname);
 
-        if (isLoggedIn) {
-            // User is logged in - redirect home to portfolio
-            if (pathname === '/' || pathname === '/index.html') {
+        if (loggedIn) {
+            // Redirect index/login to portfolio for logged-in users
+            if (pathname === '/' || pathname === '/index.html' || pathname === '/login.html') {
                 window.location.href = '/portfolio.html';
             }
-            // Let them access any page including admin pages
         } else {
-            // User is NOT logged in
-            if (isPublicPage) {
-                // Allow public pages without login
-            } else {
-                // Redirect protected pages to login
+            // Redirect protected pages to login
+            if (!isPublicPage) {
                 window.location.href = '/';
             }
         }
     } else {
-        // In iframe - just restore session without redirecting
-        restoreSession();
+        await restoreSession();
     }
 
     applyTheme();
-    setupLoginForm();
+    setupThemeSwitcher();
+    setupAdminLink();
+    setupLogoutButton();
+    setupHamburger();
+}
+
+// Inject admin nav link only for authenticated admins
+function setupAdminLink() {
+    if (!authState.isAdmin) return;
+
+    ['.header-nav', '#mobileNav'].forEach(selector => {
+        const nav = document.querySelector(selector);
+        if (!nav) return;
+        const link = document.createElement('a');
+        link.href = '/cms.html';
+        link.className = 'nav-link nav-link--admin';
+        link.textContent = 'Admin';
+        nav.appendChild(link);
+    });
+}
+
+// Wire up logout button and populate mobile auth section
+function setupLogoutButton() {
+    // Desktop logout button
+    const logoutBtn = document.getElementById('logoutBtn');
+    if (logoutBtn) {
+        if (authState.user) {
+            logoutBtn.style.display = 'block';
+            logoutBtn.addEventListener('click', logout);
+        } else {
+            logoutBtn.style.display = 'none';
+            const authActions = logoutBtn.parentElement;
+            if (authActions && !authActions.querySelector('.btn-signin')) {
+                const signinLink = document.createElement('a');
+                signinLink.href = '/login.html';
+                signinLink.className = 'btn-signin';
+                signinLink.textContent = 'Sign In';
+                authActions.appendChild(signinLink);
+            }
+        }
+    }
+
+    // Mobile auth section
+    const mobileAuth = document.getElementById('mobileAuthActions');
+    if (mobileAuth && !mobileAuth.hasChildNodes()) {
+        if (authState.user) {
+            const btn = document.createElement('button');
+            btn.className = 'btn-logout';
+            btn.textContent = 'Sign Out';
+            btn.addEventListener('click', logout);
+            mobileAuth.appendChild(btn);
+        } else {
+            const link = document.createElement('a');
+            link.href = '/login.html';
+            link.className = 'btn-signin';
+            link.textContent = 'Sign In';
+            mobileAuth.appendChild(link);
+        }
+    }
 }
 
 // Initialize on load

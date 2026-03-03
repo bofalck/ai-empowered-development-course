@@ -1,16 +1,11 @@
 // Portfolio page logic
-import {
-    getCurrentUser,
-    isLoggedIn,
-    isAdmin,
-    isGuest,
-    getTheme,
-    setTheme,
-    restoreSession,
-    logout
-} from './auth.js';
+import { applyTheme, setupThemeSwitcher } from './auth.js';
 
 import { supabase } from './supabase-client.js';
+import { blogApi, projectsApi, aboutApi } from './lib/api.js';
+import { trackAppLaunch } from './lib/events.js';
+import { APP_IDS } from './lib/types.js';
+import { formatDate as utilFormatDate, extractPlainText as utilExtractPlainText, getProjectEmoji as utilGetProjectEmoji } from './lib/utils.js';
 
 // App state
 const appState = {
@@ -59,17 +54,11 @@ function getProjectEmoji(project) {
 
 // Initialize portfolio
 async function init() {
-    // Restore session if exists (optional for public portfolio)
-    restoreSession();
-
     // Apply theme
     applyTheme();
 
     // Setup theme switcher
     setupThemeSwitcher();
-
-    // Setup logout
-    setupLogout();
 
     // Setup navigation
     setupNavigation();
@@ -77,65 +66,11 @@ async function init() {
     // Load content
     await loadBlog();
     await loadProjects();
-    loadAbout();
+    await loadAbout();
     loadCV();
 
     // Setup app launcher
     setupAppLauncher();
-
-    // Drag and drop disabled for masonry layout
-    // setupWidgetDragAndDrop();
-
-    // Widget order locked for masonry layout
-    // restoreWidgetOrder();
-
-    // Show admin CMS link if admin
-    if (isAdmin()) {
-        setupAdminCMS();
-    }
-}
-
-// Apply theme
-function applyTheme() {
-    const theme = getTheme();
-    document.body.className = `theme-${theme}`;
-    updateThemeButtons(theme);
-}
-
-// Setup theme switcher
-function setupThemeSwitcher() {
-    const themeButtons = document.querySelectorAll('#themeSelector .theme-btn');
-    themeButtons.forEach(btn => {
-        btn.addEventListener('click', () => {
-            const theme = btn.getAttribute('data-theme');
-            setTheme(theme);
-            applyTheme();
-        });
-    });
-}
-
-// Update theme buttons
-function updateThemeButtons(currentTheme) {
-    const themeButtons = document.querySelectorAll('#themeSelector .theme-btn');
-    themeButtons.forEach(btn => {
-        if (btn.getAttribute('data-theme') === currentTheme) {
-            btn.classList.add('active');
-        } else {
-            btn.classList.remove('active');
-        }
-    });
-}
-
-// Setup logout
-function setupLogout() {
-    const logoutBtn = document.getElementById('logoutBtn');
-    if (logoutBtn) {
-        logoutBtn.addEventListener('click', () => {
-            if (confirm('Are you sure you want to sign out?')) {
-                logout();
-            }
-        });
-    }
 }
 
 // Setup navigation
@@ -160,10 +95,7 @@ async function loadBlog() {
     try {
         console.log('Starting to load blog posts from Supabase...');
 
-        const { data, error } = await supabase
-            .from('blog_posts')
-            .select('*')
-            .order('created_at', { ascending: false });
+        const { data, error } = await blogApi.getAll();
 
         console.log('Blog posts query result - Data:', data, 'Error:', error);
 
@@ -238,10 +170,7 @@ async function loadProjects() {
     try {
         console.log('Starting to load projects from Supabase...');
 
-        const { data, error } = await supabase
-            .from('projects')
-            .select('*')
-            .order('created_at', { ascending: false });
+        const { data, error } = await projectsApi.getAll();
 
         console.log('Projects query result - Data:', data, 'Error:', error);
 
@@ -268,25 +197,31 @@ async function loadProjects() {
 
         console.log(`Successfully loaded ${data.length} projects`);
 
-        // Get top 3 most recent projects
-        const topProjects = data.slice(0, 3);
+        // Get top 2 most recent projects
+        const topProjects = data.slice(0, 2);
 
         // Render as a compact widget with preview of recent projects
         const projectsHTML = `
             <div class="widget-projects-preview">
                 ${topProjects.map(project => {
+                    // Use logotype if available, otherwise fall back to emoji
+                    const clientImage = project.logotype
+                        ? `<img src="${project.logotype}" alt="${extractPlainText(project.title)} logo" class="project-preview-logotype">`
+                        : `<span class="project-preview-emoji">${getProjectEmoji(project)}</span>`;
                     return `
-                        <a href="/projects.html?id=${project.id}" class="project-preview-item project-preview-link">
+                        <a href="/project.html?id=${project.id}" class="project-preview-item project-preview-link">
                             <div class="project-preview-header">
-                                <span class="project-preview-emoji">${getProjectEmoji(project)}</span>
+                                ${clientImage}
                                 <h4 class="project-preview-title">${extractPlainText(project.title)}</h4>
                             </div>
-                            ${project.description ? `
+                            ${project.subtitle ? `
+                                <div class="project-preview-description">${project.subtitle}</div>
+                            ` : project.description ? `
                                 <div class="project-preview-description">${extractPlainText(project.description)}</div>
                             ` : ''}
                             ${project.tags ? `
                                 <div class="project-preview-tags">
-                                    ${project.tags.split(',').slice(0, 2).map(tag =>
+                                    ${project.tags.split(',').slice(0, 5).map(tag =>
                                         `<span class="project-preview-tag">${tag.trim()}</span>`
                                     ).join('')}
                                 </div>
@@ -310,32 +245,65 @@ async function loadProjects() {
     }
 }
 
-// Load about content
-function loadAbout() {
-    const container = document.getElementById('aboutContainer');
+// Social link SVG icons
+const SOCIAL_ICONS = {
+    linkedin: `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14zm-.5 15.5v-5.3a3.26 3.26 0 0 0-3.26-3.26c-.85 0-1.84.52-2.32 1.39v-1.2h-2.5v8.5h2.5v-4.34c0-.77.62-1.4 1.4-1.4.77 0 1.4.63 1.4 1.4v4.34h2.5zM6.88 8.56a1.68 1.68 0 0 0 1.68-1.68c0-.93-.75-1.69-1.68-1.69-.93 0-1.69.76-1.69 1.69 0 .93.76 1.68 1.69 1.68zm1.39 9.94v-8.5H5.5v8.5h2.77z"/></svg>`,
+    instagram: `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.07 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zM5.838 12a6.162 6.162 0 1 1 12.324 0 6.162 6.162 0 0 1-12.324 0zM12 16a4 4 0 1 1 0-8 4 4 0 0 1 0 8zm4.965-10.322a1.44 1.44 0 1 1 2.881.001 1.44 1.44 0 0 1-2.881-.001z"/></svg>`,
+    medium: `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M13.54 12a6.8 6.8 0 01-6.77 6.82A6.8 6.8 0 010 12a6.8 6.8 0 016.77-6.82A6.8 6.8 0 0113.54 12zM20.96 12c0 3.54-1.51 6.42-3.38 6.42-1.87 0-3.39-2.88-3.39-6.42s1.52-6.42 3.39-6.42c1.87 0 3.38 2.88 3.38 6.42M24 12c0 3.17-.53 5.75-1.19 5.75-.66 0-1.19-2.58-1.19-5.75s.53-5.75 1.19-5.75c.66 0 1.19 2.58 1.19 5.75z"/></svg>`,
+    bluesky: `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 10.8c-1.087-2.114-4.046-6.053-6.798-7.995C2.566.944 1.561 1.266.902 1.565.139 1.908 0 3.08 0 3.768c0 .69.378 5.65.624 6.479.815 2.736 3.713 3.66 6.383 3.364.136-.02.275-.039.415-.056-.138.022-.276.04-.415.056-3.912.58-7.387 2.005-2.83 7.078 5.013 5.19 6.87-1.113 7.823-4.308.953 3.195 2.05 9.271 7.733 4.308 4.267-4.308 1.172-6.498-2.74-7.078a8.741 8.741 0 0 1-.415-.056c.14.017.279.036.415.056 2.67.297 5.568-.628 6.383-3.364.246-.828.624-5.79.624-6.478 0-.69-.139-1.861-.902-2.204-.659-.299-1.664-.62-4.3 1.24C16.046 4.748 13.087 8.687 12 10.8Z"/></svg>`,
+};
 
-    container.innerHTML = `
+function renderAbout(profile) {
+    const socialLinks = [
+        { key: 'linkedin_url', label: 'LinkedIn', icon: SOCIAL_ICONS.linkedin },
+        { key: 'instagram_url', label: 'Instagram', icon: SOCIAL_ICONS.instagram },
+        { key: 'medium_url', label: 'Medium', icon: SOCIAL_ICONS.medium },
+        { key: 'bluesky_url', label: 'Bluesky', icon: SOCIAL_ICONS.bluesky },
+    ]
+        .filter(({ key }) => profile[key])
+        .map(({ key, label, icon }) => `
+            <a href="${profile[key]}" target="_blank" rel="noopener noreferrer"
+               class="social-link" title="${label}" aria-label="Visit ${label} profile">
+                ${icon}
+            </a>
+        `)
+        .join('');
+
+    return `
         <div class="about-content">
             <div class="about-image">
-                <img src="/assets/bobby.png" alt="Bobby Falck" />
+                <img src="${profile.photo_url || '/images/bobby.png'}" alt="${profile.name || 'Profile photo'}" />
             </div>
             <div class="about-text-content">
-                <h3 class="about-greeting">Hi, I'm Bobby <span class="waving-hand">👋</span></h3>
-                <p>Strategic leader with 11+ years shaping digital transformation, AI Enablement, scaling organizations, and aligning design, technology, and business. I build high-performing teams and coach leaders through a style that's playful, safe, and caring, creating environments where people thrive, ideas grow, and outcomes align with company vision.</p>
+                <h3 class="about-greeting">Hi, I'm ${profile.name || 'Bobby'} <span class="waving-hand">👋</span></h3>
+                <div class="about-bio">${profile.bio || ''}</div>
             </div>
-            <div class="about-social-links">
-                <a href="https://www.linkedin.com/in/bobby-falck/" target="_blank" rel="noopener noreferrer" class="social-link" title="LinkedIn" aria-label="Visit LinkedIn profile">
-                    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14zm-.5 15.5v-5.3a3.26 3.26 0 0 0-3.26-3.26c-.85 0-1.84.52-2.32 1.39v-1.2h-2.5v8.5h2.5v-4.34c0-.77.62-1.4 1.4-1.4.77 0 1.4.63 1.4 1.4v4.34h2.5zM6.88 8.56a1.68 1.68 0 0 0 1.68-1.68c0-.93-.75-1.69-1.68-1.69-.93 0-1.69.76-1.69 1.69 0 .93.76 1.68 1.69 1.68zm1.39 9.94v-8.5H5.5v8.5h2.77z"/></svg>
-                </a>
-                <a href="https://www.instagram.com/samuraii_bob/" target="_blank" rel="noopener noreferrer" class="social-link" title="Instagram" aria-label="Visit Instagram profile">
-                    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.07 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zM5.838 12a6.162 6.162 0 1 1 12.324 0 6.162 6.162 0 0 1-12.324 0zM12 16a4 4 0 1 1 0-8 4 4 0 0 1 0 8zm4.965-10.322a1.44 1.44 0 1 1 2.881.001 1.44 1.44 0 0 1-2.881-.001z"/></svg>
-                </a>
-                <a href="https://medium.com/@bofalck" target="_blank" rel="noopener noreferrer" class="social-link" title="Medium" aria-label="Visit Medium profile">
-                    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M13.54 12a6.8 6.8 0 01-6.77 6.82A6.8 6.8 0 010 12a6.8 6.8 0 016.77-6.82A6.8 6.8 0 0113.54 12zM20.96 12c0 3.54-1.51 6.42-3.38 6.42-1.87 0-3.39-2.88-3.39-6.42s1.52-6.42 3.39-6.42c1.87 0 3.38 2.88 3.38 6.42M24 12c0 3.17-.53 5.75-1.19 5.75-.66 0-1.19-2.58-1.19-5.75s.53-5.75 1.19-5.75c.66 0 1.19 2.58 1.19 5.75z"/></svg>
-                </a>
-            </div>
+            ${socialLinks ? `<div class="about-social-links">${socialLinks}</div>` : ''}
         </div>
     `;
+}
+
+// Load about content from database
+async function loadAbout() {
+    const container = document.getElementById('aboutContainer');
+
+    const { data: profile, error } = await aboutApi.get();
+
+    if (error || !profile) {
+        // Fallback to static content if DB not yet set up
+        container.innerHTML = renderAbout({
+            name: 'Bobby',
+            photo_url: '/images/bobby.png',
+            bio: `<p>Strategic leader and Design Engineer, with 11+ years shaping digital transformation, M&A, AI Enablement, scaling organizations, and aligning design, technology, and business. I build high-performing teams and coach leaders through a style that's playful, safe, and caring, creating environments where people thrive, ideas grow, and outcomes align with company vision.</p>`,
+            linkedin_url: 'https://www.linkedin.com/in/bobby-falck/',
+            instagram_url: 'https://www.instagram.com/samuraii_bob/',
+            medium_url: 'https://medium.com/@bofalck',
+            bluesky_url: '',
+        });
+        return;
+    }
+
+    container.innerHTML = renderAbout(profile);
 }
 
 // Load CV
@@ -363,15 +331,19 @@ function setupAppLauncher() {
 // Launch app
 function launchApp(appName) {
     if (appName === 'transcriber') {
-        // Hide portfolio
+        trackAppLaunch(APP_IDS.TRANSCRIBER);
+
         document.querySelector('header').style.display = 'none';
         document.querySelector('main').style.display = 'none';
 
-        // Show app frame
         const appFrame = document.getElementById('appFrame');
         appFrame.src = '/apps/transcriber/index.html';
         appFrame.classList.remove('hidden');
         appState.currentApp = 'transcriber';
+    }
+
+    if (appName === 'magical-unicorns') {
+        trackAppLaunch(APP_IDS.MAGICAL_UNICORNS);
     }
 }
 
@@ -395,16 +367,6 @@ window.addEventListener('message', (event) => {
         closeApp();
     }
 });
-
-// Setup admin CMS
-function setupAdminCMS() {
-    const header = document.querySelector('.header-actions');
-    const cmsLink = document.createElement('a');
-    cmsLink.href = '/cms.html';
-    cmsLink.className = 'btn-admin-cms';
-    cmsLink.textContent = 'CMS';
-    header.insertBefore(cmsLink, header.firstChild);
-}
 
 // Setup drag and drop for widgets
 function setupWidgetDragAndDrop() {

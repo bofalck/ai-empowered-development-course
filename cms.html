@@ -8,6 +8,9 @@
     <!-- Quill Rich Text Editor -->
     <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
     <script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
+    <!-- Cropperjs for image cropping -->
+    <link href="https://cdn.jsdelivr.net/npm/cropperjs@1/dist/cropper.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/cropperjs@1/dist/cropper.js"></script>
 </head>
 <body>
     <header class="cms-header">
@@ -15,11 +18,10 @@
             <h1>Content Management</h1>
             <div class="header-actions">
                 <div class="theme-selector" id="themeSelector">
-                    <button class="theme-btn" data-theme="default" title="Default theme">☀️</button>
+                    <button class="theme-btn" data-theme="anime" title="Anime theme">🖋️</button>
                     <button class="theme-btn" data-theme="signal" title="Signal theme">📡</button>
                     <button class="theme-btn" data-theme="dark" title="Dark theme">🌙</button>
                     <button class="theme-btn" data-theme="prism" title="Prism theme">🦄</button>
-                    <button class="theme-btn" data-theme="pulse" title="Pulse theme">💫</button>
                 </div>
                 <a href="/portfolio.html" class="btn-back">← Back to Portfolio</a>
             </div>
@@ -31,6 +33,8 @@
         <div class="cms-tabs">
             <button class="cms-tab active" data-tab="blog">Blog Posts</button>
             <button class="cms-tab" data-tab="projects">Projects</button>
+            <button class="cms-tab" data-tab="about">About</button>
+            <button class="cms-tab" data-tab="analytics">Analytics</button>
         </div>
 
         <!-- Blog Tab -->
@@ -50,11 +54,6 @@
                     <div class="form-group">
                         <label>Title</label>
                         <input type="text" id="blogTitle" placeholder="Enter blog post title" required>
-                    </div>
-
-                    <div class="form-group">
-                        <label>Description</label>
-                        <input type="text" id="blogDescription" placeholder="Enter blog post description" required>
                     </div>
 
                     <div class="form-group">
@@ -101,6 +100,16 @@
                     </div>
 
                     <div class="form-group">
+                        <label>Subtitle (meta-text/excerpt)</label>
+                        <input type="text" id="projectSubtitle" placeholder="e.g., Owning the Concept Behind...">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="projectLogotype">Client Logotype URL</label>
+                        <input type="url" id="projectLogotype" placeholder="https://example.com/logo.png">
+                    </div>
+
+                    <div class="form-group">
                         <label>Description</label>
                         <div id="projectDescriptionEditor" style="height: 200px;"></div>
                         <input type="hidden" id="projectDescription" required>
@@ -123,6 +132,73 @@
                 </form>
             </div>
         </section>
+
+        <!-- About Tab -->
+        <section id="about-tab" class="cms-tab-content">
+            <h2>About Me</h2>
+            <div id="aboutForm" class="cms-form" style="display: block;">
+                <form id="aboutFormElement">
+                    <div class="form-group">
+                        <label for="aboutName">Name</label>
+                        <input type="text" id="aboutName" placeholder="Your name">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="aboutPhotoUrl">Photo URL</label>
+                        <input type="url" id="aboutPhotoUrl" placeholder="https://... or /images/bobby.png">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="aboutBio">Bio</label>
+                        <div id="aboutBioEditor" style="height: 200px;"></div>
+                        <input type="hidden" id="aboutBio">
+                    </div>
+
+                    <h4 style="margin: 1.5rem 0 1rem;">Social Links</h4>
+
+                    <div class="form-group">
+                        <label for="aboutLinkedin">LinkedIn URL</label>
+                        <input type="url" id="aboutLinkedin" placeholder="https://www.linkedin.com/in/...">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="aboutInstagram">Instagram URL</label>
+                        <input type="url" id="aboutInstagram" placeholder="https://www.instagram.com/...">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="aboutMedium">Medium URL</label>
+                        <input type="url" id="aboutMedium" placeholder="https://medium.com/@...">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="aboutBluesky">Bluesky URL</label>
+                        <input type="url" id="aboutBluesky" placeholder="https://bsky.app/profile/...">
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="submit" class="btn-save">Save About</button>
+                    </div>
+                </form>
+            </div>
+        </section>
+
+        <!-- Analytics Tab -->
+        <section id="analytics-tab" class="cms-tab-content">
+            <h2>Analytics</h2>
+
+            <div id="appAnalytics" class="analytics-section">
+                <p class="cms-empty" style="color: #9CA3AF;">Loading app analytics...</p>
+            </div>
+
+            <div id="blogAnalytics" class="analytics-section">
+                <p class="cms-empty" style="color: #9CA3AF;">Loading blog analytics...</p>
+            </div>
+
+            <div id="projectAnalytics" class="analytics-section">
+                <p class="cms-empty" style="color: #9CA3AF;">Loading project analytics...</p>
+            </div>
+        </section>
     </main>
 
     <!-- CMS Modal Overlay -->
@@ -133,7 +209,20 @@
         <h4 id="cmsModalTitle">Success</h4>
         <p id="cmsModalMessage"></p>
         <div class="cms-modal-actions">
-            <button onclick="closeCmsModal()">OK</button>
+            <button id="cmsModalTryAgain" onclick="closeCmsModal()" style="display: none;">Try Again</button>
+            <button id="cmsModalOk" onclick="closeCmsModal()">OK</button>
+        </div>
+    </div>
+
+    <!-- Image Crop Modal -->
+    <div id="cropModal" class="cms-modal hidden" style="max-width: 90vw; max-height: 90vh;">
+        <h4>Crop Image</h4>
+        <div id="cropContainer" style="position: relative; max-height: 60vh; overflow: hidden; margin-bottom: 1rem;">
+            <img id="cropImage" src="" style="max-width: 100%; display: block;">
+        </div>
+        <div class="cms-modal-actions" style="display: flex; gap: 0.5rem;">
+            <button id="cropBtn" class="btn-save" style="flex: 1;">Crop</button>
+            <button id="cancelCropBtn" class="btn-cancel" style="flex: 1;">Cancel</button>
         </div>
     </div>
 

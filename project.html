@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Project - After The Noise</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header class="portfolio-header">
+        <div class="header-content">
+            <h1 class="site-title">
+                <span>After</span>
+                <span>The</span>
+                <span>Noise</span>
+            </h1>
+            <nav class="header-nav">
+                <a href="/" class="nav-link">Home</a>
+                <a href="/projects.html" class="nav-link">Projects</a>
+                <a href="/blog.html" class="nav-link">Blog</a>
+            </nav>
+            <div class="header-actions">
+                <div class="theme-selector" id="themeSelector">
+                    <button class="theme-btn" data-theme="anime" title="Anime theme">🖋️</button>
+                    <button class="theme-btn" data-theme="signal" title="Signal theme">📡</button>
+                    <button class="theme-btn" data-theme="dark" title="Dark theme">🌙</button>
+                    <button class="theme-btn" data-theme="prism" title="Prism theme">🦄</button>
+                </div>
+                <div id="authActions">
+                    <button id="logoutBtn" class="btn-logout" style="display: none;">Sign Out</button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="portfolio-main">
+        <div id="projectDetail" class="project-detail-page">
+            <div class="loading-spinner">
+                <p>Loading project...</p>
+            </div>
+        </div>
+    </main>
+
+    <script type="module">
+        import { applyTheme, setupThemeSwitcher } from './auth.js';
+        applyTheme();
+        setupThemeSwitcher();
+    </script>
+    <script type="module" src="project-detail.js"></script>
+</body>
+</html>

@@ -407,12 +407,12 @@ function normalizeActionItems(items) {
 
 // Create recording unicorn image
 function createRecordingUnicornSvg() {
-    return `<img src="/assets/unicorn-recording.png" alt="Singing unicorn with microphone" style="max-width: 180px; max-height: 200px; display: block; margin: 0 auto;">`;
+    return `<img src="/images/unicorn-recording.png" alt="Singing unicorn with microphone" style="max-width: 180px; max-height: 200px; display: block; margin: 0 auto;">`;
 }
 
 // Create scholarly unicorn image
 function createScholarlyUnicornSvg() {
-    return `<img src="/assets/unicorn-analysis.png" alt="Scholarly unicorn with glasses and books" style="max-width: 180px; max-height: 200px; display: block; margin: 0 auto;">`;
+    return `<img src="/images/unicorn-analysis.png" alt="Scholarly unicorn with glasses and books" style="max-width: 180px; max-height: 200px; display: block; margin: 0 auto;">`;
 }
 
 // Get meeting from array by ID

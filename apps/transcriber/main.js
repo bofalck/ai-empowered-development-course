@@ -1,10 +1,13 @@
-import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.47.0/+esm';
-import { getTheme, restoreSession } from '../../auth.js';
+import { createClient } from '@supabase/supabase-js';
+import { getTheme, restoreSession, isLoggedIn } from '../../auth.js';
 
 // Supabase client
 const supabaseUrl = 'https://xqpqcuvvjgnjtqmhrtku.supabase.co';
 const supabaseKey = 'sb_publishable_XsrMMvQjHZcj6Cql1xA5Fw_nF9nfubb';
 const supabase = createClient(supabaseUrl, supabaseKey);
+
+// Check if in client-side only mode (not authenticated)
+let isClientSideOnly = false;
 
 // Recording state
 let isRecording = false;
@@ -214,16 +217,22 @@ function logout() {
 
 // Check if user is logged in
 function checkAuth() {
-    const session = getSession();
-    if (!session) {
-        // Only redirect if not in iframe
-        const isInIframe = window.parent !== window;
-        if (!isInIframe) {
-            window.location.href = 'login.html';
-        }
+    // Restore session from parent (portfolio)
+    restoreSession();
+
+    const isAuthenticated = isLoggedIn();
+    if (!isAuthenticated) {
+        // In guest mode - client-side only
+        isClientSideOnly = true;
         return false;
     }
-    currentUser = session;
+
+    // Authenticated user
+    isClientSideOnly = false;
+    const session = getSession();
+    if (session) {
+        currentUser = session;
+    }
     return true;
 }
 
@@ -429,12 +438,12 @@ function normalizeActionItems(items) {
 
 // Create recording unicorn image
 function createRecordingUnicornSvg() {
-    return `<img src="/assets/unicorn-recording.png" alt="Singing unicorn with microphone" style="max-width: 180px; max-height: 200px; display: block; margin: 0 auto;">`;
+    return `<img src="/images/unicorn-recording.png" alt="Singing unicorn with microphone" style="max-width: 180px; max-height: 200px; display: block; margin: 0 auto;">`;
 }
 
 // Create scholarly unicorn image
 function createScholarlyUnicornSvg() {
-    return `<img src="/assets/unicorn-analysis.png" alt="Scholarly unicorn with glasses and books" style="max-width: 180px; max-height: 200px; display: block; margin: 0 auto;">`;
+    return `<img src="/images/unicorn-analysis.png" alt="Scholarly unicorn with glasses and books" style="max-width: 180px; max-height: 200px; display: block; margin: 0 auto;">`;
 }
 
 // Get meeting from array by ID
@@ -571,7 +580,7 @@ function setTheme(themeName) {
 // Update active state on theme buttons
 function updateThemeButtons() {
     const buttons = document.querySelectorAll('.theme-btn');
-    const currentTheme = localStorage.getItem('theme') || 'default';
+    const currentTheme = localStorage.getItem('theme') || 'signal';
 
     buttons.forEach(btn => {
         btn.classList.remove('active');
@@ -584,7 +593,7 @@ function updateThemeButtons() {
 // Load theme preference from localStorage
 function loadTheme() {
     const body = document.body;
-    const savedTheme = localStorage.getItem('theme') || 'default';
+    const savedTheme = localStorage.getItem('theme') || 'signal';
 
     // Remove all theme classes first
     body.classList.remove('theme-signal', 'theme-dark', 'theme-prism');
@@ -605,6 +614,14 @@ function loadTheme() {
 // Initialize Web Speech API
 // Load meetings from Supabase
 async function loadMeetings() {
+    // In guest mode - load from session storage
+    if (isClientSideOnly) {
+        const guestMeetings = loadGuestMeetings();
+        savedMeetings = guestMeetings;
+        renderMeetingHistory();
+        return;
+    }
+
     const { data, error } = await supabase
         .from('meetings')
         .select('*')
@@ -619,9 +636,56 @@ async function loadMeetings() {
     renderMeetingHistory();
 }
 
+// Load meetings from session storage (guest mode)
+function loadGuestMeetings() {
+    try {
+        const stored = sessionStorage.getItem('guestMeetings');
+        return stored ? JSON.parse(stored) : [];
+    } catch (e) {
+        console.error('Error loading guest meetings:', e);
+        return [];
+    }
+}
+
+// Save meetings to session storage (guest mode)
+function saveGuestMeetings(meetings) {
+    try {
+        sessionStorage.setItem('guestMeetings', JSON.stringify(meetings));
+    } catch (e) {
+        console.error('Error saving guest meetings:', e);
+    }
+}
+
 // Save meeting to Supabase and auto-analyze
 async function saveMeetingToSupabase(title, transcript, segments, duration, metadata = {}) {
     try {
+        // In guest mode - save locally to session storage
+        if (isClientSideOnly) {
+            const guestMeeting = {
+                id: `guest-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+                title,
+                transcript,
+                segments,
+                duration,
+                audio_url: null,
+                recording_mode: recordingMode,
+                language: transcriptionLanguage,
+                created_at: new Date().toISOString(),
+                tags: [],
+                summary: null,
+                key_points: null,
+                analysis: null,
+            };
+
+            // Load existing guest meetings and add new one
+            const guestMeetings = loadGuestMeetings();
+            guestMeetings.unshift(guestMeeting); // Add to beginning (newest first)
+            saveGuestMeetings(guestMeetings);
+
+            console.log('Guest meeting saved to session storage:', guestMeeting);
+            return guestMeeting;
+        }
+
         let audioUrl = null;
 
         // Upload first segment or combined audio (for backward compatibility)
@@ -1513,6 +1577,12 @@ function updateTimer() {
 }
 
 async function saveMeeting() {
+    // Check if in guest mode
+    if (isClientSideOnly) {
+        await showAlert('Recordings are temporary in guest mode. Log in to save permanently.', 'Guest Mode');
+        return;
+    }
+
     if (currentTranscript.trim() === '') {
         await showAlert('No transcript to save');
         return;
@@ -1956,16 +2026,22 @@ function startInlineEdit(meetingId, titleDiv) {
 // Update meeting title in database
 async function updateMeetingTitle(meetingId, newTitle) {
     try {
-        const { error } = await supabase
-            .from('meetings')
-            .update({ title: newTitle })
-            .eq('id', meetingId);
-
-        if (error) throw error;
-
         const meeting = getMeeting(meetingId);
         if (meeting) {
             meeting.title = newTitle;
+        }
+
+        // In guest mode - update session storage
+        if (isClientSideOnly) {
+            saveGuestMeetings(savedMeetings);
+        } else {
+            // Update in Supabase
+            const { error } = await supabase
+                .from('meetings')
+                .update({ title: newTitle })
+                .eq('id', meetingId);
+
+            if (error) throw error;
         }
 
         // Update modal if it's open
@@ -2493,7 +2569,7 @@ function escapeHtml(text) {
 
 document.addEventListener('DOMContentLoaded', () => {
     // Check if user is logged in
-    if (!checkAuth()) return;
+    checkAuth();
 
     init();
 
@@ -2520,12 +2596,38 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 async function init() {
-    // Clear theme from localStorage - always reset to default on page load
-    localStorage.removeItem('theme');
+    // Load saved theme preference
+    loadTheme();
 
-    // Display current user
-    if (currentUser) {
-        document.getElementById('currentUser').textContent = `Logged in as: ${currentUser.username}`;
+    // Handle guest mode (client-side only)
+    if (isClientSideOnly) {
+        // Show guest mode notice
+        const guestNotice = document.getElementById('guestModeNotice');
+        if (guestNotice) {
+            guestNotice.style.display = 'block';
+        }
+
+        // Keep save button enabled for guest mode - recordings are stored locally
+        const saveBtn = document.getElementById('saveMeetingBtn');
+        if (saveBtn) {
+            saveBtn.disabled = false;
+            saveBtn.style.opacity = '1';
+            saveBtn.title = 'Save meeting (stored locally for this session)';
+        }
+
+        // Archive is now visible in guest mode - shows empty state until recordings are saved
+        // Removed: Hide archive column code - now visible with empty state
+
+        // Update current user display
+        const currentUserEl = document.getElementById('currentUser');
+        if (currentUserEl) {
+            currentUserEl.textContent = 'Guest mode - recordings stored locally';
+        }
+    } else {
+        // Display current user
+        if (currentUser) {
+            document.getElementById('currentUser').textContent = `Logged in as: ${currentUser.username}`;
+        }
     }
 
     // Load user's theme preference if available
@@ -2604,6 +2706,26 @@ async function init() {
         }
     });
 
+    // Wire up themed modal dialog buttons
+    const alertCloseBtn = document.querySelector('#alertModal .modal-close-btn');
+    const alertOkBtn = document.querySelector('#alertModal .modal-btn-primary');
+    if (alertCloseBtn) alertCloseBtn.addEventListener('click', closeAlert);
+    if (alertOkBtn) alertOkBtn.addEventListener('click', closeAlert);
+
+    const confirmCloseBtn = document.querySelector('#confirmModal .modal-close-btn');
+    const confirmCancelBtn = document.querySelector('#confirmModal .modal-btn-secondary');
+    const confirmOkBtn = document.querySelector('#confirmModal .modal-btn-primary');
+    if (confirmCloseBtn) confirmCloseBtn.addEventListener('click', cancelConfirm);
+    if (confirmCancelBtn) confirmCancelBtn.addEventListener('click', cancelConfirm);
+    if (confirmOkBtn) confirmOkBtn.addEventListener('click', acceptConfirm);
+
+    const promptCloseBtn = document.querySelector('#promptModal .modal-close-btn');
+    const promptCancelBtn = document.querySelector('#promptModal .modal-btn-secondary');
+    const promptOkBtn = document.querySelector('#promptModal .modal-btn-primary');
+    if (promptCloseBtn) promptCloseBtn.addEventListener('click', cancelPrompt);
+    if (promptCancelBtn) promptCancelBtn.addEventListener('click', cancelPrompt);
+    if (promptOkBtn) promptOkBtn.addEventListener('click', acceptPrompt);
+
     // Wire up edit transcript buttons
     document.getElementById('editTranscriptBtn').addEventListener('click', handleEditTranscriptClick);
     document.getElementById('saveEditBtn').addEventListener('click', saveTranscriptEdit);
@@ -2627,6 +2749,17 @@ async function init() {
         toggleBtn.addEventListener('click', toggleControlPanel);
     }
 
+    // Wire up ⋯ settings toggle button
+    const settingsToggleBtn = document.getElementById('settingsToggleBtn');
+    const settingsPanel = document.getElementById('settingsPanel');
+    if (settingsToggleBtn && settingsPanel) {
+        settingsToggleBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const isOpen = settingsPanel.classList.toggle('open');
+            settingsToggleBtn.classList.toggle('active', isOpen);
+        });
+    }
+
     // Load control panel visibility preference
     loadControlPanelVisibility();
 
@@ -2636,8 +2769,8 @@ async function init() {
     // Load saved position from sessionStorage
     loadControlPanelPosition();
 
-    // Wire up theme buttons
-    const themeButtons = document.querySelectorAll('.theme-btn');
+    // Wire up theme buttons (only buttons with data-theme attribute)
+    const themeButtons = document.querySelectorAll('.theme-btn[data-theme]');
     themeButtons.forEach(btn => {
         btn.addEventListener('click', () => {
             const themeName = btn.getAttribute('data-theme');
