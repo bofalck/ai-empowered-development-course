@@ -6499,16 +6499,6 @@ body.theme-prism .empty-placeholder {
     font-size: 3.5rem;
 }
 
-.app-card-icon {
-    font-size: 2.5rem;
-    display: inline-block;
-    transform-origin: 70% 70%;
-}
-
-.app-card:hover .app-card-icon {
-    animation: wave-hover 1500ms ease-in-out forwards;
-}
-
 .app-card p {
     color: var(--color-text-secondary);
     font-size: 0.95rem;

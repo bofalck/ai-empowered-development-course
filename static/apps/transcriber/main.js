@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
-import { getTheme, restoreSession, isLoggedIn } from '../../auth.js';
+import { getTheme, restoreSession, isLoggedIn } from './auth.js';
 
 // Supabase client
 const supabaseUrl = 'https://xqpqcuvvjgnjtqmhrtku.supabase.co';
@@ -8,6 +8,9 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 
 // Check if in client-side only mode (not authenticated)
 let isClientSideOnly = false;
+
+// OpenAI API key (loaded at startup from server config endpoint)
+let openaiApiKey = '';
 
 // Recording state
 let isRecording = false;
@@ -771,7 +774,7 @@ async function analyzeMeeting(meetingId, transcript) {
         const status = document.getElementById('recordingStatus');
         status.textContent = 'Analyzing meeting...';
 
-        const apiKey = import.meta.env.VITE_OPENAI_API_KEY;
+        const apiKey = openaiApiKey;
         if (!apiKey) {
             throw new Error('API key not configured');
         }
@@ -921,7 +924,7 @@ async function sendAudioToWhisper(audioBlob, language = 'en') {
         status.textContent = 'Transcribing...';
         loader.classList.add('active');
 
-        const apiKey = import.meta.env.VITE_OPENAI_API_KEY;
+        const apiKey = openaiApiKey;
         console.log('API Key available:', !!apiKey);
         if (!apiKey) {
             throw new Error('API key not configured');
@@ -2615,7 +2618,16 @@ function escapeHtml(text) {
     return div.innerHTML;
 }
 
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
+    // Load OpenAI API key from server config
+    try {
+        const res = await fetch('/api/transcriber-config');
+        if (res.ok) {
+            const cfg = await res.json();
+            openaiApiKey = cfg.key || '';
+        }
+    } catch { /* key stays empty — transcription will show "API key not configured" */ }
+
     // Check if user is logged in
     checkAuth();
 
