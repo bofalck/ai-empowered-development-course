@@ -131,28 +131,26 @@
                 <div class="blog-content-text">{@html post.content ?? ''}</div>
             </div>
 
-            <div class="blog-share-section">
-                <div class="blog-share-buttons">
-                    <button class="share-btn" onclick={shareNative}>
+            <div class="blog-share-buttons">
+                <div class="blog-share-buttons-group">
+                    <button class="share-button" onclick={shareNative}>
                         {copyConfirmed ? '✓ Copied!' : '🔗 Share'}
                     </button>
-                    <button class="share-btn share-bluesky" onclick={shareBluesky}>🦋 Bluesky</button>
-                    <button class="share-btn share-linkedin" onclick={shareLinkedIn}>in LinkedIn</button>
+                    <button class="share-button" onclick={shareBluesky}>🦋 Bluesky</button>
+                    <button class="share-button" onclick={shareLinkedIn}>in LinkedIn</button>
                 </div>
             </div>
 
-            <div class="blog-reactions-section">
-                <div class="reactions-bar">
-                    {#each REACTIONS as emoji}
-                        <button
-                            class="reaction-btn"
-                            class:active={myReactions.has(emoji)}
-                            onclick={() => toggleReaction(emoji)}
-                        >
-                            {emoji} <span class="reaction-count">{counts[emoji] ?? 0}</span>
-                        </button>
-                    {/each}
-                </div>
+            <div class="blog-reactions">
+                {#each REACTIONS as emoji}
+                    <button
+                        class="reaction-button"
+                        class:active={myReactions.has(emoji)}
+                        onclick={() => toggleReaction(emoji)}
+                    >
+                        {emoji} <span class="reaction-count">{counts[emoji] ?? 0}</span>
+                    </button>
+                {/each}
             </div>
 
             <div class="blog-detail-footer">
