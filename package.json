@@ -5,9 +5,10 @@
   "main": "app.js",
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "vite dev",
     "build": "vite build",
     "preview": "vite preview",
+    "check": "svelte-kit sync && svelte-check --tsconfig ./jsconfig.json",
     "test": "vitest",
     "test:ui": "vitest --ui",
     "test:run": "vitest run",
@@ -25,11 +26,14 @@
   "author": "",
   "license": "MIT",
   "devDependencies": {
+    "@sveltejs/adapter-vercel": "^6.3.3",
+    "@sveltejs/kit": "^2.53.4",
     "@vitest/ui": "^4.0.18",
     "eslint": "^8.54.0",
     "jsdom": "^28.1.0",
     "stylelint": "^15.11.0",
     "stylelint-config-standard": "^34.0.0",
+    "svelte": "^5.53.7",
     "vite": "^7.3.1",
     "vitest": "^4.0.18"
   },
