@@ -874,7 +874,9 @@ function initRecordingControls() {
             const status = document.getElementById('recordingStatus');
             if (!isRecording && !isPaused) {
                 if (recordingMode === 'screen_audio') {
-                    status.textContent = 'Ready (Screen + Audio)';
+                    status.textContent = 'Ready (Screen + Microphone)';
+                } else if (recordingMode === 'tab_audio') {
+                    status.textContent = 'Ready (Tab Audio)';
                 } else {
                     status.textContent = 'Ready (Microphone)';
                 }
@@ -1145,7 +1147,14 @@ async function saveRecordingSegment() {
         try {
             let newStream;
 
-            if (recordingMode === 'screen_audio') {
+            if (recordingMode === 'tab_audio') {
+                // For tab audio mode, the existing stream continues — no refresh needed
+                if (!audioStream || !audioStream.active) {
+                    throw new Error('Tab audio stream ended. Please restart recording.');
+                }
+                newStream = audioStream;
+                status.textContent = `✓ Segment ${segmentNumber} complete. Recording segment ${currentSegmentNumber}...`;
+            } else if (recordingMode === 'screen_audio') {
                 // For screen mode, get fresh microphone audio and keep using screen
                 if (audioStream) {
                     audioStream.getTracks().forEach(track => track.stop());
@@ -1263,7 +1272,7 @@ async function startRecording() {
         let stream;
 
         if (recordingMode === 'screen_audio') {
-            // Screen + Audio mode
+            // Screen + Microphone mode
             try {
                 // Get screen capture (video only)
                 screenStream = await navigator.mediaDevices.getDisplayMedia({
@@ -1294,10 +1303,47 @@ async function startRecording() {
                 stream.addTrack(audioTracks[0]);
 
                 status.textContent = 'Capturing (Screen + Microphone)';
-                console.log('Screen + Audio recording started');
+                console.log('Screen + Microphone recording started');
             } catch (err) {
                 if (err.name === 'NotAllowedError') {
                     status.textContent = 'Screen capture cancelled';
+                    isRecording = false;
+                    recordBtn.textContent = 'Record Meeting';
+                    pauseBtn.disabled = true;
+                    status.classList.remove('recording');
+                    return;
+                }
+                throw err;
+            }
+        } else if (recordingMode === 'tab_audio') {
+            // Tab / App Audio mode — captures audio directly from the selected tab or app.
+            // Works in Chrome and Edge; Firefox does not support audio via getDisplayMedia.
+            try {
+                const tabStream = await navigator.mediaDevices.getDisplayMedia({
+                    audio: {
+                        echoCancellation: false,
+                        noiseSuppression: false,
+                        autoGainControl: false
+                    },
+                    video: false
+                });
+
+                const audioTracks = tabStream.getAudioTracks();
+                if (audioTracks.length === 0) {
+                    tabStream.getTracks().forEach(t => t.stop());
+                    throw new Error('No audio track captured. Make sure to select a tab or window with "Share audio" enabled.');
+                }
+
+                // Discard any video tracks the browser may have included
+                tabStream.getVideoTracks().forEach(t => t.stop());
+
+                audioStream = tabStream;
+                stream = audioStream;
+                status.textContent = 'Capturing (Tab Audio)';
+                console.log('Tab audio recording started:', audioTracks[0].label);
+            } catch (err) {
+                if (err.name === 'NotAllowedError') {
+                    status.textContent = 'Tab audio capture cancelled';
                     isRecording = false;
                     recordBtn.textContent = 'Record Meeting';
                     pauseBtn.disabled = true;
@@ -1418,7 +1464,9 @@ function resumeRecording() {
 
     const status = document.getElementById('recordingStatus');
     if (recordingMode === 'screen_audio') {
-        status.textContent = 'Capturing (Screen + Audio)';
+        status.textContent = 'Capturing (Screen + Microphone)';
+    } else if (recordingMode === 'tab_audio') {
+        status.textContent = 'Capturing (Tab Audio)';
     } else {
         status.textContent = 'Listening (Microphone)';
     }

@@ -6132,6 +6132,10 @@ body.theme-prism .empty-placeholder {
     transform-origin: 70% 70%;
 }
 
+.widget-about:hover .waving-hand {
+    animation: wave 1500ms ease-in-out forwards;
+}
+
 @keyframes wave {
     0% {
         transform: rotate(0deg);
@@ -6301,6 +6305,12 @@ body.theme-prism .empty-placeholder {
     font-size: 1.75rem;
     line-height: 1;
     flex-shrink: 0;
+    display: inline-block;
+    transform-origin: 70% 70%;
+}
+
+.project-preview-item:hover .project-preview-emoji {
+    animation: wave 1500ms ease-in-out forwards;
 }
 
 .project-preview-title {
@@ -8233,6 +8243,24 @@ body.theme-prism .card:hover {
 
 .blog-content-text li {
     margin: var(--spacing-sm) 0;
+}
+
+/* Dark theme overrides for blog content — must use !important to beat
+   Quill-generated inline color styles (e.g. color: rgb(0,0,0)) */
+body.theme-dark .blog-content-text,
+body.theme-dark .blog-content-text p,
+body.theme-dark .blog-content-text h1,
+body.theme-dark .blog-content-text h2,
+body.theme-dark .blog-content-text h3,
+body.theme-dark .blog-content-text li,
+body.theme-dark .blog-content-text em,
+body.theme-dark .blog-content-text i {
+    color: var(--color-text) !important;
+}
+
+body.theme-dark .blog-content-text strong,
+body.theme-dark .blog-content-text b {
+    color: var(--color-text) !important;
 }
 
 .blog-detail-footer {
