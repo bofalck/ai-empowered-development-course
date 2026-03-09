@@ -8049,6 +8049,12 @@ body.theme-prism .card:hover {
 }
 
 /* Blog Detail View */
+.blog-post-page {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: var(--spacing-xl) var(--spacing-lg);
+}
+
 .blog-detail-header {
     margin-bottom: var(--spacing-xl);
 }
@@ -8174,16 +8180,16 @@ body.theme-prism .card:hover {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 2.5rem;
-    height: 2.5rem;
-    padding: 0;
+    gap: 0.3rem;
+    padding: 0.4rem 0.85rem;
     background: var(--color-surface);
     border: 1px solid var(--color-divider);
     border-radius: var(--border-radius-sm);
     cursor: pointer;
     transition: all 0.2s ease;
-    font-size: 1rem;
-    font-weight: 600;
+    font-size: 0.9rem;
+    font-weight: 500;
+    white-space: nowrap;
 }
 
 .share-button:hover {
@@ -8354,7 +8360,8 @@ body.theme-dark .blog-content-text b {
         padding: var(--spacing-md);
     }
 
-    .project-detail-page {
+    .project-detail-page,
+    .blog-post-page {
         padding: var(--spacing-lg) var(--spacing-md);
     }
 
