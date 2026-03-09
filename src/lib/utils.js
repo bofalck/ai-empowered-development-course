@@ -1,5 +1,22 @@
 // Shared utility functions
 
+// Extract unique sorted tags from a list of items
+export function extractUniqueTags(items) {
+    const tagSet = new Set();
+    items.forEach(item => {
+        if (item.tags) item.tags.split(',').forEach(t => tagSet.add(t.trim()));
+    });
+    return Array.from(tagSet).sort();
+}
+
+// Filter items by a tag (empty string = all)
+export function filterItemsByTag(items, tag) {
+    if (!tag) return items;
+    return items.filter(item =>
+        item.tags && item.tags.split(',').map(t => t.trim()).includes(tag)
+    );
+}
+
 // Get or create guest ID for unauthenticated users
 export function getGuestId() {
     let guestId = localStorage.getItem('blog_guest_id');
