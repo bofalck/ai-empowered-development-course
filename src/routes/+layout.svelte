@@ -1,6 +1,7 @@
 <script>
     import { onMount } from 'svelte';
     import '../../styles.css';
+    import { supabase } from '$lib/supabase-client.js';
 
     let { children } = $props();
 
@@ -15,22 +16,20 @@
     let isLoggedIn = $state(false);
     let mobileMenuOpen = $state(false);
 
-    onMount(() => {
+    onMount(async () => {
         // Restore theme from localStorage
         const stored = localStorage.getItem('theme') || 'signal';
         theme = stored;
         document.body.classList.add(`theme-${theme}`);
 
-        // Check if user is logged in
-        const session = localStorage.getItem('portfolio_session');
-        if (session) {
-            try {
-                const parsed = JSON.parse(session);
-                isLoggedIn = !!(parsed?.user);
-            } catch {
-                isLoggedIn = false;
-            }
-        }
+        // Check Supabase auth session
+        const { data: { session } } = await supabase.auth.getSession();
+        isLoggedIn = !!session;
+
+        // Keep in sync if session changes
+        supabase.auth.onAuthStateChange((_event, session) => {
+            isLoggedIn = !!session;
+        });
     });
 
     function setTheme(t) {
@@ -40,10 +39,10 @@
         localStorage.setItem('theme', t);
     }
 
-    function logout() {
-        localStorage.removeItem('portfolio_session');
+    async function logout() {
+        await supabase.auth.signOut();
         isLoggedIn = false;
-        window.location.reload();
+        window.location.href = '/';
     }
 
     function toggleMenu() {
@@ -89,6 +88,7 @@
             </div>
             <div id="authActions">
                 {#if isLoggedIn}
+                    <a href="/admin/cms" class="nav-link nav-link--admin">Admin</a>
                     <button class="btn-logout" onclick={logout}>Sign Out</button>
                 {/if}
             </div>
@@ -132,6 +132,7 @@
             <div class="mobile-menu-divider"></div>
             <div class="mobile-auth">
                 {#if isLoggedIn}
+                    <a href="/admin/cms" class="nav-link nav-link--admin" onclick={closeMenu}>Admin</a>
                     <button class="btn-logout" onclick={() => { logout(); closeMenu(); }}>Sign Out</button>
                 {:else}
                     <a href="/login" class="nav-link" onclick={closeMenu}>Sign In</a>
