@@ -195,7 +195,8 @@
 
     async function loadBlogPosts() {
         const { data, error } = await supabase.from('blog_posts').select('*').order('created_at', { ascending: false });
-        if (!error) blogPosts = data ?? [];
+        if (error) { showModal('Error loading posts', error.message, 'error'); return; }
+        blogPosts = data ?? [];
     }
 
     function startNewBlog() {
@@ -257,7 +258,8 @@
 
     async function loadProjects() {
         const { data, error } = await supabase.from('projects').select('*').order('created_at', { ascending: false });
-        if (!error) projects = data ?? [];
+        if (error) { showModal('Error loading projects', error.message, 'error'); return; }
+        projects = data ?? [];
     }
 
     function startNewProject() {
