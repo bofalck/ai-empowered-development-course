@@ -1,5 +1,5 @@
 <script>
-    import { onMount } from 'svelte';
+    import { onMount, tick } from 'svelte';
     import { goto } from '$app/navigation';
     import { supabase } from '$lib/supabase-client.js';
     import { blogApi, projectsApi, eventsApi, aboutApi } from '$lib/api.js';
@@ -412,35 +412,59 @@
 
     // ==================== MOUNT ====================
 
+    let quillReady = $state(false);
+
+    // Lazy-init blog editor when the form becomes visible
+    $effect(() => {
+        if (showBlogForm && quillReady && !blogEditor) {
+            tick().then(() => {
+                blogEditor = makeEditor('#blogContentEditor', 'Write your blog post here...');
+                setupImageHandler(blogEditor);
+            });
+        }
+    });
+
+    // Lazy-init project editor when the form becomes visible
+    $effect(() => {
+        if (showProjectForm && quillReady && !projectEditor) {
+            tick().then(() => {
+                projectEditor = makeEditor('#projectDescriptionEditor', 'Write your project description here...');
+                setupImageHandler(projectEditor);
+            });
+        }
+    });
+
+    // Lazy-init about editor when the About tab becomes active
+    $effect(() => {
+        if (activeTab === 'about' && quillReady && !aboutEditor) {
+            tick().then(() => {
+                aboutEditor = makeEditor('#aboutBioEditor', 'Write your bio here...', 'simple');
+                loadAbout();
+            });
+        }
+    });
+
     onMount(async () => {
         const { data: { session } } = await supabase.auth.getSession();
         if (!session) { goto('/login'); return; }
 
         authorized = true;
+        await tick(); // ensure DOM is updated before loading data or showing modals
 
         // Apply theme
         const theme = localStorage.getItem('theme') || 'signal';
         document.body.className = document.body.className.replace(/theme-\w+/, '') + ` theme-${theme}`;
 
-        // Load Quill
+        // Load Quill + Cropper scripts
         loadLink('https://cdn.quilljs.com/1.3.6/quill.snow.css');
         await loadScript('https://cdn.quilljs.com/1.3.6/quill.js');
-
-        // Load Cropper
         loadLink('https://cdn.jsdelivr.net/npm/cropperjs@1/dist/cropper.css');
         await loadScript('https://cdn.jsdelivr.net/npm/cropperjs@1/dist/cropper.js');
-
-        // Init Quill editors
-        blogEditor = makeEditor('#blogContentEditor', 'Write your blog post here...');
-        setupImageHandler(blogEditor);
-
-        projectEditor = makeEditor('#projectDescriptionEditor', 'Write your project description here...');
-        setupImageHandler(projectEditor);
-
-        aboutEditor = makeEditor('#aboutBioEditor', 'Write your bio here...', 'simple');
+        quillReady = true;
 
         // Load data
-        await Promise.all([loadBlogPosts(), loadProjects(), loadAbout(), loadAnalytics()]);
+        await Promise.all([loadBlogPosts(), loadProjects(), loadAnalytics()]);
+        // About is loaded by the $effect when the About tab is opened
     });
 </script>
 
