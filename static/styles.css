@@ -7471,6 +7471,10 @@ body.theme-prism .empty-placeholder {
         grid-auto-flow: row;
     }
 
+    .widget-about {
+        order: -1;
+    }
+
     .widget {
         border-radius: var(--border-radius-sm);
     }
