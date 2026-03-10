@@ -410,13 +410,6 @@
         }
     }
 
-    // ==================== LOGOUT ====================
-
-    async function logout() {
-        await supabase.auth.signOut();
-        goto('/');
-    }
-
     // ==================== MOUNT ====================
 
     onMount(async () => {
@@ -459,18 +452,6 @@
 <header class="cms-header">
     <div class="header-content">
         <h1>Content Management</h1>
-        <div class="header-actions">
-            <div class="theme-selector">
-                {#each ['default','signal','dark','prism'] as t}
-                    <button class="theme-btn" onclick={() => { localStorage.setItem('theme', t); document.body.className = document.body.className.replace(/theme-\w+/, `theme-${t}`); }}
-                        title="{t} theme">
-                        {#if t === 'default'}☀️{:else if t === 'signal'}📡{:else if t === 'dark'}🌙{:else}🦄{/if}
-                    </button>
-                {/each}
-            </div>
-            <a href="/" class="btn-back">← Back to Portfolio</a>
-            <button class="btn-cancel" onclick={logout}>Sign Out</button>
-        </div>
     </div>
 </header>
 
