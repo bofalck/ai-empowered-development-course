@@ -9,7 +9,7 @@
     const FALLBACK_ABOUT = {
         name: 'Bobby',
         photo_url: '/images/bobby.png',
-        bio: `<p>Strategic leader and Design Engineer, with 11+ years shaping digital transformation, M&A, AI Enablement, scaling organizations, and aligning design, technology, and business.</p>`,
+        bio: `<p>Strategic leader and Design Engineer, with 11+ years shaping digital transformation, M&A, AI Enablement, scaling organizations, and aligning design, technology, and business. I build high-performing teams and coach leaders through a style that's playful, safe, and caring, creating environments where people thrive, ideas grow, and outcomes align with company vision.</p>`,
         linkedin_url: 'https://www.linkedin.com/in/bobby-falck/',
         instagram_url: 'https://www.instagram.com/samuraii_bob/',
         medium_url: 'https://medium.com/@bofalck',
