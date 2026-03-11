@@ -53,6 +53,10 @@
     let projectEditor = null;
     let aboutEditor = null;
 
+    // --- Pending content to inject once editor is created ---
+    let pendingBlogContent = null;
+    let pendingProjectContent = null;
+
     // --- Cropper state ---
     let cropper = null;
     let currentCropFile = null;
@@ -202,6 +206,7 @@
     function startNewBlog() {
         editingBlogId = null;
         blogTitle = ''; blogExcerpt = ''; blogTags = '';
+        pendingBlogContent = '';
         if (blogEditor) blogEditor.setContents([]);
         showBlogForm = true;
     }
@@ -219,6 +224,7 @@
         blogTags = data.tags ?? '';
         showBlogForm = true;
         if (blogEditor) blogEditor.root.innerHTML = data.content ?? '';
+        else pendingBlogContent = data.content ?? '';
     }
 
     async function saveBlogPost(e) {
@@ -266,6 +272,7 @@
         editingProjectId = null;
         projectTitle = ''; projectSubtitle = ''; projectLogotype = '';
         projectLink = ''; projectTags = '';
+        pendingProjectContent = '';
         if (projectEditor) projectEditor.setContents([]);
         showProjectForm = true;
     }
@@ -285,6 +292,7 @@
         projectTags = data.tags ?? '';
         showProjectForm = true;
         if (projectEditor) projectEditor.root.innerHTML = data.description ?? '';
+        else pendingProjectContent = data.description ?? '';
     }
 
     async function saveProject(e) {
@@ -420,6 +428,10 @@
             tick().then(() => {
                 blogEditor = makeEditor('#blogContentEditor', 'Write your blog post here...');
                 setupImageHandler(blogEditor);
+                if (pendingBlogContent !== null) {
+                    blogEditor.root.innerHTML = pendingBlogContent;
+                    pendingBlogContent = null;
+                }
             });
         }
     });
@@ -430,6 +442,10 @@
             tick().then(() => {
                 projectEditor = makeEditor('#projectDescriptionEditor', 'Write your project description here...');
                 setupImageHandler(projectEditor);
+                if (pendingProjectContent !== null) {
+                    projectEditor.root.innerHTML = pendingProjectContent;
+                    pendingProjectContent = null;
+                }
             });
         }
     });
