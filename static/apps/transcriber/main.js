@@ -926,10 +926,14 @@ async function sendAudioToWhisper(audioBlob, language = 'en') {
         status.textContent = 'Transcribing...';
         loader.classList.add('active');
 
+        if (audioBlob.size < 1000) {
+            throw new Error('Audio blob is empty — no audio was captured. Make sure "Share audio" is checked in the screen picker.');
+        }
+
         const apiKey = openaiApiKey;
-        console.log('API Key available:', !!apiKey);
+        console.log('API Key available:', !!apiKey, '| Blob size:', audioBlob.size);
         if (!apiKey) {
-            throw new Error('API key not configured');
+            throw new Error('OpenAI API key not configured. Check that OPENAI_API_KEY is set in your Vercel environment variables.');
         }
 
         const formData = new FormData();
@@ -978,7 +982,11 @@ async function sendAudioToWhisper(audioBlob, language = 'en') {
         display.classList.remove('empty');
         display.scrollTop = display.scrollHeight;
 
-        status.textContent = 'Transcription complete';
+        if (!currentTranscript.trim()) {
+            status.textContent = 'No speech detected — was "Share audio" checked in the screen picker?';
+        } else {
+            status.textContent = 'Transcription complete';
+        }
         loader.classList.remove('active');
 
         return { text: result.text, segments: result.segments };
