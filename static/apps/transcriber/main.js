@@ -37,6 +37,8 @@ let recordingMode = 'microphone'; // 'microphone' or 'screen_audio'
 let transcriptionLanguage = 'en'; // Default to English
 let isProcessingWithWhisper = false; // Flag while sending to Whisper API
 let screenStream = null; // For screen capture mode
+let audioContext = null; // Web Audio context for mixing system + mic streams
+let mixedStream = null;  // Mixed output stream (system audio + mic)
 
 // Recording Segments Management
 let recordingSegments = []; // Array of {number, startTime, endTime, transcript, audioBlob}
@@ -1158,29 +1160,11 @@ async function saveRecordingSegment() {
                 newStream = audioStream;
                 status.textContent = `✓ Segment ${segmentNumber} complete. Recording segment ${currentSegmentNumber}...`;
             } else if (recordingMode === 'screen_audio') {
-                // For screen mode, get fresh microphone audio and keep using screen
-                if (audioStream) {
-                    audioStream.getTracks().forEach(track => track.stop());
+                // Reuse the existing mixed stream (system audio + mic) across segments
+                if (!mixedStream || !mixedStream.active) {
+                    throw new Error('Audio capture ended. Please restart recording.');
                 }
-
-                audioStream = await getAudioStream();
-                const audioTracks = audioStream.getAudioTracks();
-
-                if (audioTracks.length === 0) {
-                    throw new Error('No audio tracks from microphone for new segment');
-                }
-
-                // Check if screen is still active
-                const videoTracks = screenStream ? screenStream.getVideoTracks() : [];
-                if (videoTracks.length === 0) {
-                    throw new Error('Screen capture ended. Please restart recording.');
-                }
-
-                // Combine screen video with fresh microphone audio
-                newStream = new MediaStream();
-                newStream.addTrack(videoTracks[0]);
-                newStream.addTrack(audioTracks[0]);
-
+                newStream = mixedStream;
                 status.textContent = `✓ Segment ${segmentNumber} complete. Recording segment ${currentSegmentNumber}...`;
             } else {
                 // For microphone mode, just get fresh audio
@@ -1275,38 +1259,43 @@ async function startRecording() {
         let stream;
 
         if (recordingMode === 'screen_audio') {
-            // Screen + Microphone mode
+            // System audio + Microphone mode — captures both sides of a call (Teams, Zoom, etc.)
             try {
-                // Get screen capture (video only)
+                // Chrome requires video to be requested; use 1fps to minimise overhead
                 screenStream = await navigator.mediaDevices.getDisplayMedia({
-                    audio: false,
-                    video: true
+                    audio: {
+                        echoCancellation: false,
+                        noiseSuppression: false,
+                        autoGainControl: false,
+                    },
+                    video: { frameRate: { max: 1 } }
                 });
-                console.log('Screen capture started');
 
-                // Get microphone audio separately
+                // Drop video — we only need the audio
+                screenStream.getVideoTracks().forEach(t => t.stop());
+
+                const systemAudioTracks = screenStream.getAudioTracks();
+                if (systemAudioTracks.length === 0) {
+                    throw new Error('No system audio captured. In the screen picker, check "Share audio" or "Share system audio".');
+                }
+
+                // Get microphone so the user\'s own voice is also captured
                 audioStream = await getAudioStream();
-                console.log('Microphone audio started');
-
-                // Combine video from screen and audio from microphone
-                const videoTracks = screenStream.getVideoTracks();
-                const audioTracks = audioStream.getAudioTracks();
-
-                if (videoTracks.length === 0) {
-                    throw new Error('No video track in screen capture');
+                const micTracks = audioStream.getAudioTracks();
+                if (micTracks.length === 0) {
+                    throw new Error('No microphone audio available.');
                 }
 
-                if (audioTracks.length === 0) {
-                    throw new Error('No audio track from microphone');
-                }
+                // Mix system audio + microphone into one stream via Web Audio API
+                audioContext = new AudioContext();
+                const dest = audioContext.createMediaStreamDestination();
+                audioContext.createMediaStreamSource(new MediaStream([systemAudioTracks[0]])).connect(dest);
+                audioContext.createMediaStreamSource(new MediaStream([micTracks[0]])).connect(dest);
+                mixedStream = dest.stream;
+                stream = mixedStream;
 
-                // Create new stream with screen video + microphone audio
-                stream = new MediaStream();
-                stream.addTrack(videoTracks[0]);
-                stream.addTrack(audioTracks[0]);
-
-                status.textContent = 'Capturing (Screen + Microphone)';
-                console.log('Screen + Microphone recording started');
+                status.textContent = 'Capturing (System + Microphone)';
+                console.log('System audio + microphone recording started');
             } catch (err) {
                 if (err.name === 'NotAllowedError') {
                     status.textContent = 'Screen capture cancelled';
@@ -1319,8 +1308,8 @@ async function startRecording() {
                 throw err;
             }
         } else if (recordingMode === 'tab_audio') {
-            // Tab / App Audio mode — captures audio directly from the selected tab or app.
-            // Works in Chrome and Edge; Firefox does not support audio via getDisplayMedia.
+            // System audio only — no microphone. Good for one-sided capture.
+            // Chrome and Edge only; Firefox does not support audio via getDisplayMedia.
             try {
                 const tabStream = await navigator.mediaDevices.getDisplayMedia({
                     audio: {
@@ -1328,25 +1317,25 @@ async function startRecording() {
                         noiseSuppression: false,
                         autoGainControl: false
                     },
-                    video: false
+                    video: { frameRate: { max: 1 } } // Chrome requires video
                 });
+
+                // Drop video track
+                tabStream.getVideoTracks().forEach(t => t.stop());
 
                 const audioTracks = tabStream.getAudioTracks();
                 if (audioTracks.length === 0) {
                     tabStream.getTracks().forEach(t => t.stop());
-                    throw new Error('No audio track captured. Make sure to select a tab or window with "Share audio" enabled.');
+                    throw new Error('No audio captured. Make sure to check "Share audio" in the screen picker.');
                 }
-
-                // Discard any video tracks the browser may have included
-                tabStream.getVideoTracks().forEach(t => t.stop());
 
                 audioStream = tabStream;
                 stream = audioStream;
-                status.textContent = 'Capturing (Tab Audio)';
-                console.log('Tab audio recording started:', audioTracks[0].label);
+                status.textContent = 'Capturing (System Audio)';
+                console.log('System audio recording started:', audioTracks[0].label);
             } catch (err) {
                 if (err.name === 'NotAllowedError') {
-                    status.textContent = 'Tab audio capture cancelled';
+                    status.textContent = 'System audio capture cancelled';
                     isRecording = false;
                     recordBtn.textContent = 'Record Meeting';
                     pauseBtn.disabled = true;
@@ -1531,6 +1520,11 @@ async function stopRecording() {
             screenStream.getTracks().forEach(track => track.stop());
             screenStream = null;
         }
+        if (audioContext) {
+            audioContext.close();
+            audioContext = null;
+        }
+        mixedStream = null;
 
         console.log('Recording stopped, audio chunks:', audioChunks.length);
     } catch (err) {
