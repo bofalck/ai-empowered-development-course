@@ -5786,7 +5786,7 @@ body.theme-prism .empty-placeholder {
     display: flex;
     gap: var(--spacing-lg);
     flex: 1;
-    justify-content: center;
+    justify-content: flex-start;
 }
 
 .header-nav .nav-link {
@@ -5794,7 +5794,7 @@ body.theme-prism .empty-placeholder {
     text-decoration: none;
     font-family: 'DrukText-Medium', serif;
     font-weight: normal;
-    font-size: 0.95rem;
+    font-size: 1rem;
     cursor: pointer;
     transition: color 200ms ease;
     padding: 0.5rem 1rem;
