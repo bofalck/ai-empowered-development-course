@@ -5786,7 +5786,7 @@ body.theme-prism .empty-placeholder {
     display: flex;
     gap: var(--spacing-lg);
     flex: 1;
-    justify-content: flex-start;
+    justify-content: center;
 }
 
 .header-nav .nav-link {
