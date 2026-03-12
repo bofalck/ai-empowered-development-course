@@ -425,8 +425,7 @@
                 });
                 blogReaderStats = Object.entries(readerMap)
                     .map(([id, s]) => ({ id, postsRead: s.postsRead.size, reads: s.reads, shares: s.shares }))
-                    .sort((a, b) => b.reads - a.reads)
-                    .slice(0, 10);
+                    .sort((a, b) => b.reads - a.reads);
             }
 
             if (projectData?.length) {
@@ -452,8 +451,7 @@
                 });
                 projectReaderStats = Object.entries(readerMap)
                     .map(([id, s]) => ({ id, postsRead: s.postsRead.size, reads: s.reads, shares: s.shares }))
-                    .sort((a, b) => b.reads - a.reads)
-                    .slice(0, 10);
+                    .sort((a, b) => b.reads - a.reads);
             }
 
             appMetrics = Object.entries(APP_IDS).map(([, appId]) => {
@@ -912,7 +910,7 @@
                     <table class="analytics-table">
                         <thead><tr><th>User (ID suffix)</th><th>Posts Read</th><th>Total Reads</th><th>Shares</th></tr></thead>
                         <tbody>
-                            {#each blogReaderStats as reader}
+                            {#each blogReaderStats.slice(0, 10) as reader}
                                 <tr>
                                     <td class="reader-id">…{reader.id}</td>
                                     <td>{reader.postsRead}</td>
@@ -969,7 +967,7 @@
                     <table class="analytics-table">
                         <thead><tr><th>User (ID suffix)</th><th>Projects Viewed</th><th>Total Views</th><th>Shares</th></tr></thead>
                         <tbody>
-                            {#each projectReaderStats as reader}
+                            {#each projectReaderStats.slice(0, 10) as reader}
                                 <tr>
                                     <td class="reader-id">…{reader.id}</td>
                                     <td>{reader.postsRead}</td>
