@@ -8344,3 +8344,10 @@ body.theme-dark .detail-content b {
 .analytics-table tbody tr:hover {
     background: var(--color-background);
 }
+
+.reader-id {
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 0.8rem;
+    color: var(--color-text-secondary);
+    letter-spacing: 0.03em;
+}

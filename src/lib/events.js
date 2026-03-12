@@ -31,7 +31,7 @@ export async function trackEvent(contentType, contentId, eventType, additionalDa
         await eventsApi.track(eventData);
     } catch (error) {
         // Silent fail - don't impact UX
-        console.debug('Event tracking error:', error);
+        console.error('Event tracking error:', error);
     }
 }
 

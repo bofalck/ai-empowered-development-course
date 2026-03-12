@@ -267,7 +267,7 @@ export const eventsApi = {
             return { data, error: null };
         } catch (error) {
             // Silent fail - don't impact UX
-            console.debug('Event tracking error:', error);
+            console.error('Event tracking error:', error);
             return { data: null, error };
         }
     },

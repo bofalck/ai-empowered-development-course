@@ -43,6 +43,8 @@
     let blogMetrics = $state([]);
     let projectMetrics = $state([]);
     let appMetrics = $state([]);
+    let blogReaderStats = $state([]);
+    let projectReaderStats = $state([]);
 
     // --- UI state ---
     let modal = $state({ show: false, title: '', message: '', type: 'success' });
@@ -371,48 +373,75 @@
 
     async function loadAnalytics() {
         try {
-            const [{ data: blogData }, { data: projectData }] = await Promise.all([
-                blogApi.getAll(), projectsApi.getAll()
+            const [{ data: blogData }, { data: projectData }, { data: allEvents }] = await Promise.all([
+                blogApi.getAll(), projectsApi.getAll(), eventsApi.getAll()
             ]);
 
+            const events = allEvents ?? [];
+
             if (blogData?.length) {
-                blogMetrics = await Promise.all(blogData.map(async (post) => {
-                    const { data: events } = await eventsApi.getByContentId('blog_post', post.id);
-                    const ev = events ?? [];
+                blogMetrics = blogData.map(post => {
+                    const ev = events.filter(e => e.content_type === 'blog_post' && e.content_id === post.id);
+                    const viewEvents = ev.filter(e => e.event_type === 'detail_view');
+                    const shareEvents = ev.filter(e => e.event_type === 'share');
+                    const reactionEvents = ev.filter(e => e.event_type === 'reaction');
                     return {
                         ...post,
-                        views: ev.filter(e => e.event_type === 'view' || e.event_type === 'detail_view').length,
-                        reactions: ev.filter(e => e.event_type === 'reaction').length,
-                        shares: ev.filter(e => e.event_type === 'share').length,
+                        views: viewEvents.length,
+                        uniqueReaders: new Set(viewEvents.map(e => e.user_identifier)).size,
+                        reactions: reactionEvents.length,
+                        shares: shareEvents.length,
+                        uniqueSharers: new Set(shareEvents.map(e => e.user_identifier)).size,
                     };
-                }));
-                blogMetrics = [...blogMetrics].sort((a, b) => b.views - a.views);
+                }).sort((a, b) => b.views - a.views);
+
+                // Cross-post reader breakdown
+                const readerMap = {};
+                events.filter(e => e.content_type === 'blog_post').forEach(e => {
+                    const uid = e.user_identifier?.slice(-8) ?? '?';
+                    if (!readerMap[uid]) readerMap[uid] = { postsRead: new Set(), reads: 0, shares: 0 };
+                    if (e.event_type === 'detail_view') { readerMap[uid].postsRead.add(e.content_id); readerMap[uid].reads++; }
+                    if (e.event_type === 'share') readerMap[uid].shares++;
+                });
+                blogReaderStats = Object.entries(readerMap)
+                    .map(([id, s]) => ({ id, postsRead: s.postsRead.size, reads: s.reads, shares: s.shares }))
+                    .sort((a, b) => b.reads - a.reads);
             }
 
             if (projectData?.length) {
-                projectMetrics = await Promise.all(projectData.map(async (proj) => {
-                    const { data: events } = await eventsApi.getByContentId('project', proj.id);
-                    const ev = events ?? [];
+                projectMetrics = projectData.map(proj => {
+                    const ev = events.filter(e => e.content_type === 'project' && e.content_id === proj.id);
+                    const viewEvents = ev.filter(e => e.event_type === 'detail_view');
+                    const shareEvents = ev.filter(e => e.event_type === 'share');
                     return {
                         ...proj,
-                        views: ev.filter(e => e.event_type === 'detail_view').length,
-                        shares: ev.filter(e => e.event_type === 'share').length,
+                        views: viewEvents.length,
+                        uniqueReaders: new Set(viewEvents.map(e => e.user_identifier)).size,
+                        shares: shareEvents.length,
+                        uniqueSharers: new Set(shareEvents.map(e => e.user_identifier)).size,
                     };
-                }));
-                projectMetrics = [...projectMetrics].sort((a, b) => b.views - a.views);
+                }).sort((a, b) => b.views - a.views);
+
+                const readerMap = {};
+                events.filter(e => e.content_type === 'project').forEach(e => {
+                    const uid = e.user_identifier?.slice(-8) ?? '?';
+                    if (!readerMap[uid]) readerMap[uid] = { postsRead: new Set(), reads: 0, shares: 0 };
+                    if (e.event_type === 'detail_view') { readerMap[uid].postsRead.add(e.content_id); readerMap[uid].reads++; }
+                    if (e.event_type === 'share') readerMap[uid].shares++;
+                });
+                projectReaderStats = Object.entries(readerMap)
+                    .map(([id, s]) => ({ id, postsRead: s.postsRead.size, reads: s.reads, shares: s.shares }))
+                    .sort((a, b) => b.reads - a.reads);
             }
 
-            appMetrics = await Promise.all(
-                Object.entries(APP_IDS).map(async ([, appId]) => {
-                    const { data: events } = await eventsApi.getByContentId('app', appId);
-                    const ev = events ?? [];
-                    return {
-                        name: APP_NAMES[appId] || appId,
-                        launches: ev.filter(e => e.event_type === 'app_launch').length,
-                        uniqueGuests: new Set(ev.map(e => e.user_identifier)).size,
-                    };
-                })
-            );
+            appMetrics = Object.entries(APP_IDS).map(([, appId]) => {
+                const ev = events.filter(e => e.content_type === 'app' && e.content_id === appId);
+                return {
+                    name: APP_NAMES[appId] || appId,
+                    launches: ev.filter(e => e.event_type === 'app_launch').length,
+                    uniqueGuests: new Set(ev.map(e => e.user_identifier)).size,
+                };
+            });
         } catch (err) {
             console.error('Analytics error:', err);
         }
@@ -723,26 +752,53 @@
                         <div class="metric-label">Total Views</div>
                     </div>
                     <div class="metric-card">
+                        <div class="metric-value">{blogReaderStats.length}</div>
+                        <div class="metric-label">Unique Readers</div>
+                    </div>
+                    <div class="metric-card">
                         <div class="metric-value">{blogMetrics.reduce((s, p) => s + p.reactions, 0)}</div>
                         <div class="metric-label">Total Reactions</div>
                     </div>
+                    <div class="metric-card">
+                        <div class="metric-value">{blogMetrics.reduce((s, p) => s + p.shares, 0)}</div>
+                        <div class="metric-label">Total Shares</div>
+                    </div>
                 </div>
                 <div class="top-posts-section">
-                    <h4>Top Blog Posts by Views</h4>
+                    <h4>Posts</h4>
                     <table class="analytics-table">
-                        <thead><tr><th>Title</th><th>Views</th><th>Reactions</th><th>Engagement %</th></tr></thead>
+                        <thead><tr><th>Title</th><th>Views</th><th>Uniq. Readers</th><th>Reactions</th><th>Shares</th></tr></thead>
                         <tbody>
-                            {#each blogMetrics.slice(0, 5) as post}
+                            {#each blogMetrics as post}
                                 <tr>
                                     <td>{extractPlainText(post.title)}</td>
                                     <td>{post.views}</td>
+                                    <td>{post.uniqueReaders}</td>
                                     <td>{post.reactions}</td>
-                                    <td>{post.views > 0 ? ((post.reactions / post.views) * 100).toFixed(1) : 0}%</td>
+                                    <td>{post.shares}</td>
                                 </tr>
                             {/each}
                         </tbody>
                     </table>
                 </div>
+                {#if blogReaderStats.length > 0}
+                <div class="top-posts-section">
+                    <h4>Reader Breakdown</h4>
+                    <table class="analytics-table">
+                        <thead><tr><th>User (ID suffix)</th><th>Posts Read</th><th>Total Reads</th><th>Shares</th></tr></thead>
+                        <tbody>
+                            {#each blogReaderStats as reader}
+                                <tr>
+                                    <td class="reader-id">…{reader.id}</td>
+                                    <td>{reader.postsRead}</td>
+                                    <td>{reader.reads}</td>
+                                    <td>{reader.shares}</td>
+                                </tr>
+                            {/each}
+                        </tbody>
+                    </table>
+                </div>
+                {/if}
             {/if}
         </div>
 
@@ -758,26 +814,48 @@
                         <div class="metric-label">Total Views</div>
                     </div>
                     <div class="metric-card">
+                        <div class="metric-value">{projectReaderStats.length}</div>
+                        <div class="metric-label">Unique Visitors</div>
+                    </div>
+                    <div class="metric-card">
                         <div class="metric-value">{projectMetrics.reduce((s, p) => s + p.shares, 0)}</div>
                         <div class="metric-label">Total Shares</div>
                     </div>
                 </div>
                 <div class="top-posts-section">
-                    <h4>Top Projects by Views</h4>
+                    <h4>Projects</h4>
                     <table class="analytics-table">
-                        <thead><tr><th>Title</th><th>Views</th><th>Shares</th><th>Engagement %</th></tr></thead>
+                        <thead><tr><th>Title</th><th>Views</th><th>Uniq. Visitors</th><th>Shares</th></tr></thead>
                         <tbody>
-                            {#each projectMetrics.slice(0, 5) as proj}
+                            {#each projectMetrics as proj}
                                 <tr>
                                     <td>{extractPlainText(proj.title)}</td>
                                     <td>{proj.views}</td>
+                                    <td>{proj.uniqueReaders}</td>
                                     <td>{proj.shares}</td>
-                                    <td>{proj.views > 0 ? ((proj.shares / proj.views) * 100).toFixed(1) : 0}%</td>
                                 </tr>
                             {/each}
                         </tbody>
                     </table>
                 </div>
+                {#if projectReaderStats.length > 0}
+                <div class="top-posts-section">
+                    <h4>Visitor Breakdown</h4>
+                    <table class="analytics-table">
+                        <thead><tr><th>User (ID suffix)</th><th>Projects Viewed</th><th>Total Views</th><th>Shares</th></tr></thead>
+                        <tbody>
+                            {#each projectReaderStats as reader}
+                                <tr>
+                                    <td class="reader-id">…{reader.id}</td>
+                                    <td>{reader.postsRead}</td>
+                                    <td>{reader.reads}</td>
+                                    <td>{reader.shares}</td>
+                                </tr>
+                            {/each}
+                        </tbody>
+                    </table>
+                </div>
+                {/if}
             {/if}
         </div>
     </section>
