@@ -117,6 +117,12 @@
                 <time class="detail-date">📅 {formatDate(post.created_at)}</time>
             </div>
 
+            {#if post.excerpt}
+                <div class="blog-excerpt-section">
+                    <p class="blog-excerpt">{extractPlainText(post.excerpt)}</p>
+                </div>
+            {/if}
+
             {#if tags.length > 0}
                 <div class="detail-tags-section">
                     <div class="detail-tags">

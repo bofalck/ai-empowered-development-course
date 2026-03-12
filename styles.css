@@ -6440,7 +6440,6 @@ body.theme-prism .empty-placeholder {
 .blog-preview-excerpt {
     font-family: 'Courier New', Courier, monospace;
     font-size: 0.85rem;
-    font-style: italic;
     line-height: 1.4;
     color: var(--color-text-secondary);
     margin: var(--spacing-xs) 0 0 0;
