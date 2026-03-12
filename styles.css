@@ -5792,7 +5792,8 @@ body.theme-prism .empty-placeholder {
 .header-nav .nav-link {
     color: var(--color-text);
     text-decoration: none;
-    font-weight: 500;
+    font-family: 'DrukText-Medium', serif;
+    font-weight: normal;
     font-size: 0.95rem;
     cursor: pointer;
     transition: color 200ms ease;
@@ -5945,7 +5946,8 @@ body.theme-prism .empty-placeholder {
 .mobile-nav .nav-link {
     padding: 0.75rem 0.5rem;
     border-radius: var(--border-radius-sm);
-    font-weight: 500;
+    font-family: 'DrukText-Medium', serif;
+    font-weight: normal;
     color: var(--color-text);
     text-decoration: none;
     transition: background 150ms ease, color 150ms ease;
