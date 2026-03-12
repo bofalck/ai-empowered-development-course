@@ -18,19 +18,19 @@
 </svelte:head>
 
 <main class="portfolio-main">
-    <div class="project-detail-page">
-        <div class="project-detail-header">
+    <div class="detail-page">
+        <div class="detail-header">
             <a href="/projects" class="back-link">← Back to Projects</a>
         </div>
 
-        <article class="project-detail-content">
-            <div class="project-detail-hero">
+        <article class="detail-article">
+            <div class="detail-hero">
                 {#if project.logotype}
                     <img src={project.logotype} alt="{title} logo" class="project-logotype" />
                 {:else}
                     <div class="project-emoji">{getProjectEmoji(project)}</div>
                 {/if}
-                <h1 class="project-title">{title}</h1>
+                <h1 class="detail-title">{title}</h1>
                 {#if project.subtitle}
                     <p class="project-subtitle">{project.subtitle}</p>
                 {/if}
@@ -45,12 +45,12 @@
             </div>
 
             <div class="project-meta-info">
-                <span class="project-date">📅 {formatDate(project.created_at)}</span>
+                <span class="detail-date">📅 {formatDate(project.created_at)}</span>
             </div>
 
             {#if tags.length > 0}
-                <div class="project-tags-section">
-                    <div class="project-tags">
+                <div class="detail-tags-section">
+                    <div class="detail-tags">
                         {#each tags as tag}
                             <span class="tag">{tag}</span>
                         {/each}
@@ -59,12 +59,12 @@
             {/if}
 
             {#if project.description}
-                <div class="project-description-section">
-                    <div class="project-description-text">{@html project.description}</div>
+                <div class="detail-content-section">
+                    <div class="detail-content">{@html project.description}</div>
                 </div>
             {/if}
 
-            <div class="project-detail-footer">
+            <div class="detail-footer">
                 <a href="/projects" class="btn-back-link">← Back to All Projects</a>
             </div>
         </article>

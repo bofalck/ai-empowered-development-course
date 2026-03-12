@@ -1,7 +1,7 @@
 <script>
     import { onMount } from 'svelte';
     import { formatDate, extractPlainText, getGuestId } from '$lib/utils.js';
-    import { trackBlogDetailView, trackShare } from '$lib/events.js';
+    import { trackBlogDetailView, trackBlogReaction, trackShare } from '$lib/events.js';
     import { supabase } from '$lib/supabase-client.js';
     import { CONTENT_TYPES, SHARE_PLATFORMS } from '$lib/types.js';
 
@@ -72,7 +72,7 @@
                 guest_id: guestId,
                 emoji
             }]);
-            trackBlogDetailView(post.id);
+            trackBlogReaction(post.id);
         }
     }
 
@@ -106,20 +106,20 @@
 </svelte:head>
 
 <main class="portfolio-main">
-    <div class="blog-post-page">
-        <div class="blog-detail-header">
+    <div class="detail-page">
+        <div class="detail-header">
             <a href="/blog" class="back-link">← Back to Blog</a>
         </div>
 
-        <article class="blog-detail-content">
-            <div class="blog-detail-hero">
-                <h1 class="blog-title">{title}</h1>
-                <time class="blog-date">📅 {formatDate(post.created_at)}</time>
+        <article class="detail-article">
+            <div class="detail-hero">
+                <h1 class="detail-title">{title}</h1>
+                <time class="detail-date">📅 {formatDate(post.created_at)}</time>
             </div>
 
             {#if tags.length > 0}
-                <div class="blog-tags-section">
-                    <div class="blog-tags">
+                <div class="detail-tags-section">
+                    <div class="detail-tags">
                         {#each tags as tag}
                             <span class="tag">{tag}</span>
                         {/each}
@@ -127,8 +127,8 @@
                 </div>
             {/if}
 
-            <div class="blog-content-section">
-                <div class="blog-content-text">{@html post.content ?? ''}</div>
+            <div class="detail-content-section">
+                <div class="detail-content">{@html post.content ?? ''}</div>
             </div>
 
             <div class="blog-share-buttons">
@@ -153,7 +153,7 @@
                 {/each}
             </div>
 
-            <div class="blog-detail-footer">
+            <div class="detail-footer">
                 <a href="/blog" class="btn-back-link">← Back to All Posts</a>
             </div>
         </article>

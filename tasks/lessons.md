@@ -78,3 +78,17 @@
 ### 2026-03-11 — Fallback text truncation
 - Hardcoded `FALLBACK_ABOUT.bio` was cut short during migration — user noticed
 - Rule: **When migrating hardcoded content, verify against the original source file character-for-character.**
+
+### 2026-03-11 — Wrong event tracker called on reaction
+- `toggleReaction` in `blog/[id]/+page.svelte` called `trackBlogDetailView` on reaction add instead of `trackBlogReaction`
+- This silently corrupted analytics (views inflated, reactions underreported) with no runtime error
+- Rule: **After adding event tracking, verify you called the semantically correct function, not just any imported tracker.**
+
+### 2026-03-11 — Whisper hallucinations on silent/short audio
+- Whisper generates phantom text (e.g. Swedish credits "Tack till elever...") when given near-silent or very short audio
+- Fix: add `temperature=0` to the API call (deterministic mode, far fewer confabulations); also raise the minimum blob size threshold to 10 KB so near-empty blobs are rejected before hitting the API
+- Rule: **Always send `temperature=0` to Whisper. Never send blobs under ~10 KB.**
+
+### 2026-03-11 — Status message overwritten after async operation
+- `sendAudioToWhisper` correctly set "No speech detected" for empty transcripts, but the caller (single-segment microphone path) unconditionally set "Transcription complete" afterward, overwriting the nuanced message
+- Rule: **When an async helper sets user-visible status, callers must not unconditionally overwrite it — either re-check the condition or trust the helper's output.**

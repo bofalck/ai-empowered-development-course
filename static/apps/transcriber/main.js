@@ -926,8 +926,8 @@ async function sendAudioToWhisper(audioBlob, language = 'en') {
         status.textContent = 'Transcribing...';
         loader.classList.add('active');
 
-        if (audioBlob.size < 1000) {
-            throw new Error('Audio blob is empty — no audio was captured. Make sure "Share audio" is checked in the screen picker.');
+        if (audioBlob.size < 10000) {
+            throw new Error('Audio blob is too small — no audio was captured. Make sure "Share audio" is checked in the screen picker.');
         }
 
         const apiKey = openaiApiKey;
@@ -940,6 +940,7 @@ async function sendAudioToWhisper(audioBlob, language = 'en') {
         formData.append('file', audioBlob, 'audio.webm');
         formData.append('model', 'whisper-1');
         formData.append('language', language);
+        formData.append('temperature', '0');
 
         console.log('Sending to Whisper API...');
         const response = await fetch(
@@ -1594,7 +1595,7 @@ async function stopRecording() {
 
             status.textContent = `✓ Recording complete: ${recordingSegments.length} segments transcribed and combined`;
         } else {
-            status.textContent = 'Transcription complete';
+            status.textContent = currentTranscript.trim() ? 'Transcription complete' : 'No speech detected';
         }
 
         console.log('All segments processed:', {

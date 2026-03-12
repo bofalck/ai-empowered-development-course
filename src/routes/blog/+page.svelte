@@ -44,7 +44,7 @@
                 </div>
             {:else}
                 {#each filtered as post (post.id)}
-                    <div class="card blog-card">
+                    <a href="/blog/{post.id}" class="card blog-card">
                         <time class="card-date">{formatDate(post.created_at)}</time>
                         <h3 class="card-title">{extractPlainText(post.title)}</h3>
                         {#if post.excerpt}
@@ -52,13 +52,13 @@
                         {/if}
                         {#if post.tags}
                             <div class="card-tags">
-                                {#each post.tags.split(',').slice(0, 2) as tag}
+                                {#each post.tags.split(',').slice(0, 3) as tag}
                                     <span class="tag">{tag.trim()}</span>
                                 {/each}
                             </div>
                         {/if}
-                        <a href="/blog/{post.id}" class="card-link">Read More →</a>
-                    </div>
+                        <div class="card-link">Read More →</div>
+                    </a>
                 {/each}
             {/if}
         </div>
