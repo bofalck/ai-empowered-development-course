@@ -45,6 +45,13 @@
     let appMetrics = $state([]);
     let blogReaderStats = $state([]);
     let projectReaderStats = $state([]);
+    let allRawEvents = $state([]);
+    let countryStats = $state([]);
+    let chartPeriod = $state('monthly');
+    let chartDateFrom = $state('');
+    let chartDateTo = $state('');
+    let chartData = $derived(buildChartData(allRawEvents, chartPeriod, chartDateFrom, chartDateTo));
+    let maxChartVal = $derived(Math.max(...chartData.map(d => d.total), 1));
 
     // --- UI state ---
     let modal = $state({ show: false, title: '', message: '', type: 'success' });
@@ -378,6 +385,19 @@
             ]);
 
             const events = allEvents ?? [];
+            allRawEvents = events;
+
+            // Country breakdown
+            const countryMap = {};
+            events.forEach(e => {
+                const c = e.country ?? 'Unknown';
+                if (!countryMap[c]) countryMap[c] = { views: 0, total: 0 };
+                countryMap[c].total++;
+                if (e.event_type === 'detail_view') countryMap[c].views++;
+            });
+            countryStats = Object.entries(countryMap)
+                .map(([country, s]) => ({ country, ...s }))
+                .sort((a, b) => b.total - a.total);
 
             if (blogData?.length) {
                 blogMetrics = blogData.map(post => {
@@ -405,7 +425,8 @@
                 });
                 blogReaderStats = Object.entries(readerMap)
                     .map(([id, s]) => ({ id, postsRead: s.postsRead.size, reads: s.reads, shares: s.shares }))
-                    .sort((a, b) => b.reads - a.reads);
+                    .sort((a, b) => b.reads - a.reads)
+                    .slice(0, 10);
             }
 
             if (projectData?.length) {
@@ -431,7 +452,8 @@
                 });
                 projectReaderStats = Object.entries(readerMap)
                     .map(([id, s]) => ({ id, postsRead: s.postsRead.size, reads: s.reads, shares: s.shares }))
-                    .sort((a, b) => b.reads - a.reads);
+                    .sort((a, b) => b.reads - a.reads)
+                    .slice(0, 10);
             }
 
             appMetrics = Object.entries(APP_IDS).map(([, appId]) => {
@@ -445,6 +467,51 @@
         } catch (err) {
             console.error('Analytics error:', err);
         }
+    }
+
+    // ==================== CHART HELPERS ====================
+
+    function buildChartData(events, period, from, to) {
+        const fromDate = from ? new Date(from) : null;
+        const toDate = to ? new Date(to + 'T23:59:59') : null;
+        const filtered = events.filter(e => {
+            const d = new Date(e.created_at);
+            if (fromDate && d < fromDate) return false;
+            if (toDate && d > toDate) return false;
+            return true;
+        });
+        const buckets = {};
+        filtered.forEach(e => {
+            const key = getChartBucketKey(new Date(e.created_at), period);
+            if (!buckets[key]) buckets[key] = { views: 0, reactions: 0, shares: 0, launches: 0 };
+            if (e.event_type === 'detail_view') buckets[key].views++;
+            else if (e.event_type === 'reaction') buckets[key].reactions++;
+            else if (e.event_type === 'share') buckets[key].shares++;
+            else if (e.event_type === 'app_launch') buckets[key].launches++;
+        });
+        return Object.entries(buckets)
+            .sort(([a], [b]) => a.localeCompare(b))
+            .map(([label, c]) => ({ label, ...c, total: c.views + c.reactions + c.shares + c.launches }));
+    }
+
+    function getChartBucketKey(date, period) {
+        if (period === 'yearly') return `${date.getFullYear()}`;
+        if (period === 'monthly') return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+        const d = new Date(date);
+        const day = d.getDay();
+        d.setDate(d.getDate() - day + (day === 0 ? -6 : 1));
+        return d.toISOString().slice(0, 10);
+    }
+
+    function formatChartLabel(key, period) {
+        if (period === 'yearly') return key;
+        const mo = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+        if (period === 'monthly') {
+            const [y, m] = key.split('-');
+            return `${mo[parseInt(m) - 1]} '${y.slice(2)}`;
+        }
+        const d = new Date(key + 'T12:00:00');
+        return `${mo[d.getMonth()]} ${d.getDate()}`;
     }
 
     // ==================== MOUNT ====================
@@ -737,6 +804,64 @@
                         </tbody>
                     </table>
                 </div>
+            {/if}
+        </div>
+
+        <!-- Activity Chart -->
+        <div class="analytics-section">
+            <h3>Activity Over Time</h3>
+            <div class="chart-controls">
+                <div class="period-selector">
+                    <button class="period-btn" class:active={chartPeriod === 'weekly'} onclick={() => chartPeriod = 'weekly'}>Weekly</button>
+                    <button class="period-btn" class:active={chartPeriod === 'monthly'} onclick={() => chartPeriod = 'monthly'}>Monthly</button>
+                    <button class="period-btn" class:active={chartPeriod === 'yearly'} onclick={() => chartPeriod = 'yearly'}>Yearly</button>
+                </div>
+                <div class="date-range">
+                    <label>From <input type="date" bind:value={chartDateFrom} /></label>
+                    <label>To <input type="date" bind:value={chartDateTo} /></label>
+                </div>
+            </div>
+            {#if chartData.length === 0}
+                <p class="cms-empty" style="margin-top:1rem;">No activity data for the selected range.</p>
+            {:else}
+                <div class="chart-scroll">
+                    <div class="chart-bars">
+                        {#each chartData as bucket}
+                            <div class="chart-bar-group">
+                                <div class="bar-stack">
+                                    {#if bucket.views > 0}<div class="bar-segment bar-views" style="height:{(bucket.views / maxChartVal * 100)}%"></div>{/if}
+                                    {#if bucket.reactions > 0}<div class="bar-segment bar-reactions" style="height:{(bucket.reactions / maxChartVal * 100)}%"></div>{/if}
+                                    {#if bucket.shares > 0}<div class="bar-segment bar-shares" style="height:{(bucket.shares / maxChartVal * 100)}%"></div>{/if}
+                                    {#if bucket.launches > 0}<div class="bar-segment bar-launches" style="height:{(bucket.launches / maxChartVal * 100)}%"></div>{/if}
+                                </div>
+                                <div class="bar-label">{formatChartLabel(bucket.label, chartPeriod)}</div>
+                            </div>
+                        {/each}
+                    </div>
+                </div>
+                <div class="chart-legend">
+                    <span class="legend-item"><span class="legend-dot" style="background:#4A90D9"></span>Views</span>
+                    <span class="legend-item"><span class="legend-dot" style="background:#E56B4C"></span>Reactions</span>
+                    <span class="legend-item"><span class="legend-dot" style="background:#7ABF6A"></span>Shares</span>
+                    <span class="legend-item"><span class="legend-dot" style="background:#9B6DD2"></span>Launches</span>
+                </div>
+            {/if}
+            {#if countryStats.length > 0}
+            <div class="top-posts-section">
+                <h4>Visitors by Country</h4>
+                <table class="analytics-table">
+                    <thead><tr><th>Country</th><th>Views</th><th>Total Events</th></tr></thead>
+                    <tbody>
+                        {#each countryStats as row}
+                            <tr>
+                                <td>{row.country}</td>
+                                <td>{row.views}</td>
+                                <td>{row.total}</td>
+                            </tr>
+                        {/each}
+                    </tbody>
+                </table>
+            </div>
             {/if}
         </div>
 

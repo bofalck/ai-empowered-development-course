@@ -6,6 +6,23 @@ import { eventsApi } from '$lib/api.js';
 import { getGuestId } from '$lib/utils.js';
 import { CONTENT_TYPES, EVENT_TYPES, USER_TYPES, APP_IDS } from '$lib/types.js';
 
+let _country = null;
+
+async function getCountry() {
+    if (_country !== null) return _country;
+    try {
+        const cached = sessionStorage.getItem('visitor_country');
+        if (cached) { _country = cached; return _country; }
+        const res = await fetch('https://ipapi.co/country/');
+        const text = (await res.text()).trim();
+        _country = text.length === 2 ? text : null;
+        if (_country) sessionStorage.setItem('visitor_country', _country);
+    } catch {
+        _country = null;
+    }
+    return _country;
+}
+
 /**
  * Track an engagement event
  * @param {string} contentType - Type of content (CONTENT_TYPES.BLOG_POST or CONTENT_TYPES.PROJECT)
@@ -18,6 +35,7 @@ export async function trackEvent(contentType, contentId, eventType, additionalDa
         const user = (await supabase.auth.getUser()).data.user;
         const isAuthenticated = !!user;
         const userIdentifier = isAuthenticated ? user.id : getGuestId();
+        const country = await getCountry();
 
         const eventData = {
             content_type: contentType,
@@ -25,6 +43,7 @@ export async function trackEvent(contentType, contentId, eventType, additionalDa
             event_type: eventType,
             user_identifier: userIdentifier,
             user_type: isAuthenticated ? USER_TYPES.AUTHENTICATED : USER_TYPES.GUEST,
+            country: country || null,
             ...additionalData
         };
 
