@@ -221,9 +221,9 @@ function logout() {
 }
 
 // Check if user is logged in
-function checkAuth() {
+async function checkAuth() {
     // Restore session from parent (portfolio)
-    restoreSession();
+    await restoreSession();
 
     const isAuthenticated = isLoggedIn();
     if (!isAuthenticated) {
@@ -2632,7 +2632,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     } catch { /* key stays empty — transcription will show "API key not configured" */ }
 
     // Check if user is logged in
-    checkAuth();
+    await checkAuth();
 
     init();
 
