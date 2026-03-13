@@ -39,6 +39,22 @@ export const blogApi = {
         }
     },
 
+    async getBySlug(slug) {
+        try {
+            const { data, error } = await supabase
+                .from('blog_posts')
+                .select('*')
+                .eq('slug', slug)
+                .single();
+
+            if (error) throw error;
+            return { data, error: null };
+        } catch (error) {
+            console.error('Blog API error:', error);
+            return { data: null, error };
+        }
+    },
+
     async create(post) {
         try {
             const { data, error } = await supabase

@@ -6469,6 +6469,72 @@ body.theme-prism .empty-placeholder {
     opacity: 0.8;
 }
 
+/* Widget CV Preview */
+.widget-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.widget-cv-open {
+    font-size: 0.8rem;
+    color: var(--color-text-secondary);
+    text-decoration: none;
+    opacity: 0.7;
+    transition: opacity 0.15s;
+}
+
+.widget-cv-open:hover {
+    opacity: 1;
+}
+
+.widget-cv-content {
+    padding: 0 !important;
+    overflow: hidden;
+}
+
+.cv-preview-link {
+    display: block;
+    position: relative;
+    overflow: hidden;
+    height: 320px;
+    cursor: pointer;
+    text-decoration: none;
+}
+
+.cv-preview-frame {
+    width: 100%;
+    height: 500px;
+    border: none;
+    pointer-events: none;
+    transform-origin: top left;
+    transform: scale(0.7);
+    width: 143%;
+}
+
+.cv-preview-overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: flex-end;
+    justify-content: flex-end;
+    padding: 1rem;
+    background: linear-gradient(to top, rgba(0,0,0,0.25) 0%, transparent 50%);
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+
+.cv-preview-overlay span {
+    font-size: 0.85rem;
+    color: #fff;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+}
+
+.cv-preview-link:hover .cv-preview-overlay {
+    opacity: 1;
+}
+
 @keyframes pulse {
     0%, 100% { opacity: 1; }
     50% { opacity: 0.6; }

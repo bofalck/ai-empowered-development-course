@@ -44,7 +44,7 @@
                 </div>
             {:else}
                 {#each filtered as post (post.id)}
-                    <a href="/blog/{post.id}" class="card blog-card">
+                    <a href="/blog/{post.slug || post.id}" class="card blog-card">
                         <time class="card-date">{formatDate(post.created_at)}</time>
                         <h3 class="card-title">{extractPlainText(post.title)}</h3>
                         {#if post.excerpt}

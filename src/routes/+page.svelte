@@ -83,7 +83,7 @@
                     {:else}
                         <div class="widget-blog-preview">
                             {#each posts.slice(0, 3) as post (post.id)}
-                                <a href="/blog/{post.id}" class="blog-preview-item blog-preview-link">
+                                <a href="/blog/{post.slug || post.id}" class="blog-preview-item blog-preview-link">
                                     <div class="blog-preview-header">
                                         <time class="blog-preview-date">{formatDate(post.created_at)}</time>
                                         <h4 class="blog-preview-title">{extractPlainText(post.title)}</h4>
@@ -183,11 +183,21 @@
             <section id="cv" class="widget widget-cv">
                 <div class="widget-header">
                     <h2>CV</h2>
+                    <a href="/cv.pdf" target="_blank" rel="noopener noreferrer" class="widget-cv-open">Open PDF ↗</a>
                 </div>
-                <div class="widget-content">
-                    <div class="empty-state">
-                        <p>CV coming soon...</p>
-                    </div>
+                <div class="widget-content widget-cv-content">
+                    <a href="/cv.pdf" target="_blank" rel="noopener noreferrer" class="cv-preview-link" aria-label="Open CV as PDF">
+                        <iframe
+                            src="/cv.pdf#toolbar=0&navpanes=0&scrollbar=0&view=FitH"
+                            class="cv-preview-frame"
+                            title="CV preview"
+                            tabindex="-1"
+                            scrolling="no"
+                        ></iframe>
+                        <div class="cv-preview-overlay">
+                            <span>View full CV →</span>
+                        </div>
+                    </a>
                 </div>
             </section>
 
