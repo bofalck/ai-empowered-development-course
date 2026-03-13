@@ -401,7 +401,7 @@
 
             if (blogData?.length) {
                 blogMetrics = blogData.map(post => {
-                    const ev = events.filter(e => e.content_type === 'blog_post' && e.content_id === post.id);
+                    const ev = events.filter(e => e.content_type === 'blog_post' && e.content_id === String(post.id));
                     const viewEvents = ev.filter(e => e.event_type === 'detail_view');
                     const shareEvents = ev.filter(e => e.event_type === 'share');
                     const reactionEvents = ev.filter(e => e.event_type === 'reaction');
@@ -430,7 +430,7 @@
 
             if (projectData?.length) {
                 projectMetrics = projectData.map(proj => {
-                    const ev = events.filter(e => e.content_type === 'project' && e.content_id === proj.id);
+                    const ev = events.filter(e => e.content_type === 'project' && e.content_id === String(proj.id));
                     const viewEvents = ev.filter(e => e.event_type === 'detail_view');
                     const shareEvents = ev.filter(e => e.event_type === 'share');
                     return {
