@@ -71,8 +71,8 @@
         </h1>
         <nav class="header-nav desktop-only">
             <a href="/" class="nav-link">Home</a>
-            <a href="/projects" class="nav-link">Projects</a>
             <a href="/blog" class="nav-link">Blog</a>
+            <a href="/projects" class="nav-link">Projects</a>
         </nav>
         <div class="header-actions desktop-only">
             <div class="theme-selector" id="themeSelector">
@@ -111,8 +111,8 @@
         <div class="mobile-menu-inner">
             <nav class="mobile-nav">
                 <a href="/" class="nav-link" onclick={closeMenu}>Home</a>
-                <a href="/projects" class="nav-link" onclick={closeMenu}>Projects</a>
                 <a href="/blog" class="nav-link" onclick={closeMenu}>Blog</a>
+                <a href="/projects" class="nav-link" onclick={closeMenu}>Projects</a>
             </nav>
             <div class="mobile-menu-divider"></div>
             <div class="mobile-theme-section">
