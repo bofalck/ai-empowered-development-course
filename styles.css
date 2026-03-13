@@ -6504,14 +6504,12 @@ body.theme-prism .empty-placeholder {
     text-decoration: none;
 }
 
-.cv-preview-frame {
+.cv-preview-img {
     width: 100%;
-    height: 500px;
-    border: none;
-    pointer-events: none;
-    transform-origin: top left;
-    transform: scale(0.7);
-    width: 143%;
+    height: 100%;
+    object-fit: cover;
+    object-position: top;
+    display: block;
 }
 
 .cv-preview-overlay {

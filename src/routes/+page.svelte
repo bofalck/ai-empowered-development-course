@@ -187,13 +187,7 @@
                 </div>
                 <div class="widget-content widget-cv-content">
                     <a href="/cv.pdf" target="_blank" rel="noopener noreferrer" class="cv-preview-link" aria-label="Open CV as PDF">
-                        <iframe
-                            src="/cv.pdf#toolbar=0&navpanes=0&scrollbar=0&view=FitH"
-                            class="cv-preview-frame"
-                            title="CV preview"
-                            tabindex="-1"
-                            scrolling="no"
-                        ></iframe>
+                        <img src="/images/cv-thumbnail.png" alt="CV preview" class="cv-preview-img" />
                         <div class="cv-preview-overlay">
                             <span>View full CV →</span>
                         </div>
