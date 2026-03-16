@@ -378,17 +378,13 @@
         else projectDragOverIdx = index;
     }
 
-    function dragLeave(type) {
-        if (type === 'blog') blogDragOverIdx = -1;
-        else projectDragOverIdx = -1;
-    }
-
     function dragEnd(type) {
         if (type === 'blog') { blogDragIdx = -1; blogDragOverIdx = -1; }
         else { projectDragIdx = -1; projectDragOverIdx = -1; }
     }
 
-    function drop(targetIndex, type) {
+    function drop(e, targetIndex, type) {
+        e.preventDefault();
         if (type === 'blog') {
             if (blogDragIdx < 0 || blogDragIdx === targetIndex) { dragEnd('blog'); return; }
             const updated = [...blogPosts];
@@ -696,8 +692,7 @@
                             draggable={true}
                             ondragstart={(e) => dragStart(e, i, 'blog')}
                             ondragover={(e) => dragOver(e, i, 'blog')}
-                            ondragleave={() => dragLeave('blog')}
-                            ondrop={() => drop(i, 'blog')}
+                            ondrop={(e) => drop(e, i, 'blog')}
                             ondragend={() => dragEnd('blog')}
                         >
                             <div class="cms-item-header">
@@ -773,8 +768,7 @@
                             draggable={true}
                             ondragstart={(e) => dragStart(e, i, 'projects')}
                             ondragover={(e) => dragOver(e, i, 'projects')}
-                            ondragleave={() => dragLeave('projects')}
-                            ondrop={() => drop(i, 'projects')}
+                            ondrop={(e) => drop(e, i, 'projects')}
                             ondragend={() => dragEnd('projects')}
                         >
                             <div class="cms-item-header">
