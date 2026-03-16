@@ -862,6 +862,7 @@
                     <div class="chart-bars">
                         {#each chartData as bucket}
                             <div class="chart-bar-group">
+                                <div class="bar-total">{bucket.total > 0 ? bucket.total : ''}</div>
                                 <div class="bar-stack">
                                     {#if bucket.views > 0}<div class="bar-segment bar-views" style="height:{(bucket.views / maxChartVal * 100)}%"></div>{/if}
                                     {#if bucket.reactions > 0}<div class="bar-segment bar-reactions" style="height:{(bucket.reactions / maxChartVal * 100)}%"></div>{/if}

@@ -6410,10 +6410,18 @@ body.theme-prism .empty-placeholder {
 
 .widget-star-badge {
     position: absolute;
-    top: 8px;
-    right: 8px;
-    font-size: 14px;
+    top: 10px;
+    right: 10px;
+    width: 22px;
+    height: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
     color: var(--color-primary);
+    background: var(--color-background);
+    border: 1.5px solid var(--color-border);
+    border-radius: 50%;
     line-height: 1;
     pointer-events: none;
     user-select: none;
@@ -8559,6 +8567,15 @@ body.theme-dark .detail-content b {
     color: var(--color-text-secondary);
     text-align: center;
     white-space: nowrap;
+}
+
+.bar-total {
+    font-size: 0.65rem;
+    font-weight: 600;
+    color: var(--color-text-secondary);
+    text-align: center;
+    min-height: 16px;
+    line-height: 16px;
 }
 
 .chart-legend {
