@@ -269,6 +269,16 @@
         await loadBlogPosts();
     }
 
+    async function toggleBlogStar(post) {
+        if (!post.starred && blogPosts.filter(p => p.starred).length >= 3) {
+            showModal('Limit reached', 'You can feature a maximum of 3 posts on the home page. Unstar one first.', 'error');
+            return;
+        }
+        const { error } = await supabase.from('blog_posts').update({ starred: !post.starred }).eq('id', post.id);
+        if (error) { showModal('Error', error.message, 'error'); return; }
+        await loadBlogPosts();
+    }
+
     // ==================== PROJECTS ====================
 
     async function loadProjects() {
@@ -333,6 +343,16 @@
     async function deleteProject(id) {
         if (!confirm('Delete this project?')) return;
         const { error } = await supabase.from('projects').delete().eq('id', id);
+        if (error) { showModal('Error', error.message, 'error'); return; }
+        await loadProjects();
+    }
+
+    async function toggleProjectStar(project) {
+        if (!project.starred && projects.filter(p => p.starred).length >= 3) {
+            showModal('Limit reached', 'You can feature a maximum of 3 projects on the home page. Unstar one first.', 'error');
+            return;
+        }
+        const { error } = await supabase.from('projects').update({ starred: !project.starred }).eq('id', project.id);
         if (error) { showModal('Error', error.message, 'error'); return; }
         await loadProjects();
     }
@@ -621,6 +641,13 @@
                             {#if post.excerpt}<p class="cms-item-excerpt">{post.excerpt}</p>{/if}
                             <div class="cms-item-preview">{@html post.content}</div>
                             <div class="cms-item-actions">
+                                <button
+                                    class="cms-item-star"
+                                    class:starred={post.starred}
+                                    onclick={() => toggleBlogStar(post)}
+                                    title={post.starred ? 'Remove from home page' : 'Feature on home page'}
+                                    disabled={!post.starred && blogPosts.filter(p => p.starred).length >= 3}
+                                >{post.starred ? '★' : '☆'}</button>
                                 <button class="cms-item-edit" onclick={() => editBlogPost(post.id)}>Edit</button>
                                 <button class="cms-item-delete" onclick={() => deleteBlogPost(post.id)}>Delete</button>
                             </div>
@@ -682,6 +709,13 @@
                                 <div class="cms-item-preview">{@html project.description}</div>
                             {/if}
                             <div class="cms-item-actions">
+                                <button
+                                    class="cms-item-star"
+                                    class:starred={project.starred}
+                                    onclick={() => toggleProjectStar(project)}
+                                    title={project.starred ? 'Remove from home page' : 'Feature on home page'}
+                                    disabled={!project.starred && projects.filter(p => p.starred).length >= 3}
+                                >{project.starred ? '★' : '☆'}</button>
                                 <button class="cms-item-edit" onclick={() => editProject(project.id)}>Edit</button>
                                 <button class="cms-item-delete" onclick={() => deleteProject(project.id)}>Delete</button>
                             </div>

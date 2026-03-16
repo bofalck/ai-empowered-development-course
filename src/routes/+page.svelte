@@ -18,6 +18,8 @@
 
     let posts = $derived(data.posts ?? []);
     let projects = $derived(data.projects ?? []);
+    let postCount = $derived(data.postCount ?? posts.length);
+    let projectCount = $derived(data.projectCount ?? projects.length);
     let profile = $derived(data.about ?? FALLBACK_ABOUT);
 
     const SOCIAL_ICONS = {
@@ -82,7 +84,7 @@
                         </div>
                     {:else}
                         <div class="widget-blog-preview">
-                            {#each posts.slice(0, 3) as post (post.id)}
+                            {#each posts as post (post.id)}
                                 <a href="/blog/{post.slug || post.id}" class="blog-preview-item blog-preview-link">
                                     <div class="blog-preview-header">
                                         <time class="blog-preview-date">{formatDate(post.created_at)}</time>
@@ -93,7 +95,7 @@
                                     {/if}
                                 </a>
                             {/each}
-                            <a href="/blog" class="widget-blog-link">View all {posts.length} posts →</a>
+                            <a href="/blog" class="widget-blog-link">View all {postCount} posts →</a>
                         </div>
                     {/if}
                 </div>
@@ -139,7 +141,7 @@
                                     {/if}
                                 </a>
                             {/each}
-                            <a href="/projects" class="widget-projects-link">View all {projects.length} projects →</a>
+                            <a href="/projects" class="widget-projects-link">View all {projectCount} projects →</a>
                         </div>
                     {/if}
                 </div>
