@@ -9,19 +9,23 @@ import { supabase } from '$lib/supabase-client.js';
  */
 export const blogApi = {
     async getAll() {
-        try {
-            const { data, error } = await supabase
-                .from('blog_posts')
-                .select('*')
-                .order('sort_order', { ascending: true, nullsFirst: false })
-                .order('created_at', { ascending: false });
+        // Try with sort_order first; fall back to created_at if the column doesn't exist yet
+        const { data, error } = await supabase
+            .from('blog_posts')
+            .select('*')
+            .order('sort_order', { ascending: true, nullsFirst: false })
+            .order('created_at', { ascending: false });
 
-            if (error) throw error;
-            return { data, error: null };
-        } catch (error) {
-            console.error('Blog API error:', error);
-            return { data: null, error };
-        }
+        if (!error) return { data, error: null };
+
+        // sort_order column missing — fall back gracefully
+        const { data: fallback, error: err2 } = await supabase
+            .from('blog_posts')
+            .select('*')
+            .order('created_at', { ascending: false });
+
+        if (err2) { console.error('Blog API error:', err2); return { data: null, error: err2 }; }
+        return { data: fallback, error: null };
     },
 
     async getById(id) {
@@ -120,19 +124,23 @@ export const blogApi = {
  */
 export const projectsApi = {
     async getAll() {
-        try {
-            const { data, error } = await supabase
-                .from('projects')
-                .select('*')
-                .order('sort_order', { ascending: true, nullsFirst: false })
-                .order('created_at', { ascending: false });
+        // Try with sort_order first; fall back to created_at if the column doesn't exist yet
+        const { data, error } = await supabase
+            .from('projects')
+            .select('*')
+            .order('sort_order', { ascending: true, nullsFirst: false })
+            .order('created_at', { ascending: false });
 
-            if (error) throw error;
-            return { data, error: null };
-        } catch (error) {
-            console.error('Projects API error:', error);
-            return { data: null, error };
-        }
+        if (!error) return { data, error: null };
+
+        // sort_order column missing — fall back gracefully
+        const { data: fallback, error: err2 } = await supabase
+            .from('projects')
+            .select('*')
+            .order('created_at', { ascending: false });
+
+        if (err2) { console.error('Projects API error:', err2); return { data: null, error: err2 }; }
+        return { data: fallback, error: null };
     },
 
     async getById(id) {
