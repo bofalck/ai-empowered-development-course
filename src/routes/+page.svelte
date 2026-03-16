@@ -86,6 +86,7 @@
                         <div class="widget-blog-preview">
                             {#each posts as post (post.id)}
                                 <a href="/blog/{post.slug || post.id}" class="blog-preview-item blog-preview-link">
+                                    {#if post.starred}<span class="widget-star-badge">★</span>{/if}
                                     <div class="blog-preview-header">
                                         <time class="blog-preview-date">{formatDate(post.created_at)}</time>
                                         <h4 class="blog-preview-title">{extractPlainText(post.title)}</h4>
@@ -115,6 +116,7 @@
                         <div class="widget-projects-preview">
                             {#each projects.slice(0, 2) as project (project.id)}
                                 <a href="/projects/{project.id}" class="project-preview-item project-preview-link">
+                                    {#if project.starred}<span class="widget-star-badge">★</span>{/if}
                                     <div class="project-preview-header">
                                         {#if project.logotype}
                                             <img

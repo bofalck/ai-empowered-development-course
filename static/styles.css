@@ -6284,6 +6284,7 @@ body.theme-prism .empty-placeholder {
     text-decoration: none;
     color: inherit;
     min-height: 140px;
+    position: relative;
 }
 
 .project-preview-link {
@@ -6402,6 +6403,18 @@ body.theme-prism .empty-placeholder {
     text-decoration: none;
     color: inherit;
     min-height: 140px;
+    position: relative;
+}
+
+.widget-star-badge {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    font-size: 14px;
+    color: var(--color-primary);
+    line-height: 1;
+    pointer-events: none;
+    user-select: none;
 }
 
 .blog-preview-link {
