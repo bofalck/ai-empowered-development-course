@@ -5698,52 +5698,76 @@ body.theme-prism .empty-placeholder {
     border: 1px solid var(--color-divider);
     border-radius: var(--border-radius-sm);
     font-size: 1rem;
+    font-family: inherit;
     background: var(--color-background);
     color: var(--color-text);
+    box-sizing: border-box;
+    transition: border-color 150ms ease, box-shadow 150ms ease;
+}
+
+.login-card input:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary) 15%, transparent);
+}
+
+.login-error {
+    padding: 0.75rem 1rem;
+    background: color-mix(in srgb, #e53e3e 10%, transparent);
+    border: 1px solid color-mix(in srgb, #e53e3e 35%, transparent);
+    border-radius: var(--border-radius-sm);
+    color: #c53030;
+    font-size: 0.875rem;
+    margin-bottom: var(--spacing-md);
 }
 
 .btn-login {
     width: 100%;
-    padding: 0.75rem;
+    padding: 0.8rem;
     background: var(--color-primary);
     color: white;
     border: none;
     border-radius: var(--border-radius-sm);
+    font-size: 1rem;
+    font-family: inherit;
     font-weight: 600;
+    letter-spacing: 0.02em;
     cursor: pointer;
     margin-bottom: var(--spacing-md);
+    transition: opacity 150ms ease, transform 100ms ease;
 }
 
-.btn-login:hover {
+.btn-login:hover:not(:disabled) {
     opacity: 0.9;
 }
 
-.login-divider {
-    text-align: center;
-    margin: var(--spacing-md) 0;
-    color: var(--color-text-secondary);
+.btn-login:active:not(:disabled) {
+    transform: scale(0.99);
 }
 
-.btn-guest {
-    width: 100%;
-    padding: 0.75rem;
-    background: var(--color-surface);
-    border: 1px solid var(--color-divider);
-    border-radius: var(--border-radius-sm);
-    cursor: pointer;
-    font-weight: 500;
-    color: var(--color-text);
-    margin-bottom: var(--spacing-md);
-}
-
-.btn-guest:hover {
-    background: var(--color-divider);
+.btn-login:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
 }
 
 .login-hint {
     font-size: 0.8rem;
     color: var(--color-text-secondary);
     text-align: center;
+}
+
+.login-back {
+    display: block;
+    text-align: center;
+    margin-top: var(--spacing-md);
+    font-size: 0.875rem;
+    color: var(--color-text-secondary);
+    text-decoration: none;
+    transition: color 150ms ease;
+}
+
+.login-back:hover {
+    color: var(--color-primary);
 }
 
 /* PORTFOLIO HEADER */
@@ -5865,15 +5889,26 @@ body.theme-prism .empty-placeholder {
 }
 
 .btn-admin-cms {
-    padding: 0.5rem 1rem;
+    display: inline-flex;
+    align-items: center;
+    padding: 0.375rem 0.875rem;
     background: var(--color-primary);
     border: none;
     border-radius: var(--border-radius-sm);
     cursor: pointer;
-    font-weight: 500;
+    font-size: 0.8rem;
+    font-family: inherit;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
     color: white;
     text-decoration: none;
-    display: inline-block;
+    transition: opacity 150ms ease, transform 100ms ease;
+}
+
+.btn-admin-cms:hover {
+    opacity: 0.85;
+    transform: translateY(-1px);
 }
 
 /* ---- Hamburger button (mobile only) ---- */
@@ -5986,7 +6021,8 @@ body.theme-prism .empty-placeholder {
 }
 
 .mobile-auth .btn-logout,
-.mobile-auth .btn-signin {
+.mobile-auth .btn-signin,
+.mobile-auth .btn-admin-cms {
     display: block;
     width: 100%;
     text-align: center;

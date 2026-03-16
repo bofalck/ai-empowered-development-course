@@ -34,38 +34,43 @@
 <main class="portfolio-main">
     <div class="login-page">
         <div class="login-container">
-            <h1 class="login-title">Sign In</h1>
-            <form onsubmit={handleLogin} class="login-form">
-                {#if error}
-                    <div class="login-error">{error}</div>
-                {/if}
-                <div class="form-group">
-                    <label for="email">Email</label>
-                    <input
-                        type="email"
-                        id="email"
-                        bind:value={email}
-                        required
-                        autocomplete="email"
-                        placeholder="your@email.com"
-                    />
-                </div>
-                <div class="form-group">
-                    <label for="password">Password</label>
-                    <input
-                        type="password"
-                        id="password"
-                        bind:value={password}
-                        required
-                        autocomplete="current-password"
-                        placeholder="••••••••"
-                    />
-                </div>
-                <button type="submit" class="btn-save" disabled={loading}>
-                    {loading ? 'Signing in…' : 'Sign In'}
-                </button>
-            </form>
-            <a href="/" class="back-link" style="display:block; margin-top:1.5rem; text-align:center;">← Back to Portfolio</a>
+            <div class="login-card">
+                <h1>After The Noise</h1>
+                <p class="subtitle">Admin — portfolio management</p>
+
+                <form onsubmit={handleLogin}>
+                    {#if error}
+                        <div class="login-error">{error}</div>
+                    {/if}
+                    <div class="form-group">
+                        <label for="email">Email</label>
+                        <input
+                            type="email"
+                            id="email"
+                            bind:value={email}
+                            required
+                            autocomplete="email"
+                            placeholder="your@email.com"
+                        />
+                    </div>
+                    <div class="form-group">
+                        <label for="password">Password</label>
+                        <input
+                            type="password"
+                            id="password"
+                            bind:value={password}
+                            required
+                            autocomplete="current-password"
+                            placeholder="••••••••"
+                        />
+                    </div>
+                    <button type="submit" class="btn-login" disabled={loading}>
+                        {loading ? 'Signing in…' : 'Sign In'}
+                    </button>
+                </form>
+
+                <a href="/" class="login-back">← Back to portfolio</a>
+            </div>
         </div>
     </div>
 </main>

@@ -88,7 +88,7 @@
             </div>
             <div id="authActions">
                 {#if isLoggedIn}
-                    <a href="/admin/cms" class="nav-link nav-link--admin">Admin</a>
+                    <a href="/admin/cms" class="btn-admin-cms">Admin</a>
                     <button class="btn-logout" onclick={logout}>Sign Out</button>
                 {/if}
             </div>
@@ -132,7 +132,7 @@
             <div class="mobile-menu-divider"></div>
             <div class="mobile-auth">
                 {#if isLoggedIn}
-                    <a href="/admin/cms" class="nav-link nav-link--admin" onclick={closeMenu}>Admin</a>
+                    <a href="/admin/cms" class="btn-admin-cms" onclick={closeMenu}>Admin</a>
                     <button class="btn-logout" onclick={() => { logout(); closeMenu(); }}>Sign Out</button>
                 {:else}
                     <a href="/login" class="nav-link" onclick={closeMenu}>Sign In</a>
