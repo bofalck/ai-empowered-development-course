@@ -64,11 +64,13 @@
 
 <header class="portfolio-header">
     <div class="header-content">
-        <h1 class="site-title">
-            <span>After</span>
-            <span>The</span>
-            <span>Noise</span>
-        </h1>
+        <a href="/" class="site-title-link">
+            <h1 class="site-title">
+                <span>After</span>
+                <span>The</span>
+                <span>Noise</span>
+            </h1>
+        </a>
         <nav class="header-nav desktop-only">
             <a href="/" class="nav-link">Home</a>
             <a href="/blog" class="nav-link">Blog</a>

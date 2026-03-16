@@ -13,6 +13,7 @@ export const blogApi = {
             const { data, error } = await supabase
                 .from('blog_posts')
                 .select('*')
+                .order('sort_order', { ascending: true, nullsFirst: false })
                 .order('created_at', { ascending: false });
 
             if (error) throw error;
@@ -98,6 +99,20 @@ export const blogApi = {
             return { data: null, error };
         }
     },
+
+    async reorder(orderedIds) {
+        try {
+            await Promise.all(
+                orderedIds.map((id, index) =>
+                    supabase.from('blog_posts').update({ sort_order: index }).eq('id', id)
+                )
+            );
+            return { error: null };
+        } catch (error) {
+            console.error('Blog API error:', error);
+            return { error };
+        }
+    },
 };
 
 /**
@@ -109,6 +124,7 @@ export const projectsApi = {
             const { data, error } = await supabase
                 .from('projects')
                 .select('*')
+                .order('sort_order', { ascending: true, nullsFirst: false })
                 .order('created_at', { ascending: false });
 
             if (error) throw error;
@@ -176,6 +192,20 @@ export const projectsApi = {
         } catch (error) {
             console.error('Projects API error:', error);
             return { data: null, error };
+        }
+    },
+
+    async reorder(orderedIds) {
+        try {
+            await Promise.all(
+                orderedIds.map((id, index) =>
+                    supabase.from('projects').update({ sort_order: index }).eq('id', id)
+                )
+            );
+            return { error: null };
+        } catch (error) {
+            console.error('Projects API error:', error);
+            return { error };
         }
     },
 };

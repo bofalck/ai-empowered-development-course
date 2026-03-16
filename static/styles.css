@@ -5789,6 +5789,11 @@ body.theme-prism .empty-placeholder {
     gap: var(--spacing-lg);
 }
 
+.site-title-link {
+    text-decoration: none;
+    color: inherit;
+}
+
 .site-title {
     display: flex;
     flex-direction: column;
@@ -6894,6 +6899,31 @@ body.theme-prism .empty-placeholder {
 .cms-item:hover {
     border-color: var(--color-primary);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.cms-item--dragging {
+    opacity: 0.35;
+    pointer-events: none;
+}
+
+.cms-item--drag-over {
+    border-top: 2px solid var(--color-primary);
+    box-shadow: 0 -2px 0 var(--color-primary);
+}
+
+.cms-drag-handle {
+    cursor: grab;
+    font-size: 1.1rem;
+    color: var(--color-text-secondary);
+    user-select: none;
+    flex-shrink: 0;
+    opacity: 0.5;
+    transition: opacity 150ms ease;
+    line-height: 1;
+}
+
+.cms-item:hover .cms-drag-handle {
+    opacity: 1;
 }
 
 .cms-item-header {
