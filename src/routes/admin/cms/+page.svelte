@@ -515,6 +515,7 @@
     function getChartBucketKey(date, period) {
         if (period === 'yearly') return `${date.getFullYear()}`;
         if (period === 'monthly') return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+        if (period === 'daily') return date.toISOString().slice(0, 10);
         const d = new Date(date);
         const day = d.getDay();
         d.setDate(d.getDate() - day + (day === 0 ? -6 : 1));
@@ -844,6 +845,7 @@
             <h3>Activity Over Time</h3>
             <div class="chart-controls">
                 <div class="period-selector">
+                    <button class="period-btn" class:active={chartPeriod === 'daily'} onclick={() => chartPeriod = 'daily'}>Daily</button>
                     <button class="period-btn" class:active={chartPeriod === 'weekly'} onclick={() => chartPeriod = 'weekly'}>Weekly</button>
                     <button class="period-btn" class:active={chartPeriod === 'monthly'} onclick={() => chartPeriod = 'monthly'}>Monthly</button>
                     <button class="period-btn" class:active={chartPeriod === 'yearly'} onclick={() => chartPeriod = 'yearly'}>Yearly</button>
