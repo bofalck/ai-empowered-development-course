@@ -7229,6 +7229,100 @@ body.theme-prism .empty-placeholder {
 }
 
 @media (max-width: 768px) {
+    /* ---- CMS container ---- */
+    .cms-main {
+        padding: var(--spacing-sm);
+    }
+
+    /* ---- Tabs: scrollable row, smaller buttons ---- */
+    .cms-tabs {
+        gap: 0;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+    }
+    .cms-tabs::-webkit-scrollbar { display: none; }
+
+    .cms-tab {
+        padding: 0.6rem 0.875rem;
+        font-size: 0.82rem;
+        white-space: nowrap;
+        flex-shrink: 0;
+    }
+
+    /* ---- List items ---- */
+    .cms-item {
+        padding: var(--spacing-md);
+    }
+
+    .cms-item-header {
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .cms-item-header h4 {
+        font-size: 0.95rem;
+        flex: 1;
+        min-width: 0;
+    }
+
+    .cms-item-date {
+        width: 100%;
+        order: 4;
+        font-size: 0.78rem;
+        margin-top: 0.125rem;
+    }
+
+    /* ---- Order buttons: bigger tap targets ---- */
+    .cms-order-btns {
+        flex-direction: row;
+        gap: 4px;
+    }
+
+    .cms-order-btn {
+        width: 36px;
+        height: 36px;
+        font-size: 1rem;
+        border-radius: var(--border-radius-sm);
+    }
+
+    /* ---- Action buttons ---- */
+    .cms-item-actions {
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+
+    .cms-item-star {
+        order: -1;
+    }
+
+    .cms-item-edit,
+    .cms-item-delete {
+        flex: 1;
+        min-width: 80px;
+        text-align: center;
+        padding: 0.5rem 0.75rem;
+        font-size: 0.85rem;
+    }
+
+    /* ---- Forms ---- */
+    .cms-form {
+        padding: var(--spacing-md);
+        max-width: 100%;
+    }
+
+    .cms-form .form-actions {
+        flex-direction: column;
+    }
+
+    .btn-save,
+    .btn-cancel {
+        width: 100%;
+        text-align: center;
+    }
+
+    /* ---- Analytics tables ---- */
     .cms-projects-table {
         font-size: 0.85rem;
     }
@@ -7248,12 +7342,6 @@ body.theme-prism .empty-placeholder {
 
     .cms-tags-list {
         max-width: 80px;
-    }
-
-    .cms-item-edit,
-    .cms-item-delete {
-        padding: 0.3rem 0.5rem;
-        font-size: 0.75rem;
     }
 }
 

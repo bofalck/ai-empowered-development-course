@@ -105,17 +105,17 @@ export const blogApi = {
     },
 
     async reorder(orderedIds) {
-        try {
-            await Promise.all(
-                orderedIds.map((id, index) =>
-                    supabase.from('blog_posts').update({ sort_order: index }).eq('id', id)
-                )
-            );
-            return { error: null };
-        } catch (error) {
-            console.error('Blog API error:', error);
-            return { error };
+        const results = await Promise.all(
+            orderedIds.map((id, index) =>
+                supabase.from('blog_posts').update({ sort_order: index }).eq('id', id)
+            )
+        );
+        const failed = results.find(r => r.error);
+        if (failed) {
+            console.error('Blog API error:', failed.error);
+            return { error: failed.error };
         }
+        return { error: null };
     },
 };
 
@@ -204,17 +204,17 @@ export const projectsApi = {
     },
 
     async reorder(orderedIds) {
-        try {
-            await Promise.all(
-                orderedIds.map((id, index) =>
-                    supabase.from('projects').update({ sort_order: index }).eq('id', id)
-                )
-            );
-            return { error: null };
-        } catch (error) {
-            console.error('Projects API error:', error);
-            return { error };
+        const results = await Promise.all(
+            orderedIds.map((id, index) =>
+                supabase.from('projects').update({ sort_order: index }).eq('id', id)
+            )
+        );
+        const failed = results.find(r => r.error);
+        if (failed) {
+            console.error('Projects API error:', failed.error);
+            return { error: failed.error };
         }
+        return { error: null };
     },
 };
 
