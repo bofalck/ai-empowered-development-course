@@ -57,11 +57,8 @@
     let modal = $state({ show: false, title: '', message: '', type: 'success' });
     let cropModal = $state(false);
 
-    // --- Drag-and-drop order ---
-    let blogDragIdx = $state(-1);
-    let blogDragOverIdx = $state(-1);
-    let projectDragIdx = $state(-1);
-    let projectDragOverIdx = $state(-1);
+    // --- Manual ordering ---
+    let savingOrder = $state(false);
 
     // --- Quill instances (not reactive) ---
     let blogEditor = null;
@@ -363,49 +360,25 @@
         await loadProjects();
     }
 
-    // ==================== DRAG-AND-DROP ORDER ====================
+    // ==================== MANUAL ORDERING ====================
 
-    function dragStart(e, index, type) {
-        e.dataTransfer.effectAllowed = 'move';
-        if (type === 'blog') blogDragIdx = index;
-        else projectDragIdx = index;
-    }
+    async function moveItem(index, direction, type) {
+        const list = type === 'blog' ? blogPosts : projects;
+        const newIndex = index + direction;
+        if (newIndex < 0 || newIndex >= list.length) return;
 
-    function dragOver(e, index, type) {
-        e.preventDefault();
-        e.dataTransfer.dropEffect = 'move';
-        if (type === 'blog') blogDragOverIdx = index;
-        else projectDragOverIdx = index;
-    }
+        const updated = [...list];
+        const [moved] = updated.splice(index, 1);
+        updated.splice(newIndex, 0, moved);
 
-    function dragEnd(type) {
-        if (type === 'blog') { blogDragIdx = -1; blogDragOverIdx = -1; }
-        else { projectDragIdx = -1; projectDragOverIdx = -1; }
-    }
+        if (type === 'blog') blogPosts = updated;
+        else projects = updated;
 
-    function drop(e, targetIndex, type) {
-        e.preventDefault();
-        if (type === 'blog') {
-            if (blogDragIdx < 0 || blogDragIdx === targetIndex) { dragEnd('blog'); return; }
-            const updated = [...blogPosts];
-            const [moved] = updated.splice(blogDragIdx, 1);
-            updated.splice(targetIndex, 0, moved);
-            blogPosts = updated;
-            dragEnd('blog');
-            blogApi.reorder(updated.map(p => p.id)).then(({ error }) => {
-                if (error) showModal('Error', 'Could not save order.', 'error');
-            });
-        } else {
-            if (projectDragIdx < 0 || projectDragIdx === targetIndex) { dragEnd('projects'); return; }
-            const updated = [...projects];
-            const [moved] = updated.splice(projectDragIdx, 1);
-            updated.splice(targetIndex, 0, moved);
-            projects = updated;
-            dragEnd('projects');
-            projectsApi.reorder(updated.map(p => p.id)).then(({ error }) => {
-                if (error) showModal('Error', 'Could not save order.', 'error');
-            });
-        }
+        savingOrder = true;
+        const api = type === 'blog' ? blogApi : projectsApi;
+        const { error } = await api.reorder(updated.map(p => p.id));
+        savingOrder = false;
+        if (error) showModal('Error', 'Could not save order.', 'error');
     }
 
     // ==================== ABOUT ====================
@@ -685,18 +658,12 @@
                     <div class="cms-empty"><p>No blog posts yet. Create your first post!</p></div>
                 {:else}
                     {#each blogPosts as post, i (post.id)}
-                        <div
-                            class="cms-item"
-                            class:cms-item--dragging={blogDragIdx === i}
-                            class:cms-item--drag-over={blogDragOverIdx === i && blogDragIdx !== i}
-                            draggable={true}
-                            ondragstart={(e) => dragStart(e, i, 'blog')}
-                            ondragover={(e) => dragOver(e, i, 'blog')}
-                            ondrop={(e) => drop(e, i, 'blog')}
-                            ondragend={() => dragEnd('blog')}
-                        >
+                        <div class="cms-item">
                             <div class="cms-item-header">
-                                <span class="cms-drag-handle" aria-hidden="true">⠿</span>
+                                <div class="cms-order-btns">
+                                    <button class="cms-order-btn" onclick={() => moveItem(i, -1, 'blog')} disabled={i === 0 || savingOrder} title="Move up">↑</button>
+                                    <button class="cms-order-btn" onclick={() => moveItem(i, 1, 'blog')} disabled={i === blogPosts.length - 1 || savingOrder} title="Move down">↓</button>
+                                </div>
                                 <h4>{extractPlainText(post.title)}</h4>
                                 <span class="cms-item-date">{new Date(post.created_at).toLocaleDateString()}</span>
                             </div>
@@ -761,18 +728,12 @@
                     <div class="cms-empty"><p>No projects yet. Create your first project!</p></div>
                 {:else}
                     {#each projects as project, i (project.id)}
-                        <div
-                            class="cms-item"
-                            class:cms-item--dragging={projectDragIdx === i}
-                            class:cms-item--drag-over={projectDragOverIdx === i && projectDragIdx !== i}
-                            draggable={true}
-                            ondragstart={(e) => dragStart(e, i, 'projects')}
-                            ondragover={(e) => dragOver(e, i, 'projects')}
-                            ondrop={(e) => drop(e, i, 'projects')}
-                            ondragend={() => dragEnd('projects')}
-                        >
+                        <div class="cms-item">
                             <div class="cms-item-header">
-                                <span class="cms-drag-handle" aria-hidden="true">⠿</span>
+                                <div class="cms-order-btns">
+                                    <button class="cms-order-btn" onclick={() => moveItem(i, -1, 'projects')} disabled={i === 0 || savingOrder} title="Move up">↑</button>
+                                    <button class="cms-order-btn" onclick={() => moveItem(i, 1, 'projects')} disabled={i === projects.length - 1 || savingOrder} title="Move down">↓</button>
+                                </div>
                                 <h4>{extractPlainText(project.title)}</h4>
                                 <span class="cms-item-date">{new Date(project.created_at).toLocaleDateString()}</span>
                             </div>
