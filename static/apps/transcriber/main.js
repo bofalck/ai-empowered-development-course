@@ -22,6 +22,7 @@ let recordingStartTime = null;
 let timerInterval = null;
 let isRestarting = false;
 let currentAnalysis = null;
+const pendingDeletions = new Map(); // itemIndex → { timeoutId, intervalId }
 let mediaRecorder = null;
 let audioChunks = [];
 let audioStream = null;
@@ -2297,6 +2298,13 @@ function renderAnalysisColumn() {
                 <li class="action-item" data-item-index="${index}">
                     <input type="checkbox" class="action-item-checkbox" data-item-index="${index}" ${item.completed ? 'checked' : ''} title="Click to mark as complete">
                     <span class="action-item-text ${item.completed ? 'completed' : ''}">${escapeHtml(item.text)}</span>
+                    <div class="action-item-controls">
+                        <button class="copy-item-btn" data-item-index="${index}" title="Copy this action item">Copy</button>
+                        <button class="delete-item-btn" data-item-index="${index}" title="Delete this action item">✕</button>
+                        <span class="undo-delete-wrapper hidden">
+                            <button class="undo-delete-btn" data-item-index="${index}">Undo <span class="undo-countdown">5</span>s</button>
+                        </span>
+                    </div>
                 </li>
             `).join('') +
             '</ul>';
@@ -2325,19 +2333,16 @@ function renderAnalysisColumn() {
                 </div>
             </div>
 
+            <h3>Sentiment</h3>
+            <p>${escapeHtml(currentAnalysis.sentiment || '')}</p>
+
             <h3>Executive Summary</h3>
             <p>${escapeHtml(currentAnalysis.summary || '')}</p>
 
             <div class="action-items-section">
-                <div class="action-items-header">
-                    <h3>Action Items</h3>
-                    ${Array.isArray(currentAnalysis.action_items) && currentAnalysis.action_items.length > 0 ? '<button class="copy-action-items-btn" title="Copy all action items to clipboard">Copy</button>' : ''}
-                </div>
+                <h3>Action Items</h3>
                 ${actionItemsHtml}
             </div>
-
-            <h3>Sentiment</h3>
-            <p>${escapeHtml(currentAnalysis.sentiment || '')}</p>
         </div>
     `;
 
@@ -2386,19 +2391,74 @@ function renderAnalysisColumn() {
         });
     });
 
-    // Copy all action items to clipboard
-    const copyBtn = analysisBody.querySelector('.copy-action-items-btn');
-    if (copyBtn) {
-        copyBtn.addEventListener('click', () => {
-            const items = currentAnalysis.action_items;
-            if (!Array.isArray(items) || items.length === 0) return;
-            const text = items.map((item, i) => `${i + 1}. ${item.text || item}`).join('\n');
+    // Per-item copy buttons
+    analysisBody.querySelectorAll('.copy-item-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const index = parseInt(btn.getAttribute('data-item-index'));
+            const item = currentAnalysis.action_items[index];
+            if (!item) return;
+            const text = item.text || item;
             navigator.clipboard.writeText(text).then(() => {
-                copyBtn.textContent = 'Copied!';
-                setTimeout(() => { copyBtn.textContent = 'Copy'; }, 2000);
+                btn.textContent = '✓';
+                setTimeout(() => { btn.textContent = 'Copy'; }, 2000);
             });
         });
-    }
+    });
+
+    // Per-item delete with 5-second undo
+    analysisBody.querySelectorAll('.delete-item-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const index = parseInt(btn.getAttribute('data-item-index'));
+            const li = btn.closest('.action-item');
+            const undoWrapper = li.querySelector('.undo-delete-wrapper');
+            const countdownEl = li.querySelector('.undo-countdown');
+
+            // Visual pending state
+            li.classList.add('pending-delete');
+            btn.classList.add('hidden');
+            undoWrapper.classList.remove('hidden');
+
+            let secondsLeft = 5;
+            const intervalId = setInterval(() => {
+                secondsLeft--;
+                if (countdownEl) countdownEl.textContent = secondsLeft;
+            }, 1000);
+
+            const timeoutId = setTimeout(() => {
+                clearInterval(intervalId);
+                pendingDeletions.delete(index);
+                // Remove from data and DOM
+                const dataIndex = currentAnalysis.action_items.findIndex((_, i) => i === index);
+                if (dataIndex !== -1) currentAnalysis.action_items.splice(dataIndex, 1);
+                li.remove();
+                saveActionItemsChanges();
+            }, 5000);
+
+            pendingDeletions.set(index, { timeoutId, intervalId });
+        });
+    });
+
+    analysisBody.querySelectorAll('.undo-delete-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const index = parseInt(btn.getAttribute('data-item-index'));
+            const li = btn.closest('.action-item');
+            const deleteBtn = li.querySelector('.delete-item-btn');
+            const undoWrapper = li.querySelector('.undo-delete-wrapper');
+            const countdownEl = li.querySelector('.undo-countdown');
+
+            const pending = pendingDeletions.get(index);
+            if (pending) {
+                clearTimeout(pending.timeoutId);
+                clearInterval(pending.intervalId);
+                pendingDeletions.delete(index);
+            }
+
+            li.classList.remove('pending-delete');
+            deleteBtn.classList.remove('hidden');
+            undoWrapper.classList.add('hidden');
+            if (countdownEl) countdownEl.textContent = '5';
+        });
+    });
 
     // Set up inline edit listener for title
     setupMeetingInfoListeners();

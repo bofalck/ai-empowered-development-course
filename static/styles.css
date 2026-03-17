@@ -3738,13 +3738,9 @@ body.theme-signal .record-button.recording {
     }
 
     .action-item {
-        grid-template-columns: auto 1fr;
+        grid-template-columns: auto 1fr auto;
         gap: 0.5rem;
         padding: 0.75rem 0.5rem;
-    }
-
-    .action-item-assignee {
-        display: none;
     }
 }
 
@@ -4360,6 +4356,73 @@ body.theme-prism.theme-dark .prompt-input:focus {
 }
 
 .action-item-text.completed {
+    text-decoration: line-through;
+    color: #9ca3af;
+}
+
+.hidden {
+    display: none !important;
+}
+
+/* Action item controls (copy + delete) */
+.action-item-controls {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    flex-shrink: 0;
+}
+
+.copy-item-btn,
+.delete-item-btn,
+.undo-delete-btn {
+    padding: 0.15rem 0.45rem;
+    font-size: 0.7rem;
+    font-weight: 600;
+    border: 1px solid var(--color-divider);
+    border-radius: var(--border-radius-sm);
+    background: transparent;
+    cursor: pointer;
+    transition: all 150ms ease;
+    white-space: nowrap;
+}
+
+.copy-item-btn {
+    color: var(--color-text-secondary);
+}
+
+.copy-item-btn:hover {
+    background: var(--color-divider);
+    color: var(--color-text);
+}
+
+.delete-item-btn {
+    color: #ef4444;
+    border-color: transparent;
+}
+
+.delete-item-btn:hover {
+    background: #fee2e2;
+    border-color: #ef4444;
+}
+
+.undo-delete-btn {
+    color: var(--color-text);
+    border-color: var(--color-primary);
+    background: transparent;
+}
+
+.undo-delete-btn:hover {
+    background: var(--color-divider);
+}
+
+/* Pending delete state */
+.action-item.pending-delete {
+    opacity: 0.5;
+    border-color: #ef4444;
+    border-style: dashed;
+}
+
+.action-item.pending-delete .action-item-text {
     text-decoration: line-through;
     color: #9ca3af;
 }
