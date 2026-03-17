@@ -4364,30 +4364,38 @@ body.theme-prism.theme-dark .prompt-input:focus {
     display: none !important;
 }
 
-/* Action item controls (copy + delete) */
+/* Action item controls — hidden until hover */
 .action-item-controls {
     display: flex;
     align-items: center;
-    gap: 0.25rem;
+    gap: 2px;
     flex-shrink: 0;
+    opacity: 0;
+    transition: opacity 150ms ease;
 }
 
+.action-item:hover .action-item-controls,
+.action-item:focus-within .action-item-controls,
+.action-item.pending-delete .action-item-controls {
+    opacity: 1;
+}
+
+/* Icon buttons */
 .copy-item-btn,
-.delete-item-btn,
-.undo-delete-btn {
-    padding: 0.15rem 0.45rem;
-    font-size: 0.7rem;
-    font-weight: 600;
-    border: 1px solid var(--color-divider);
-    border-radius: var(--border-radius-sm);
+.delete-item-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    border: none;
+    border-radius: 6px;
     background: transparent;
-    cursor: pointer;
-    transition: all 150ms ease;
-    white-space: nowrap;
-}
-
-.copy-item-btn {
     color: var(--color-text-secondary);
+    cursor: pointer;
+    transition: background 150ms ease, color 150ms ease;
+    flex-shrink: 0;
 }
 
 .copy-item-btn:hover {
@@ -4395,36 +4403,58 @@ body.theme-prism.theme-dark .prompt-input:focus {
     color: var(--color-text);
 }
 
-.delete-item-btn {
-    color: #ef4444;
-    border-color: transparent;
+.copy-item-btn.copied {
+    background: var(--color-divider);
+    color: var(--color-primary);
 }
 
 .delete-item-btn:hover {
-    background: #fee2e2;
-    border-color: #ef4444;
+    background: color-mix(in srgb, #ef4444 10%, transparent);
+    color: #ef4444;
+}
+
+/* Undo pill — only shown when deletion is pending */
+.undo-delete-wrapper {
+    display: flex;
+    align-items: center;
 }
 
 .undo-delete-btn {
-    color: var(--color-text);
-    border-color: var(--color-primary);
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.2rem 0.55rem;
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    border: 1px solid var(--color-primary);
+    border-radius: 100px;
     background: transparent;
+    color: var(--color-primary);
+    cursor: pointer;
+    transition: background 150ms ease;
+    white-space: nowrap;
 }
 
 .undo-delete-btn:hover {
     background: var(--color-divider);
 }
 
+.undo-countdown {
+    font-variant-numeric: tabular-nums;
+    opacity: 0.65;
+}
+
 /* Pending delete state */
 .action-item.pending-delete {
-    opacity: 0.5;
-    border-color: #ef4444;
-    border-style: dashed;
+    opacity: 0.55;
+    border-color: color-mix(in srgb, #ef4444 40%, transparent);
+    background-color: color-mix(in srgb, #ef4444 4%, var(--color-surface));
 }
 
 .action-item.pending-delete .action-item-text {
     text-decoration: line-through;
-    color: #9ca3af;
+    color: var(--color-text-secondary);
 }
 
 .action-item-assignee {

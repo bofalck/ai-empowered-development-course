@@ -2291,18 +2291,22 @@ function renderAnalysisColumn() {
     // Ensure analysis body has correct class
     analysisBody.className = 'analysis-body';
 
+    const iconCopy = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>`;
+    const iconTrash = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M9 6V4h6v2"/></svg>`;
+    const iconCheck = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`;
+
     let actionItemsHtml = '';
     if (Array.isArray(currentAnalysis.action_items)) {
         actionItemsHtml = '<ul class="action-items-list">' +
             currentAnalysis.action_items.map((item, index) => `
                 <li class="action-item" data-item-index="${index}">
-                    <input type="checkbox" class="action-item-checkbox" data-item-index="${index}" ${item.completed ? 'checked' : ''} title="Click to mark as complete">
+                    <input type="checkbox" class="action-item-checkbox" data-item-index="${index}" ${item.completed ? 'checked' : ''} title="Mark as complete">
                     <span class="action-item-text ${item.completed ? 'completed' : ''}">${escapeHtml(item.text)}</span>
                     <div class="action-item-controls">
-                        <button class="copy-item-btn" data-item-index="${index}" title="Copy this action item">Copy</button>
-                        <button class="delete-item-btn" data-item-index="${index}" title="Delete this action item">✕</button>
+                        <button class="copy-item-btn" data-item-index="${index}" aria-label="Copy action item">${iconCopy}</button>
+                        <button class="delete-item-btn" data-item-index="${index}" aria-label="Delete action item">${iconTrash}</button>
                         <span class="undo-delete-wrapper hidden">
-                            <button class="undo-delete-btn" data-item-index="${index}">Undo <span class="undo-countdown">5</span>s</button>
+                            <button class="undo-delete-btn" data-item-index="${index}">Undo <span class="undo-countdown">5</span></button>
                         </span>
                     </div>
                 </li>
@@ -2399,8 +2403,12 @@ function renderAnalysisColumn() {
             if (!item) return;
             const text = item.text || item;
             navigator.clipboard.writeText(text).then(() => {
-                btn.textContent = '✓';
-                setTimeout(() => { btn.textContent = 'Copy'; }, 2000);
+                btn.innerHTML = iconCheck;
+                btn.classList.add('copied');
+                setTimeout(() => {
+                    btn.innerHTML = iconCopy;
+                    btn.classList.remove('copied');
+                }, 2000);
             });
         });
     });
