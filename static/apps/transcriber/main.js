@@ -2294,7 +2294,6 @@ function renderAnalysisColumn() {
                 <li class="action-item" data-item-index="${index}">
                     <input type="checkbox" class="action-item-checkbox" data-item-index="${index}" ${item.completed ? 'checked' : ''} title="Click to mark as complete">
                     <span class="action-item-text ${item.completed ? 'completed' : ''}">${escapeHtml(item.text)}</span>
-                    <input type="text" class="action-item-assignee" placeholder="Assign to..." value="${escapeHtml(item.assigned_to || '')}" data-item-index="${index}" title="Click to assign this item to someone">
                 </li>
             `).join('') +
             '</ul>';
@@ -2327,7 +2326,10 @@ function renderAnalysisColumn() {
             <p>${escapeHtml(currentAnalysis.summary || '')}</p>
 
             <div class="action-items-section">
-                <h3>Action Items</h3>
+                <div class="action-items-header">
+                    <h3>Action Items</h3>
+                    ${Array.isArray(currentAnalysis.action_items) && currentAnalysis.action_items.length > 0 ? '<button class="copy-action-items-btn" title="Copy all action items to clipboard">Copy</button>' : ''}
+                </div>
                 ${actionItemsHtml}
             </div>
 
@@ -2381,21 +2383,19 @@ function renderAnalysisColumn() {
         });
     });
 
-    // Set up action item assignee inputs
-    const assigneeInputs = analysisBody.querySelectorAll('.action-item-assignee');
-    assigneeInputs.forEach(input => {
-        input.addEventListener('change', () => {
-            const itemIndex = parseInt(input.getAttribute('data-item-index'));
-            const assignedTo = input.value.trim();
-
-            if (currentAnalysis.action_items[itemIndex]) {
-                currentAnalysis.action_items[itemIndex].assigned_to = assignedTo || null;
-            }
-
-            // Save to database
-            saveActionItemsChanges();
+    // Copy all action items to clipboard
+    const copyBtn = analysisBody.querySelector('.copy-action-items-btn');
+    if (copyBtn) {
+        copyBtn.addEventListener('click', () => {
+            const items = currentAnalysis.action_items;
+            if (!Array.isArray(items) || items.length === 0) return;
+            const text = items.map((item, i) => `${i + 1}. ${item.text || item}`).join('\n');
+            navigator.clipboard.writeText(text).then(() => {
+                copyBtn.textContent = 'Copied!';
+                setTimeout(() => { copyBtn.textContent = 'Copy'; }, 2000);
+            });
         });
-    });
+    }
 
     // Set up inline edit listener for title
     setupMeetingInfoListeners();
