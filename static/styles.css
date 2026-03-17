@@ -1907,6 +1907,7 @@ textarea:focus {
     grid-template-columns: 1fr 1fr 1fr;
     gap: 1.5rem;
     margin-bottom: 2rem;
+    align-items: start; /* each column sizes independently */
 }
 
 .kanban-column {
@@ -1916,9 +1917,21 @@ textarea:focus {
     border-radius: var(--border-radius-md);
     background-color: var(--color-surface);
     overflow: hidden;
-    height: min(680px, calc(100vh - 160px));
+    height: auto;
     box-shadow: none;
-    transition: all 200ms ease;
+    transition: border-color 200ms ease;
+}
+
+/* Recording and Archive have a fixed height so their content scrolls */
+.col-recording,
+.col-archive {
+    height: min(640px, calc(100vh - 160px));
+}
+
+/* Analysis grows with its content */
+.col-analysis {
+    height: auto;
+    overflow: visible;
 }
 
 .column-header {
@@ -3388,8 +3401,9 @@ body.theme-signal .record-button.recording {
         gap: 1rem;
     }
 
-    .kanban-column {
-        height: min(600px, calc(100vh - 160px));
+    .col-recording,
+    .col-archive {
+        height: min(560px, calc(100vh - 160px));
     }
 
     main {
@@ -3409,8 +3423,9 @@ body.theme-signal .record-button.recording {
         gap: 1rem;
     }
 
-    .kanban-column {
-        height: min(520px, calc(100vh - 140px));
+    .col-recording,
+    .col-archive {
+        height: min(480px, calc(100vh - 140px));
     }
 
     main {
@@ -3607,8 +3622,12 @@ body.theme-signal .record-button.recording {
     }
 
     .kanban-column {
-        height: min(480px, calc(100vh - 130px));
         border-radius: 12px;
+    }
+
+    .col-recording,
+    .col-archive {
+        height: min(420px, calc(100vh - 130px));
     }
 
     .column-header {
@@ -4380,9 +4399,17 @@ body.theme-prism.theme-dark .prompt-input:focus {
     opacity: 1;
 }
 
+/* On touch devices there's no hover — always show controls */
+@media (hover: none), (pointer: coarse) {
+    .action-item-controls {
+        opacity: 1;
+    }
+}
+
 /* Icon buttons */
 .copy-item-btn,
 .delete-item-btn {
+    appearance: none;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -4390,12 +4417,13 @@ body.theme-prism.theme-dark .prompt-input:focus {
     height: 28px;
     padding: 0;
     border: none;
-    border-radius: 6px;
+    border-radius: var(--border-radius-sm);
     background: transparent;
     color: var(--color-text-secondary);
     cursor: pointer;
     transition: background 150ms ease, color 150ms ease;
     flex-shrink: 0;
+    line-height: 1;
 }
 
 .copy-item-btn:hover {
@@ -4404,51 +4432,52 @@ body.theme-prism.theme-dark .prompt-input:focus {
 }
 
 .copy-item-btn.copied {
-    background: var(--color-divider);
     color: var(--color-primary);
 }
 
 .delete-item-btn:hover {
-    background: color-mix(in srgb, #ef4444 10%, transparent);
     color: #ef4444;
 }
 
-/* Undo pill — only shown when deletion is pending */
-.undo-delete-wrapper {
-    display: flex;
-    align-items: center;
+/* In pending-delete: hide copy + trash, show only undo */
+.action-item.pending-delete .copy-item-btn,
+.action-item.pending-delete .delete-item-btn {
+    display: none;
 }
 
+/* Undo — only visible once delete is triggered (shown via JS inline style) */
 .undo-delete-btn {
-    display: flex;
+    appearance: none;
+    display: inline-flex;
     align-items: center;
-    gap: 0.3rem;
-    padding: 0.2rem 0.55rem;
+    gap: 0.25rem;
+    padding: 0.2rem 0.6rem;
     font-size: 0.72rem;
-    font-weight: 600;
-    letter-spacing: 0.01em;
-    border: 1px solid var(--color-primary);
-    border-radius: 100px;
+    font-weight: 500;
+    border: 1px solid var(--color-divider);
+    border-radius: var(--border-radius-sm);
     background: transparent;
-    color: var(--color-primary);
+    color: var(--color-text-secondary);
     cursor: pointer;
-    transition: background 150ms ease;
+    transition: background 150ms ease, border-color 150ms ease;
     white-space: nowrap;
 }
 
 .undo-delete-btn:hover {
     background: var(--color-divider);
+    border-color: var(--color-text-secondary);
+    color: var(--color-text);
 }
 
 .undo-countdown {
     font-variant-numeric: tabular-nums;
-    opacity: 0.65;
+    font-weight: 600;
+    color: var(--color-text);
 }
 
 /* Pending delete state */
 .action-item.pending-delete {
-    opacity: 0.55;
-    border-color: color-mix(in srgb, #ef4444 40%, transparent);
+    opacity: 0.5;
     background-color: color-mix(in srgb, #ef4444 4%, var(--color-surface));
 }
 

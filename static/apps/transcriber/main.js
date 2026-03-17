@@ -2305,7 +2305,7 @@ function renderAnalysisColumn() {
                     <div class="action-item-controls">
                         <button class="copy-item-btn" data-item-index="${index}" aria-label="Copy action item">${iconCopy}</button>
                         <button class="delete-item-btn" data-item-index="${index}" aria-label="Delete action item">${iconTrash}</button>
-                        <span class="undo-delete-wrapper hidden">
+                        <span class="undo-delete-wrapper" style="display:none">
                             <button class="undo-delete-btn" data-item-index="${index}">Undo <span class="undo-countdown">5</span></button>
                         </span>
                     </div>
@@ -2423,8 +2423,7 @@ function renderAnalysisColumn() {
 
             // Visual pending state
             li.classList.add('pending-delete');
-            btn.classList.add('hidden');
-            undoWrapper.classList.remove('hidden');
+            undoWrapper.style.display = 'flex';
 
             let secondsLeft = 5;
             const intervalId = setInterval(() => {
@@ -2462,8 +2461,7 @@ function renderAnalysisColumn() {
             }
 
             li.classList.remove('pending-delete');
-            deleteBtn.classList.remove('hidden');
-            undoWrapper.classList.add('hidden');
+            undoWrapper.style.display = 'none';
             if (countdownEl) countdownEl.textContent = '5';
         });
     });

@@ -50,7 +50,7 @@
         <div class="container">
             <div class="kanban-board">
                 <!-- Left Column: Transcription -->
-                <div class="kanban-column">
+                <div class="kanban-column col-recording">
                     <h2 class="column-header">Recording</h2>
                     <div class="recording-status" id="recordingStatus">Ready</div>
                     <div class="recording-actions">
@@ -67,7 +67,7 @@
                 </div>
 
                 <!-- Middle Column: AI Analysis (Phase 2) -->
-                <div class="kanban-column">
+                <div class="kanban-column col-analysis">
                     <h2 class="column-header">Analysis</h2>
                     <div id="analysisEmptyState" class="empty-placeholder" style="display: flex;">
                         <div class="empty-state-content">
@@ -79,7 +79,7 @@
                 </div>
 
                 <!-- Right Column: Meeting History -->
-                <div class="kanban-column">
+                <div class="kanban-column col-archive">
                     <h2 class="column-header">Archive</h2>
                     <div style="padding: 0.75rem 1rem;">
                         <input type="text" id="meetingsSearch" class="meetings-search-input" placeholder="Search meetings">
