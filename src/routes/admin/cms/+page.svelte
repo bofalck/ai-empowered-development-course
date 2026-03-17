@@ -157,15 +157,16 @@
 
     // ==================== IMAGE / CROP ====================
 
-    function handleImageUpload(file, editor) {
+    async function handleImageUpload(file, editor) {
         const allowed = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
         if (!allowed.includes(file.type)) { showModal('Error', 'Invalid image type.', 'error'); return; }
         if (file.size > 50 * 1024 * 1024) { showModal('Error', 'Image too large (max 50MB).', 'error'); return; }
         currentCropFile = file;
         currentCropEditor = editor;
+        cropModal = true;
+        await tick(); // wait for {#if cropModal} to render #cropImage into the DOM
         const img = document.getElementById('cropImage');
         img.src = URL.createObjectURL(file);
-        cropModal = true;
         setTimeout(() => {
             if (cropper) { cropper.destroy(); cropper = null; }
             cropper = new window.Cropper(img, { aspectRatio: NaN, viewMode: 1 });
