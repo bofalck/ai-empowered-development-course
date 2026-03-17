@@ -757,6 +757,9 @@ async function saveMeetingToSupabase(title, transcript, segments, duration, meta
 
         console.log('Meeting saved successfully:', insertResult);
 
+        // Refresh archive immediately so the meeting appears regardless of analysis outcome
+        await loadMeetings();
+
         // Auto-analyze if we have the meeting ID
         if (insertResult && insertResult.length > 0) {
             const meetingId = insertResult[0].id;
