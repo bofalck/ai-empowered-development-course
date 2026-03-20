@@ -6778,6 +6778,10 @@ body.theme-prism .empty-placeholder {
     padding: var(--spacing-md) 0;
 }
 
+.cms-header h1 {
+    font-size: clamp(1.1rem, 4.5vw, 2rem);
+}
+
 .cms-header .header-content {
     padding: 0 var(--spacing-md);
     display: flex;
