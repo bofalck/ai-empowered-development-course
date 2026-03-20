@@ -6025,14 +6025,21 @@ body.theme-prism .empty-placeholder {
     font-size: 1.1rem;
 }
 
+.mobile-auth {
+    display: flex;
+    gap: 0.5rem;
+}
+
 .mobile-auth .btn-logout,
 .mobile-auth .btn-signin,
 .mobile-auth .btn-admin-cms {
-    display: block;
-    width: 100%;
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     text-align: center;
-    padding: 0.75rem 1rem;
-    font-size: 0.95rem;
+    padding: 0.625rem 1rem;
+    font-size: 0.875rem;
     border-radius: var(--border-radius-sm);
     box-sizing: border-box;
 }
@@ -6778,8 +6785,10 @@ body.theme-prism .empty-placeholder {
     padding: var(--spacing-md) 0;
 }
 
-.cms-header h1 {
-    font-size: clamp(1.1rem, 4.5vw, 2rem);
+html .cms-header h1 {
+    font-size: clamp(1rem, 4vw, 1.75rem);
+    white-space: normal;
+    overflow-wrap: break-word;
 }
 
 .cms-header .header-content {
