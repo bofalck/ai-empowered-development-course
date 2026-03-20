@@ -1907,7 +1907,6 @@ textarea:focus {
     grid-template-columns: 1fr 1fr 1fr;
     gap: 1.5rem;
     margin-bottom: 2rem;
-    align-items: start; /* each column sizes independently */
 }
 
 .kanban-column {
@@ -1916,22 +1915,11 @@ textarea:focus {
     border: 1px solid var(--color-divider);
     border-radius: var(--border-radius-md);
     background-color: var(--color-surface);
-    overflow: hidden;
+    overflow-y: auto;
+    overflow-x: hidden;
     height: auto;
     box-shadow: none;
-    transition: border-color 200ms ease;
-}
-
-/* Recording and Archive have a fixed height so their content scrolls */
-.col-recording,
-.col-archive {
-    height: min(640px, calc(100vh - 160px));
-}
-
-/* Analysis grows with its content */
-.col-analysis {
-    height: auto;
-    overflow: visible;
+    transition: all 200ms ease;
 }
 
 .column-header {
@@ -2178,7 +2166,6 @@ textarea:focus {
 .transcription-display {
     flex: 1;
     overflow-y: auto;
-    min-height: 0;
     padding: var(--spacing);
     font-family: monospace;
     font-size: 0.95rem;
@@ -2319,8 +2306,6 @@ textarea:focus {
     list-style: none;
     padding: var(--spacing);
     overflow-y: auto;
-    flex: 1;
-    min-height: 0;
 }
 
 .meeting-item {
@@ -3401,9 +3386,8 @@ body.theme-signal .record-button.recording {
         gap: 1rem;
     }
 
-    .col-recording,
-    .col-archive {
-        height: min(560px, calc(100vh - 160px));
+    .kanban-column {
+        min-height: 400px;
     }
 
     main {
@@ -3423,9 +3407,8 @@ body.theme-signal .record-button.recording {
         gap: 1rem;
     }
 
-    .col-recording,
-    .col-archive {
-        height: min(480px, calc(100vh - 140px));
+    .kanban-column {
+        min-height: 350px;
     }
 
     main {
@@ -3622,12 +3605,8 @@ body.theme-signal .record-button.recording {
     }
 
     .kanban-column {
+        min-height: 300px;
         border-radius: 12px;
-    }
-
-    .col-recording,
-    .col-archive {
-        height: min(420px, calc(100vh - 130px));
     }
 
     .column-header {
@@ -3757,9 +3736,13 @@ body.theme-signal .record-button.recording {
     }
 
     .action-item {
-        grid-template-columns: auto 1fr auto;
+        grid-template-columns: auto 1fr;
         gap: 0.5rem;
         padding: 0.75rem 0.5rem;
+    }
+
+    .action-item-assignee {
+        display: none;
     }
 }
 
@@ -4299,34 +4282,6 @@ body.theme-prism.theme-dark .prompt-input:focus {
     margin: var(--spacing-md) 0;
 }
 
-.action-items-header {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    margin-bottom: 0.5rem;
-}
-
-.action-items-header h3 {
-    margin: 0;
-}
-
-.copy-action-items-btn {
-    padding: 0.2rem 0.6rem;
-    font-size: 0.75rem;
-    font-weight: 600;
-    border: 1px solid var(--color-divider);
-    border-radius: var(--border-radius-sm);
-    background: transparent;
-    color: var(--color-text-secondary);
-    cursor: pointer;
-    transition: all 150ms ease;
-}
-
-.copy-action-items-btn:hover {
-    background: var(--color-divider);
-    color: var(--color-text);
-}
-
 .action-items-list {
     list-style: none;
     padding: 0;
@@ -4377,113 +4332,6 @@ body.theme-prism.theme-dark .prompt-input:focus {
 .action-item-text.completed {
     text-decoration: line-through;
     color: #9ca3af;
-}
-
-.hidden {
-    display: none !important;
-}
-
-/* Action item controls — hidden until hover */
-.action-item-controls {
-    display: flex;
-    align-items: center;
-    gap: 2px;
-    flex-shrink: 0;
-    opacity: 0;
-    transition: opacity 150ms ease;
-}
-
-.action-item:hover .action-item-controls,
-.action-item:focus-within .action-item-controls,
-.action-item.pending-delete .action-item-controls {
-    opacity: 1;
-}
-
-/* On touch devices there's no hover — always show controls */
-@media (hover: none), (pointer: coarse) {
-    .action-item-controls {
-        opacity: 1;
-    }
-}
-
-/* Icon buttons */
-.copy-item-btn,
-.delete-item-btn {
-    appearance: none;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 28px;
-    height: 28px;
-    padding: 0;
-    border: none;
-    border-radius: var(--border-radius-sm);
-    background: transparent;
-    color: var(--color-text-secondary);
-    cursor: pointer;
-    transition: background 150ms ease, color 150ms ease;
-    flex-shrink: 0;
-    line-height: 1;
-}
-
-.copy-item-btn:hover {
-    background: var(--color-divider);
-    color: var(--color-text);
-}
-
-.copy-item-btn.copied {
-    color: var(--color-primary);
-}
-
-.delete-item-btn:hover {
-    color: #ef4444;
-}
-
-/* In pending-delete: hide copy + trash, show only undo */
-.action-item.pending-delete .copy-item-btn,
-.action-item.pending-delete .delete-item-btn {
-    display: none;
-}
-
-/* Undo — only visible once delete is triggered (shown via JS inline style) */
-.undo-delete-btn {
-    appearance: none;
-    display: inline-flex;
-    align-items: center;
-    gap: 0.25rem;
-    padding: 0.2rem 0.6rem;
-    font-size: 0.72rem;
-    font-weight: 500;
-    border: 1px solid var(--color-divider);
-    border-radius: var(--border-radius-sm);
-    background: transparent;
-    color: var(--color-text-secondary);
-    cursor: pointer;
-    transition: background 150ms ease, border-color 150ms ease;
-    white-space: nowrap;
-}
-
-.undo-delete-btn:hover {
-    background: var(--color-divider);
-    border-color: var(--color-text-secondary);
-    color: var(--color-text);
-}
-
-.undo-countdown {
-    font-variant-numeric: tabular-nums;
-    font-weight: 600;
-    color: var(--color-text);
-}
-
-/* Pending delete state */
-.action-item.pending-delete {
-    opacity: 0.5;
-    background-color: color-mix(in srgb, #ef4444 4%, var(--color-surface));
-}
-
-.action-item.pending-delete .action-item-text {
-    text-decoration: line-through;
-    color: var(--color-text-secondary);
 }
 
 .action-item-assignee {
@@ -5973,8 +5821,9 @@ body.theme-prism .empty-placeholder {
 .header-nav .nav-link {
     color: var(--color-text);
     text-decoration: none;
-    font-weight: 500;
-    font-size: 0.95rem;
+    font-family: 'DrukText-Medium', serif;
+    font-weight: normal;
+    font-size: 1rem;
     cursor: pointer;
     transition: color 200ms ease;
     padding: 0.5rem 1rem;
@@ -6137,7 +5986,8 @@ body.theme-prism .empty-placeholder {
 .mobile-nav .nav-link {
     padding: 0.75rem 0.5rem;
     border-radius: var(--border-radius-sm);
-    font-weight: 500;
+    font-family: 'DrukText-Medium', serif;
+    font-weight: normal;
     color: var(--color-text);
     text-decoration: none;
     transition: background 150ms ease, color 150ms ease;
@@ -7379,6 +7229,100 @@ body.theme-prism .empty-placeholder {
 }
 
 @media (max-width: 768px) {
+    /* ---- CMS container ---- */
+    .cms-main {
+        padding: var(--spacing-sm);
+    }
+
+    /* ---- Tabs: scrollable row, smaller buttons ---- */
+    .cms-tabs {
+        gap: 0;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+    }
+    .cms-tabs::-webkit-scrollbar { display: none; }
+
+    .cms-tab {
+        padding: 0.6rem 0.875rem;
+        font-size: 0.82rem;
+        white-space: nowrap;
+        flex-shrink: 0;
+    }
+
+    /* ---- List items ---- */
+    .cms-item {
+        padding: var(--spacing-md);
+    }
+
+    .cms-item-header {
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .cms-item-header h4 {
+        font-size: 0.95rem;
+        flex: 1;
+        min-width: 0;
+    }
+
+    .cms-item-date {
+        width: 100%;
+        order: 4;
+        font-size: 0.78rem;
+        margin-top: 0.125rem;
+    }
+
+    /* ---- Order buttons: bigger tap targets ---- */
+    .cms-order-btns {
+        flex-direction: row;
+        gap: 4px;
+    }
+
+    .cms-order-btn {
+        width: 36px;
+        height: 36px;
+        font-size: 1rem;
+        border-radius: var(--border-radius-sm);
+    }
+
+    /* ---- Action buttons ---- */
+    .cms-item-actions {
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+
+    .cms-item-star {
+        order: -1;
+    }
+
+    .cms-item-edit,
+    .cms-item-delete {
+        flex: 1;
+        min-width: 80px;
+        text-align: center;
+        padding: 0.5rem 0.75rem;
+        font-size: 0.85rem;
+    }
+
+    /* ---- Forms ---- */
+    .cms-form {
+        padding: var(--spacing-md);
+        max-width: 100%;
+    }
+
+    .cms-form .form-actions {
+        flex-direction: column;
+    }
+
+    .btn-save,
+    .btn-cancel {
+        width: 100%;
+        text-align: center;
+    }
+
+    /* ---- Analytics tables ---- */
     .cms-projects-table {
         font-size: 0.85rem;
     }
@@ -7398,12 +7342,6 @@ body.theme-prism .empty-placeholder {
 
     .cms-tags-list {
         max-width: 80px;
-    }
-
-    .cms-item-edit,
-    .cms-item-delete {
-        padding: 0.3rem 0.5rem;
-        font-size: 0.75rem;
     }
 }
 
@@ -7635,96 +7573,6 @@ body.theme-prism .empty-placeholder {
 .btn-cancel:hover {
     background: var(--color-primary);
     color: white;
-}
-
-/* ---- CMS mobile ---- */
-@media (max-width: 768px) {
-    .cms-main {
-        padding: var(--spacing-sm);
-    }
-
-    .cms-tabs {
-        gap: 0;
-        overflow-x: auto;
-        -webkit-overflow-scrolling: touch;
-        scrollbar-width: none;
-    }
-    .cms-tabs::-webkit-scrollbar { display: none; }
-
-    .cms-tab {
-        padding: 0.6rem 0.875rem;
-        font-size: 0.82rem;
-        white-space: nowrap;
-        flex-shrink: 0;
-    }
-
-    .cms-item {
-        padding: var(--spacing-md);
-    }
-
-    .cms-item-header {
-        flex-wrap: wrap;
-        align-items: center;
-        gap: 0.5rem;
-    }
-
-    .cms-item-header h4 {
-        font-size: 0.95rem;
-        flex: 1;
-        min-width: 0;
-    }
-
-    .cms-item-date {
-        width: 100%;
-        order: 4;
-        font-size: 0.78rem;
-        margin-top: 0.125rem;
-    }
-
-    .cms-order-btns {
-        flex-direction: row;
-        gap: 4px;
-    }
-
-    .cms-order-btn {
-        width: 36px;
-        height: 36px;
-        font-size: 1rem;
-        border-radius: var(--border-radius-sm);
-    }
-
-    .cms-item-actions {
-        flex-wrap: wrap;
-        gap: 0.5rem;
-    }
-
-    .cms-item-star {
-        order: -1;
-    }
-
-    .cms-item-edit,
-    .cms-item-delete {
-        flex: 1;
-        min-width: 80px;
-        text-align: center;
-        padding: 0.5rem 0.75rem;
-        font-size: 0.85rem;
-    }
-
-    .cms-form {
-        padding: var(--spacing-md);
-        max-width: 100%;
-    }
-
-    .cms-form .form-actions {
-        flex-direction: column;
-    }
-
-    .btn-save,
-    .btn-cancel {
-        width: 100%;
-        text-align: center;
-    }
 }
 
 .cms-form.hidden {

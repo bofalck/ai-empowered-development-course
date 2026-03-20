@@ -129,6 +129,7 @@
             ['bold', 'italic', 'underline', 'strike'],
             ['blockquote', 'code-block'],
             [{ list: 'ordered' }, { list: 'bullet' }],
+            [{ align: [] }],
             ['link', 'image', 'video'],
             ['clean']
         ];
@@ -614,6 +615,15 @@
         // Load Quill + Cropper scripts
         loadLink('https://cdn.quilljs.com/1.3.6/quill.snow.css');
         await loadScript('https://cdn.quilljs.com/1.3.6/quill.js');
+        // Prefer inline styles for alignment (style="text-align:right") over Quill's
+        // default class-based output (class="ql-align-right"), so saved HTML renders
+        // correctly on display pages that don't load Quill's CSS.
+        // If the import fails (shouldn't, but guard anyway), fall back gracefully —
+        // styles.css includes .ql-align-* rules as a CSS fallback.
+        try {
+            const AlignStyle = window.Quill.import('attributors/style/align');
+            if (AlignStyle) window.Quill.register(AlignStyle, true);
+        } catch (e) { /* non-fatal — CSS fallback covers class-based output */ }
         loadLink('https://cdn.jsdelivr.net/npm/cropperjs@1/dist/cropper.css');
         await loadScript('https://cdn.jsdelivr.net/npm/cropperjs@1/dist/cropper.js');
         quillReady = true;
@@ -660,26 +670,37 @@
                 {:else}
                     {#each blogPosts as post, i (post.id)}
                         <div class="cms-item">
-                            <div class="cms-item-header">
-                                <div class="cms-order-btns">
-                                    <button class="cms-order-btn" onclick={() => moveItem(i, -1, 'blog')} disabled={i === 0 || savingOrder} title="Move up">↑</button>
-                                    <button class="cms-order-btn" onclick={() => moveItem(i, 1, 'blog')} disabled={i === blogPosts.length - 1 || savingOrder} title="Move down">↓</button>
-                                </div>
-                                <h4>{extractPlainText(post.title)}</h4>
-                                <span class="cms-item-date">{new Date(post.created_at).toLocaleDateString()}</span>
+                            <div class="cms-item-top">
+                                <h4 class="cms-item-title">{extractPlainText(post.title)}</h4>
+                                {#if post.starred}<span class="cms-featured-badge">★ Featured</span>{/if}
                             </div>
                             {#if post.excerpt}<p class="cms-item-excerpt">{post.excerpt}</p>{/if}
-                            <div class="cms-item-preview">{@html post.content}</div>
-                            <div class="cms-item-actions">
-                                <button
-                                    class="cms-item-star"
-                                    class:starred={post.starred}
-                                    onclick={() => toggleBlogStar(post)}
-                                    title={post.starred ? 'Remove from home page' : 'Feature on home page'}
-                                    disabled={!post.starred && blogPosts.filter(p => p.starred).length >= 3}
-                                >{post.starred ? '★' : '☆'}</button>
-                                <button class="cms-item-edit" onclick={() => editBlogPost(post.id)}>Edit</button>
-                                <button class="cms-item-delete" onclick={() => deleteBlogPost(post.id)}>Delete</button>
+                            <div class="cms-item-bottom">
+                                <div class="cms-item-meta">
+                                    {#if post.tags && post.tags.trim()}
+                                        <div class="cms-item-tags">
+                                            {#each post.tags.split(',').filter(t => t.trim()) as tag}
+                                                <span class="cms-tag-chip">{tag.trim()}</span>
+                                            {/each}
+                                        </div>
+                                    {/if}
+                                    <span class="cms-item-date">{new Date(post.created_at).toLocaleDateString()}</span>
+                                </div>
+                                <div class="cms-item-actions">
+                                    <div class="cms-order-btns">
+                                        <button class="cms-order-btn" onclick={() => moveItem(i, -1, 'blog')} disabled={i === 0 || savingOrder} title="Move up">↑</button>
+                                        <button class="cms-order-btn" onclick={() => moveItem(i, 1, 'blog')} disabled={i === blogPosts.length - 1 || savingOrder} title="Move down">↓</button>
+                                    </div>
+                                    <button
+                                        class="cms-icon-btn cms-item-star"
+                                        class:starred={post.starred}
+                                        onclick={() => toggleBlogStar(post)}
+                                        title={post.starred ? 'Remove from home page' : 'Feature on home page'}
+                                        disabled={!post.starred && blogPosts.filter(p => p.starred).length >= 3}
+                                    >★</button>
+                                    <button class="cms-icon-btn cms-item-edit" onclick={() => editBlogPost(post.id)} title="Edit">✏</button>
+                                    <button class="cms-icon-btn cms-item-delete" onclick={() => deleteBlogPost(post.id)} title="Delete">✕</button>
+                                </div>
                             </div>
                         </div>
                     {/each}
@@ -703,7 +724,7 @@
                     </div>
                     <div class="form-group">
                         <label>Content</label>
-                        <div id="blogContentEditor" style="height:400px;"></div>
+                        <div id="blogContentEditor" class="quill-editor-lg"></div>
                     </div>
                     <div class="form-actions">
                         <button type="submit" class="btn-save">Save</button>
@@ -730,28 +751,37 @@
                 {:else}
                     {#each projects as project, i (project.id)}
                         <div class="cms-item">
-                            <div class="cms-item-header">
-                                <div class="cms-order-btns">
-                                    <button class="cms-order-btn" onclick={() => moveItem(i, -1, 'projects')} disabled={i === 0 || savingOrder} title="Move up">↑</button>
-                                    <button class="cms-order-btn" onclick={() => moveItem(i, 1, 'projects')} disabled={i === projects.length - 1 || savingOrder} title="Move down">↓</button>
-                                </div>
-                                <h4>{extractPlainText(project.title)}</h4>
-                                <span class="cms-item-date">{new Date(project.created_at).toLocaleDateString()}</span>
+                            <div class="cms-item-top">
+                                <h4 class="cms-item-title">{extractPlainText(project.title)}</h4>
+                                {#if project.starred}<span class="cms-featured-badge">★ Featured</span>{/if}
                             </div>
                             {#if project.subtitle}<p class="cms-item-excerpt">{project.subtitle}</p>{/if}
-                            {#if project.description}
-                                <div class="cms-item-preview">{@html project.description}</div>
-                            {/if}
-                            <div class="cms-item-actions">
-                                <button
-                                    class="cms-item-star"
-                                    class:starred={project.starred}
-                                    onclick={() => toggleProjectStar(project)}
-                                    title={project.starred ? 'Remove from home page' : 'Feature on home page'}
-                                    disabled={!project.starred && projects.filter(p => p.starred).length >= 3}
-                                >{project.starred ? '★' : '☆'}</button>
-                                <button class="cms-item-edit" onclick={() => editProject(project.id)}>Edit</button>
-                                <button class="cms-item-delete" onclick={() => deleteProject(project.id)}>Delete</button>
+                            <div class="cms-item-bottom">
+                                <div class="cms-item-meta">
+                                    {#if project.tags && project.tags.trim()}
+                                        <div class="cms-item-tags">
+                                            {#each project.tags.split(',').filter(t => t.trim()) as tag}
+                                                <span class="cms-tag-chip">{tag.trim()}</span>
+                                            {/each}
+                                        </div>
+                                    {/if}
+                                    <span class="cms-item-date">{new Date(project.created_at).toLocaleDateString()}</span>
+                                </div>
+                                <div class="cms-item-actions">
+                                    <div class="cms-order-btns">
+                                        <button class="cms-order-btn" onclick={() => moveItem(i, -1, 'projects')} disabled={i === 0 || savingOrder} title="Move up">↑</button>
+                                        <button class="cms-order-btn" onclick={() => moveItem(i, 1, 'projects')} disabled={i === projects.length - 1 || savingOrder} title="Move down">↓</button>
+                                    </div>
+                                    <button
+                                        class="cms-icon-btn cms-item-star"
+                                        class:starred={project.starred}
+                                        onclick={() => toggleProjectStar(project)}
+                                        title={project.starred ? 'Remove from home page' : 'Feature on home page'}
+                                        disabled={!project.starred && projects.filter(p => p.starred).length >= 3}
+                                    >★</button>
+                                    <button class="cms-icon-btn cms-item-edit" onclick={() => editProject(project.id)} title="Edit">✏</button>
+                                    <button class="cms-icon-btn cms-item-delete" onclick={() => deleteProject(project.id)} title="Delete">✕</button>
+                                </div>
                             </div>
                         </div>
                     {/each}
@@ -775,7 +805,7 @@
                     </div>
                     <div class="form-group">
                         <label>Description</label>
-                        <div id="projectDescriptionEditor" style="height:200px;"></div>
+                        <div id="projectDescriptionEditor" class="quill-editor-sm"></div>
                     </div>
                     <div class="form-group">
                         <label>Project Link</label>
@@ -811,7 +841,7 @@
                 </div>
                 <div class="form-group">
                     <label>Bio</label>
-                    <div id="aboutBioEditor" style="height:200px;"></div>
+                    <div id="aboutBioEditor" class="quill-editor-sm"></div>
                 </div>
                 <h4 style="margin:1.5rem 0 1rem;">Social Links</h4>
                 <div class="form-group">

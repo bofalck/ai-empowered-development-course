@@ -53,8 +53,10 @@
                 <div class="kanban-column col-recording">
                     <h2 class="column-header">Recording</h2>
                     <div class="recording-status" id="recordingStatus">Ready</div>
+                    <div class="level-meter" id="levelMeter"><div class="level-meter-bar" id="levelMeterBar"></div></div>
                     <div class="recording-actions">
                         <button id="saveMeetingBtn" class="action-button save-button">Save</button>
+                        <button id="copyTranscriptBtn" class="action-button copy-transcript-btn" title="Copy full transcript to clipboard">Copy</button>
                         <button id="clearBtn" class="action-button clear-button">Clear</button>
                         <div id="guestModeNotice" class="guest-mode-notice" style="display: none;">
                             📝 Guest mode - recordings are temporary
@@ -64,6 +66,13 @@
                         <div class="transcription-loader-bar"></div>
                     </div>
                     <div class="transcription-display" id="transcriptionDisplay"></div>
+                    <div id="manualEntryWrapper" class="manual-entry-wrapper" style="display:none">
+                        <textarea id="manualEntryText" class="manual-entry-textarea" placeholder="Paste or type your transcript here…"></textarea>
+                        <div class="manual-entry-actions">
+                            <button id="applyManualBtn" class="action-button save-button">Apply</button>
+                            <button id="cancelManualBtn" class="action-button clear-button">Cancel</button>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Middle Column: AI Analysis (Phase 2) -->
@@ -152,6 +161,7 @@
                 <div class="recording-timer" id="recordingTimer">00:00:00</div>
                 <div class="control-buttons">
                     <button id="micButton" class="record-button" title="Start recording">Record</button>
+                    <button id="manualEntryBtn" class="manual-button" title="Enter transcript manually">Manual</button>
                     <button id="pauseButton" class="pause-button" title="Pause recording" disabled>Pause</button>
                 </div>
                 <button class="settings-toggle-btn" id="settingsToggleBtn" title="Settings">⋯</button>

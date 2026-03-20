@@ -49,6 +49,10 @@ const MAX_SEGMENT_DURATION_MINUTES = 50; // Auto-save at 50 minutes
 // Audio Device Management
 let audioDevices = [];
 let selectedAudioDeviceId = 'default';
+
+// Level meter
+let levelMeterContext = null;
+let levelMeterAnimFrame = null;
 const AUDIO_CONSTRAINT_PROFILES = {
     default: { audio: true },
     microphone: { audio: { echoCancellation: true, noiseSuppression: true } },
@@ -764,6 +768,9 @@ async function saveMeetingToSupabase(title, transcript, segments, duration, meta
         // Auto-analyze if we have the meeting ID
         if (insertResult && insertResult.length > 0) {
             const meetingId = insertResult[0].id;
+            // Select the new meeting so the analysis column binds to it
+            currentViewingMeetingId = meetingId;
+            renderMeetingHistory();
             await analyzeMeeting(meetingId, transcript);
         }
 
@@ -1042,70 +1049,55 @@ async function enumerateAudioDevices() {
 }
 
 // Get audio constraints for the selected device
-function getAudioConstraints() {
-    // Basic audio constraints that work with most devices
-    const basicConstraints = {
-        audio: {
-            echoCancellation: true,
-            noiseSuppression: true,
-            autoGainControl: true
-        }
-    };
-
-    if (selectedAudioDeviceId === 'default') {
-        return basicConstraints;
-    }
-
-    // Try to use specific device, but don't make it strict
-    return {
-        audio: {
-            ...basicConstraints.audio,
-            deviceId: selectedAudioDeviceId // Not using { exact: } to allow fallback
-        }
-    };
-}
-
 // Request audio stream from the selected device
 async function getAudioStream() {
     try {
-        let constraints = getAudioConstraints();
-        console.log('Requesting audio stream with constraints:', constraints);
-
         let stream;
-        try {
-            stream = await navigator.mediaDevices.getUserMedia(constraints);
-        } catch (err) {
-            console.warn('Failed with specified constraints, trying basic audio:', err);
-            // Fallback to basic audio constraint
-            stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+
+        if (selectedAudioDeviceId === 'default') {
+            // Built-in mic: apply browser processing (echo cancel, noise suppress, AGC).
+            // Fall back to bare audio: true if the browser doesn't support all constraints.
+            try {
+                stream = await navigator.mediaDevices.getUserMedia({
+                    audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true }
+                });
+            } catch {
+                stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            }
+        } else {
+            // External device: use { exact } so the browser MUST use the selected device.
+            // Do NOT apply echoCancellation/noiseSuppression/autoGainControl — many external
+            // mics and audio interfaces don't support these constraints and throw
+            // OverconstrainedError, which previously caused a silent fallback to the laptop mic.
+            try {
+                stream = await navigator.mediaDevices.getUserMedia({
+                    audio: { deviceId: { exact: selectedAudioDeviceId } }
+                });
+            } catch (err) {
+                if (err.name === 'OverconstrainedError' || err.name === 'NotFoundError') {
+                    // Device gone or no longer available — refresh the list and tell the user
+                    await enumerateAudioDevices();
+                    throw new Error(`Selected audio device is no longer available. Please choose another device from the list.`);
+                }
+                throw err;
+            }
         }
 
         const audioTracks = stream.getAudioTracks();
-        console.log(`Audio tracks available: ${audioTracks.length}`);
+        if (audioTracks.length === 0) throw new Error('No audio tracks in stream');
+        console.log(`Recording from: ${audioTracks[0].label}`);
 
-        if (audioTracks.length === 0) {
-            throw new Error('No audio tracks in stream');
-        }
-
-        const deviceLabel = audioTracks[0].label;
-        console.log(`Recording from: ${deviceLabel}`);
-
-        // Verify stream is active
-        if (!stream.active) {
-            throw new Error('Audio stream is not active');
-        }
+        // Re-enumerate now that we have permission — browser reveals device labels
+        // only after the first getUserMedia grant
+        enumerateAudioDevices();
 
         return stream;
     } catch (err) {
         console.error('Error getting audio stream:', err);
-        if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
-            throw new Error(`Audio device not found. Please check your audio input devices.`);
-        } else if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
-            throw new Error(`Microphone permission denied. Please allow microphone access.`);
-        } else if (err.name === 'OverconstrainedError') {
-            throw new Error(`The selected audio device doesn't support the required settings. Try selecting a different device.`);
+        if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+            throw new Error('Microphone permission denied. Please allow microphone access in your browser settings.');
         }
-        throw new Error(`Error accessing audio: ${err.message}`);
+        throw new Error(err.message || `Error accessing audio: ${err.message}`);
     }
 }
 
@@ -1205,10 +1197,10 @@ async function saveRecordingSegment() {
 
             if (MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) {
                 options.mimeType = 'audio/webm;codecs=opus';
-                options.audioBitsPerSecond = 64000;
+                options.audioBitsPerSecond = 32000;
             } else if (MediaRecorder.isTypeSupported('audio/webm')) {
                 options.mimeType = 'audio/webm';
-                options.audioBitsPerSecond = 64000;
+                options.audioBitsPerSecond = 32000;
             }
 
             mediaRecorder = new MediaRecorder(newStream, options);
@@ -1361,8 +1353,9 @@ async function startRecording() {
             // Microphone-only mode (default)
             audioStream = await getAudioStream();
             stream = audioStream;
-            status.textContent = 'Listening (Microphone)';
-            console.log('Microphone recording started');
+            const trackLabel = audioStream.getAudioTracks()[0]?.label || 'Microphone';
+            status.textContent = `Listening (${trackLabel})`;
+            console.log('Microphone recording started:', trackLabel);
         }
 
         // Verify stream has audio tracks
@@ -1381,13 +1374,14 @@ async function startRecording() {
         // Set lower audio bitrate to keep file size under API limit (26MB)
         const options = {};
 
-        // Try to use lower bitrates for better compression
+        // 32kbps is plenty for speech transcription and keeps recordings under
+        // the 25MB Whisper API limit for up to ~100 minutes (vs ~50 min at 64kbps)
         if (MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) {
             options.mimeType = 'audio/webm;codecs=opus';
-            options.audioBitsPerSecond = 64000; // 64kbps instead of default ~128kbps
+            options.audioBitsPerSecond = 32000;
         } else if (MediaRecorder.isTypeSupported('audio/webm')) {
             options.mimeType = 'audio/webm';
-            options.audioBitsPerSecond = 64000;
+            options.audioBitsPerSecond = 32000;
         }
 
         console.log('Creating MediaRecorder with options:', options);
@@ -1415,6 +1409,7 @@ async function startRecording() {
         try {
             mediaRecorder.start();
             console.log('MediaRecorder started successfully');
+            startLevelMeter(stream);
         } catch (startErr) {
             console.error('Failed to start MediaRecorder:', startErr);
             throw new Error(`Cannot start recording: ${startErr.message}`);
@@ -1431,6 +1426,41 @@ async function startRecording() {
 
     // Start timer
     timerInterval = setInterval(updateTimer, 100);
+}
+
+function startLevelMeter(stream) {
+    stopLevelMeter();
+    const bar = document.getElementById('levelMeterBar');
+    if (!bar) return;
+    try {
+        levelMeterContext = new AudioContext();
+        const source = levelMeterContext.createMediaStreamSource(stream);
+        const analyser = levelMeterContext.createAnalyser();
+        analyser.fftSize = 256;
+        source.connect(analyser);
+        const data = new Uint8Array(analyser.frequencyBinCount);
+        function draw() {
+            levelMeterAnimFrame = requestAnimationFrame(draw);
+            analyser.getByteTimeDomainData(data);
+            let sum = 0;
+            for (let i = 0; i < data.length; i++) {
+                const v = (data[i] - 128) / 128;
+                sum += v * v;
+            }
+            const rms = Math.sqrt(sum / data.length);
+            bar.style.width = Math.min(100, Math.round(rms * 500)) + '%';
+        }
+        draw();
+    } catch (e) {
+        console.warn('Level meter unavailable:', e);
+    }
+}
+
+function stopLevelMeter() {
+    if (levelMeterAnimFrame) { cancelAnimationFrame(levelMeterAnimFrame); levelMeterAnimFrame = null; }
+    if (levelMeterContext) { levelMeterContext.close().catch(() => {}); levelMeterContext = null; }
+    const bar = document.getElementById('levelMeterBar');
+    if (bar) bar.style.width = '0%';
 }
 
 function pauseRecording() {
@@ -1455,6 +1485,7 @@ function pauseRecording() {
         console.error('Error pausing:', err);
     }
     clearInterval(timerInterval);
+    stopLevelMeter();
 }
 
 function resumeRecording() {
@@ -1487,6 +1518,7 @@ function resumeRecording() {
 
     // Restart timer from where it was
     timerInterval = setInterval(updateTimer, 100);
+    startLevelMeter(mixedStream || audioStream);
 }
 
 async function stopRecording() {
@@ -1503,6 +1535,7 @@ async function stopRecording() {
     status.classList.remove('recording');
 
     clearInterval(timerInterval);
+    stopLevelMeter();
 
     try {
         // Stop MediaRecorder and wait for data
@@ -1552,16 +1585,20 @@ async function stopRecording() {
 
         console.log(`Audio blob size: ${fileSizeMB.toFixed(2)}MB (limit: ${maxSizeMB}MB)`);
 
+        let blobToTranscribe = audioBlob;
         if (fileSizeMB > maxSizeMB) {
-            status.textContent = `Recording too large (${fileSizeMB.toFixed(1)}MB). Maximum is ${maxSizeMB}MB. Please record a shorter clip.`;
-            console.warn(`File size ${fileSizeMB.toFixed(2)}MB exceeds limit of ${maxSizeMB}MB`);
-            return;
+            // WebM is a streaming format — slicing the first 24.5MB gives a valid,
+            // slightly truncated recording that Whisper can decode normally.
+            const trimBytes = 24.5 * 1024 * 1024;
+            blobToTranscribe = audioBlob.slice(0, trimBytes, 'audio/webm');
+            console.warn(`Recording ${fileSizeMB.toFixed(1)}MB exceeds ${maxSizeMB}MB limit — trimming to first 24.5MB for transcription`);
+            status.textContent = `Recording was ${fileSizeMB.toFixed(1)}MB — transcribing first portion (reduce to under 100 min or use shorter segments)…`;
         }
 
         status.textContent = 'Transcribing final segment...';
 
-        // Transcribe final segment
-        const finalTranscript = await sendAudioToWhisper(audioBlob, transcriptionLanguage);
+        // Transcribe final segment (use trimmed blob if original exceeded API limit)
+        const finalTranscript = await sendAudioToWhisper(blobToTranscribe, transcriptionLanguage);
 
         // Save final segment
         const segmentEndTime = Date.now();
@@ -2291,9 +2328,9 @@ function renderAnalysisColumn() {
     // Ensure analysis body has correct class
     analysisBody.className = 'analysis-body';
 
-    const iconCopy = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>`;
-    const iconTrash = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M9 6V4h6v2"/></svg>`;
-    const iconCheck = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`;
+    const iconCopy = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>`;
+    const iconTrash = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M9 6V4h6v2"/></svg>`;
+    const iconCheck = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`;
 
     let actionItemsHtml = '';
     if (Array.isArray(currentAnalysis.action_items)) {
@@ -2829,6 +2866,49 @@ async function init() {
     // Wire up save and clear buttons
     document.getElementById('saveMeetingBtn').addEventListener('click', saveMeeting);
     document.getElementById('clearBtn').addEventListener('click', clearRecording);
+
+    // Wire up copy transcript button
+    document.getElementById('copyTranscriptBtn').addEventListener('click', () => {
+        const text = currentTranscript.trim();
+        if (!text) return;
+        navigator.clipboard.writeText(text).then(() => {
+            const btn = document.getElementById('copyTranscriptBtn');
+            const original = btn.textContent;
+            btn.textContent = '✓ Copied';
+            setTimeout(() => { btn.textContent = original; }, 2000);
+        });
+    });
+
+    // Wire up manual entry
+    document.getElementById('manualEntryBtn').addEventListener('click', () => {
+        if (isRecording) return;
+        const display = document.getElementById('transcriptionDisplay');
+        const wrapper = document.getElementById('manualEntryWrapper');
+        const textarea = document.getElementById('manualEntryText');
+        textarea.value = currentTranscript;
+        display.style.display = 'none';
+        wrapper.style.display = 'flex';
+        textarea.focus();
+    });
+
+    document.getElementById('applyManualBtn').addEventListener('click', () => {
+        const textarea = document.getElementById('manualEntryText');
+        const text = textarea.value.trim();
+        currentTranscript = text;
+        const display = document.getElementById('transcriptionDisplay');
+        display.textContent = text;
+        display.classList.toggle('empty', !text);
+        document.getElementById('manualEntryWrapper').style.display = 'none';
+        display.style.display = '';
+        if (text) {
+            document.getElementById('recordingStatus').textContent = 'Manual entry ready — click Save to store';
+        }
+    });
+
+    document.getElementById('cancelManualBtn').addEventListener('click', () => {
+        document.getElementById('manualEntryWrapper').style.display = 'none';
+        document.getElementById('transcriptionDisplay').style.display = '';
+    });
 
     // Wire up modal close
     document.getElementById('modalCloseBtn').addEventListener('click', closeMeetingTranscript);
