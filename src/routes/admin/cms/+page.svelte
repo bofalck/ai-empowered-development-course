@@ -3,9 +3,9 @@
     import { goto } from '$app/navigation';
     import { supabase } from '$lib/supabase-client.js';
     import { blogApi, projectsApi, eventsApi, aboutApi } from '$lib/api.js';
-    import { APP_IDS, APP_NAMES } from '$lib/types.js';
+    import { APP_IDS, APP_NAMES, CONTENT_TYPES } from '$lib/types.js';
     import { extractPlainText } from '$lib/utils.js';
-    import { trackBlogCreated, trackProjectCreated } from '$lib/events.js';
+    import { trackBlogCreated, trackProjectCreated, trackContentUpdated, trackContentDeleted, trackProfileUpdated, trackFeatureToggled } from '$lib/events.js';
 
     // --- Auth ---
     let authorized = $state(false);
@@ -255,6 +255,7 @@
                     .update({ title: blogTitle, excerpt: blogExcerpt || null, content, tags: blogTags || null })
                     .eq('id', editingBlogId);
                 if (error) throw error;
+                trackContentUpdated(CONTENT_TYPES.BLOG_POST, editingBlogId);
             } else {
                 const { data: newPosts, error } = await supabase.from('blog_posts').insert([{
                     title: blogTitle, slug: generateSlug(blogTitle),
@@ -277,6 +278,7 @@
         if (!confirm('Delete this blog post?')) return;
         const { error } = await supabase.from('blog_posts').delete().eq('id', id);
         if (error) { showModal('Error', error.message, 'error'); return; }
+        trackContentDeleted(CONTENT_TYPES.BLOG_POST, id);
         await loadBlogPosts();
     }
 
@@ -287,6 +289,7 @@
         }
         const { error } = await supabase.from('blog_posts').update({ starred: !post.starred }).eq('id', post.id);
         if (error) { showModal('Error', error.message, 'error'); return; }
+        trackFeatureToggled(CONTENT_TYPES.BLOG_POST, post.id, !post.starred);
         await loadBlogPosts();
     }
 
@@ -335,6 +338,7 @@
                     .update({ title: projectTitle, subtitle: projectSubtitle || null, logotype: projectLogotype || null, description: description || null, link: projectLink || null, tags: projectTags || null })
                     .eq('id', editingProjectId);
                 if (error) throw error;
+                trackContentUpdated(CONTENT_TYPES.PROJECT, editingProjectId);
             } else {
                 const { data: newProjects, error } = await supabase.from('projects').insert([{
                     title: projectTitle, subtitle: projectSubtitle || null, logotype: projectLogotype || null,
@@ -357,6 +361,7 @@
         if (!confirm('Delete this project?')) return;
         const { error } = await supabase.from('projects').delete().eq('id', id);
         if (error) { showModal('Error', error.message, 'error'); return; }
+        trackContentDeleted(CONTENT_TYPES.PROJECT, id);
         await loadProjects();
     }
 
@@ -367,6 +372,7 @@
         }
         const { error } = await supabase.from('projects').update({ starred: !project.starred }).eq('id', project.id);
         if (error) { showModal('Error', error.message, 'error'); return; }
+        trackFeatureToggled(CONTENT_TYPES.PROJECT, project.id, !project.starred);
         await loadProjects();
     }
 
@@ -424,6 +430,7 @@
         try {
             const { error } = await aboutApi.upsert(profile);
             if (error) throw error;
+            trackProfileUpdated();
             showModal('Success', 'About profile saved!');
         } catch (err) {
             showModal('Error', 'Failed to save: ' + err.message, 'error');

@@ -2,6 +2,7 @@
     import { onMount } from 'svelte';
     import { goto } from '$app/navigation';
     import { supabase } from '$lib/supabase-client.js';
+    import { trackLogin, trackLoginFailed } from '$lib/events.js';
 
     let email = $state('');
     let password = $state('');
@@ -19,9 +20,11 @@
         error = '';
         const { error: err } = await supabase.auth.signInWithPassword({ email, password });
         if (err) {
+            trackLoginFailed(err.message);
             error = err.message;
             loading = false;
         } else {
+            trackLogin();
             goto('/admin/cms');
         }
     }

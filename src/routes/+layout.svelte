@@ -2,6 +2,7 @@
     import { onMount } from 'svelte';
     import '../../styles.css';
     import { supabase } from '$lib/supabase-client.js';
+    import { trackThemeChanged, trackLogout } from '$lib/events.js';
 
     let { children } = $props();
 
@@ -37,9 +38,11 @@
         document.body.classList.add(`theme-${t}`);
         theme = t;
         localStorage.setItem('theme', t);
+        trackThemeChanged(t);
     }
 
     async function logout() {
+        trackLogout();
         await supabase.auth.signOut();
         isLoggedIn = false;
         window.location.href = '/';

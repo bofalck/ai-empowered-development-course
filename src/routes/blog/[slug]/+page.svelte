@@ -1,7 +1,7 @@
 <script>
     import { onMount } from 'svelte';
     import { formatDate, extractPlainText, getGuestId } from '$lib/utils.js';
-    import { trackBlogDetailView, trackBlogReaction, trackShare } from '$lib/events.js';
+    import { trackBlogDetailView, trackBlogReaction, trackReactionRemoved, trackShare } from '$lib/events.js';
     import { supabase } from '$lib/supabase-client.js';
     import { CONTENT_TYPES, SHARE_PLATFORMS } from '$lib/types.js';
 
@@ -66,6 +66,7 @@
                 .eq('blog_post_id', post.id)
                 .eq('guest_id', guestId)
                 .eq('emoji', emoji);
+            trackReactionRemoved(post.id);
         } else {
             await supabase.from('blog_post_reactions').insert([{
                 blog_post_id: post.id,

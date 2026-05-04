@@ -1,5 +1,7 @@
 <script>
     import { extractUniqueTags, filterItemsByTag, extractPlainText, getProjectEmoji } from '$lib/utils.js';
+    import { trackTagFilter } from '$lib/events.js';
+    import { CONTENT_TYPES } from '$lib/types.js';
 
     let { data } = $props();
 
@@ -25,13 +27,13 @@
                 <button
                     class="filter-btn"
                     class:active={activeTag === ''}
-                    onclick={() => activeTag = ''}
+                    onclick={() => { activeTag = ''; trackTagFilter(CONTENT_TYPES.PROJECT, ''); }}
                 >All</button>
                 {#each tags as tag}
                     <button
                         class="filter-btn"
                         class:active={activeTag === tag}
-                        onclick={() => activeTag = tag}
+                        onclick={() => { activeTag = tag; trackTagFilter(CONTENT_TYPES.PROJECT, tag); }}
                     >{tag}</button>
                 {/each}
             </div>

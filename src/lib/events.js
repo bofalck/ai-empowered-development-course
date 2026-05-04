@@ -125,3 +125,43 @@ export function trackOutboundLink(contentType, contentId, destination) {
 export function trackCvDownload() {
     return trackEvent(CONTENT_TYPES.PROFILE, 'cv', EVENT_TYPES.CV_DOWNLOAD);
 }
+
+export function trackContentUpdated(contentType, contentId) {
+    return trackEvent(contentType, contentId, EVENT_TYPES.CONTENT_UPDATED);
+}
+
+export function trackContentDeleted(contentType, contentId) {
+    return trackEvent(contentType, contentId, EVENT_TYPES.CONTENT_DELETED);
+}
+
+export function trackProfileUpdated() {
+    return trackEvent(CONTENT_TYPES.PROFILE, 'about', EVENT_TYPES.PROFILE_UPDATED);
+}
+
+export function trackReactionRemoved(blogPostId) {
+    return trackEvent(CONTENT_TYPES.BLOG_POST, blogPostId, EVENT_TYPES.REACTION_REMOVED);
+}
+
+export function trackFeatureToggled(contentType, contentId, starred) {
+    return trackEvent(contentType, contentId, EVENT_TYPES.FEATURE_TOGGLED, { starred });
+}
+
+export function trackTagFilter(contentType, tag) {
+    return trackEvent(contentType, tag || 'all', EVENT_TYPES.TAG_FILTER, { tag: tag || 'all' });
+}
+
+export function trackThemeChanged(theme) {
+    return trackEvent(CONTENT_TYPES.PROFILE, 'theme', EVENT_TYPES.THEME_CHANGED, { theme });
+}
+
+export function trackLogin() {
+    return trackEvent(CONTENT_TYPES.PROFILE, 'admin', EVENT_TYPES.LOGIN);
+}
+
+export function trackLoginFailed(errorMessage) {
+    return trackEvent(CONTENT_TYPES.PROFILE, 'admin', EVENT_TYPES.LOGIN_FAILED, { error: errorMessage });
+}
+
+export function trackLogout() {
+    return trackEvent(CONTENT_TYPES.PROFILE, 'admin', EVENT_TYPES.LOGOUT);
+}

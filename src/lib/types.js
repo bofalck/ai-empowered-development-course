@@ -8,6 +8,16 @@ export const EVENT_TYPES = {
     POST_CREATED: 'post_created',
     OUTBOUND_LINK: 'outbound_link',
     CV_DOWNLOAD: 'cv_download',
+    CONTENT_UPDATED: 'content_updated',
+    CONTENT_DELETED: 'content_deleted',
+    PROFILE_UPDATED: 'profile_updated',
+    REACTION_REMOVED: 'reaction_removed',
+    FEATURE_TOGGLED: 'feature_toggled',
+    TAG_FILTER: 'tag_filter',
+    THEME_CHANGED: 'theme_changed',
+    LOGIN: 'login',
+    LOGIN_FAILED: 'login_failed',
+    LOGOUT: 'logout',
 };
 
 export const CONTENT_TYPES = {
