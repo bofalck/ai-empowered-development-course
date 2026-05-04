@@ -8738,6 +8738,8 @@ body.theme-dark .detail-content b {
 .bar-reactions { background: #E56B4C; }
 .bar-shares   { background: #7ABF6A; }
 .bar-launches { background: #9B6DD2; }
+.bar-outbound { background: #F0A500; }
+.bar-cv       { background: #20B2AA; }
 
 .bar-label {
     font-size: 0.65rem;

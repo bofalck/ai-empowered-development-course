@@ -44,6 +44,7 @@
     let blogMetrics = $state([]);
     let projectMetrics = $state([]);
     let appMetrics = $state([]);
+    let profileMetrics = $state({ cvDownloads: 0, socialClicks: {} });
     let blogReaderStats = $state([]);
     let projectReaderStats = $state([]);
     let allRawEvents = $state([]);
@@ -488,12 +489,14 @@
                     const ev = events.filter(e => e.content_type === 'project' && e.content_id === String(proj.id));
                     const viewEvents = ev.filter(e => e.event_type === 'detail_view');
                     const shareEvents = ev.filter(e => e.event_type === 'share');
+                    const outboundEvents = ev.filter(e => e.event_type === 'outbound_link');
                     return {
                         ...proj,
                         views: viewEvents.length,
                         uniqueReaders: new Set(viewEvents.map(e => e.user_identifier)).size,
                         shares: shareEvents.length,
                         uniqueSharers: new Set(shareEvents.map(e => e.user_identifier)).size,
+                        outboundClicks: outboundEvents.length,
                     };
                 }).sort((a, b) => b.views - a.views);
 
@@ -517,6 +520,16 @@
                     uniqueGuests: new Set(ev.map(e => e.user_identifier)).size,
                 };
             });
+
+            const profileEvents = events.filter(e => e.content_type === 'profile');
+            const cvDownloads = profileEvents.filter(e => e.event_type === 'cv_download').length;
+            const socialMap = {};
+            profileEvents.filter(e => e.event_type === 'outbound_link').forEach(e => {
+                const platform = e.content_id ?? 'unknown';
+                socialMap[platform] = (socialMap[platform] || 0) + 1;
+            });
+            profileMetrics = { cvDownloads, socialClicks: socialMap };
+
             analyticsLoaded = true;
         } catch (err) {
             console.error('Analytics error:', err);
@@ -539,15 +552,17 @@
         const buckets = {};
         filtered.forEach(e => {
             const key = getChartBucketKey(new Date(e.created_at), period);
-            if (!buckets[key]) buckets[key] = { views: 0, reactions: 0, shares: 0, launches: 0 };
+            if (!buckets[key]) buckets[key] = { views: 0, reactions: 0, shares: 0, launches: 0, outbound: 0, cv: 0 };
             if (e.event_type === 'detail_view') buckets[key].views++;
             else if (e.event_type === 'reaction') buckets[key].reactions++;
             else if (e.event_type === 'share') buckets[key].shares++;
             else if (e.event_type === 'app_launch') buckets[key].launches++;
+            else if (e.event_type === 'outbound_link') buckets[key].outbound++;
+            else if (e.event_type === 'cv_download') buckets[key].cv++;
         });
         return Object.entries(buckets)
             .sort(([a], [b]) => a.localeCompare(b))
-            .map(([label, c]) => ({ label, ...c, total: c.views + c.reactions + c.shares + c.launches }));
+            .map(([label, c]) => ({ label, ...c, total: c.views + c.reactions + c.shares + c.launches + c.outbound + c.cv }));
     }
 
     function getChartBucketKey(date, period) {
@@ -949,6 +964,8 @@
                                     {#if bucket.reactions > 0}<div class="bar-segment bar-reactions" style="height:{(bucket.reactions / maxChartVal * 100)}%"></div>{/if}
                                     {#if bucket.shares > 0}<div class="bar-segment bar-shares" style="height:{(bucket.shares / maxChartVal * 100)}%"></div>{/if}
                                     {#if bucket.launches > 0}<div class="bar-segment bar-launches" style="height:{(bucket.launches / maxChartVal * 100)}%"></div>{/if}
+                                    {#if bucket.outbound > 0}<div class="bar-segment bar-outbound" style="height:{(bucket.outbound / maxChartVal * 100)}%"></div>{/if}
+                                    {#if bucket.cv > 0}<div class="bar-segment bar-cv" style="height:{(bucket.cv / maxChartVal * 100)}%"></div>{/if}
                                 </div>
                                 <div class="bar-label">{formatChartLabel(bucket.label, chartPeriod)}</div>
                             </div>
@@ -960,6 +977,8 @@
                     <span class="legend-item"><span class="legend-dot" style="background:#E56B4C"></span>Reactions</span>
                     <span class="legend-item"><span class="legend-dot" style="background:#7ABF6A"></span>Shares</span>
                     <span class="legend-item"><span class="legend-dot" style="background:#9B6DD2"></span>Launches</span>
+                    <span class="legend-item"><span class="legend-dot" style="background:#F0A500"></span>Outbound</span>
+                    <span class="legend-item"><span class="legend-dot" style="background:#20B2AA"></span>CV</span>
                 </div>
             {/if}
             {#if countryStats.length > 0}
@@ -1070,7 +1089,7 @@
                 <div class="top-posts-section">
                     <h4>Projects</h4>
                     <table class="analytics-table">
-                        <thead><tr><th>Title</th><th>Views</th><th>Uniq. Visitors</th><th>Shares</th></tr></thead>
+                        <thead><tr><th>Title</th><th>Views</th><th>Uniq. Visitors</th><th>Shares</th><th>Link Clicks</th></tr></thead>
                         <tbody>
                             {#each projectMetrics as proj}
                                 <tr>
@@ -1078,6 +1097,7 @@
                                     <td>{proj.views}</td>
                                     <td>{proj.uniqueReaders}</td>
                                     <td>{proj.shares}</td>
+                                    <td>{proj.outboundClicks}</td>
                                 </tr>
                             {/each}
                         </tbody>
@@ -1096,6 +1116,38 @@
                                     <td>{reader.reads}</td>
                                     <td>{reader.shares}</td>
                                 </tr>
+                            {/each}
+                        </tbody>
+                    </table>
+                </div>
+                {/if}
+            {/if}
+        </div>
+
+        <!-- Profile & Outreach -->
+        <div class="analytics-section">
+            <h3>Profile & Outreach</h3>
+            {#if !analyticsLoaded}
+                <p class="cms-empty">Loading outreach analytics…</p>
+            {:else}
+                <div class="analytics-grid">
+                    <div class="metric-card">
+                        <div class="metric-value">{profileMetrics.cvDownloads}</div>
+                        <div class="metric-label">CV Opens</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value">{Object.values(profileMetrics.socialClicks).reduce((s, n) => s + n, 0)}</div>
+                        <div class="metric-label">Social Clicks</div>
+                    </div>
+                </div>
+                {#if Object.keys(profileMetrics.socialClicks).length > 0}
+                <div class="top-posts-section">
+                    <h4>Social Platform Breakdown</h4>
+                    <table class="analytics-table">
+                        <thead><tr><th>Platform</th><th>Clicks</th></tr></thead>
+                        <tbody>
+                            {#each Object.entries(profileMetrics.socialClicks).sort((a, b) => b[1] - a[1]) as [platform, clicks]}
+                                <tr><td style="text-transform:capitalize">{platform}</td><td>{clicks}</td></tr>
                             {/each}
                         </tbody>
                     </table>
