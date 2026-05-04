@@ -5,6 +5,7 @@
     import { blogApi, projectsApi, eventsApi, aboutApi } from '$lib/api.js';
     import { APP_IDS, APP_NAMES } from '$lib/types.js';
     import { extractPlainText } from '$lib/utils.js';
+    import { trackBlogCreated } from '$lib/events.js';
 
     // --- Auth ---
     let authorized = $state(false);
@@ -50,6 +51,8 @@
     let chartPeriod = $state('monthly');
     let chartDateFrom = $state('');
     let chartDateTo = $state('');
+    let analyticsLoaded = $state(false);
+    let analyticsError = $state(null);
     let chartData = $derived(buildChartData(allRawEvents, chartPeriod, chartDateFrom, chartDateTo));
     let maxChartVal = $derived(Math.max(...chartData.map(d => d.total), 1));
 
@@ -252,16 +255,18 @@
                     .eq('id', editingBlogId);
                 if (error) throw error;
             } else {
-                const { error } = await supabase.from('blog_posts').insert([{
+                const { data: newPosts, error } = await supabase.from('blog_posts').insert([{
                     title: blogTitle, slug: generateSlug(blogTitle),
                     excerpt: blogExcerpt || null, content,
                     tags: blogTags || null, created_at: new Date().toISOString()
-                }]);
+                }]).select();
                 if (error) throw error;
+                trackBlogCreated(newPosts[0].id);
             }
             showModal('Success', editingBlogId ? 'Post updated!' : 'Post saved!');
             cancelBlog();
             await loadBlogPosts();
+            await loadAnalytics();
         } catch (err) {
             showModal('Error', 'Failed to save: ' + err.message, 'error');
         }
@@ -425,6 +430,8 @@
     // ==================== ANALYTICS ====================
 
     async function loadAnalytics() {
+        analyticsLoaded = false;
+        analyticsError = null;
         try {
             const [{ data: blogData }, { data: projectData }, { data: allEvents }] = await Promise.all([
                 blogApi.getAll(), projectsApi.getAll(), eventsApi.getAll()
@@ -508,8 +515,11 @@
                     uniqueGuests: new Set(ev.map(e => e.user_identifier)).size,
                 };
             });
+            analyticsLoaded = true;
         } catch (err) {
             console.error('Analytics error:', err);
+            analyticsError = err?.message ?? 'Failed to load analytics.';
+            analyticsLoaded = true;
         }
     }
 
@@ -873,11 +883,17 @@
     <section class="cms-tab-content active">
         <h2>Analytics</h2>
 
+        {#if analyticsError}
+            <p class="cms-empty" style="color:var(--color-error,#c0392b);">Analytics failed to load: {analyticsError}</p>
+        {/if}
+
         <!-- App Analytics -->
         <div class="analytics-section">
             <h3>Application Usage</h3>
-            {#if appMetrics.length === 0}
+            {#if !analyticsLoaded}
                 <p class="cms-empty">Loading app analytics…</p>
+            {:else if appMetrics.length === 0}
+                <p class="cms-empty">No app events found.</p>
             {:else}
                 <div class="analytics-grid">
                     <div class="metric-card">
@@ -966,8 +982,10 @@
         <!-- Blog Analytics -->
         <div class="analytics-section">
             <h3>Blog Post Performance</h3>
-            {#if blogMetrics.length === 0}
+            {#if !analyticsLoaded}
                 <p class="cms-empty">Loading blog analytics…</p>
+            {:else if blogMetrics.length === 0}
+                <p class="cms-empty">No blog posts found.</p>
             {:else}
                 <div class="analytics-grid">
                     <div class="metric-card">
@@ -1028,8 +1046,10 @@
         <!-- Project Analytics -->
         <div class="analytics-section">
             <h3>Project Performance</h3>
-            {#if projectMetrics.length === 0}
+            {#if !analyticsLoaded}
                 <p class="cms-empty">Loading project analytics…</p>
+            {:else if projectMetrics.length === 0}
+                <p class="cms-empty">No projects found.</p>
             {:else}
                 <div class="analytics-grid">
                     <div class="metric-card">

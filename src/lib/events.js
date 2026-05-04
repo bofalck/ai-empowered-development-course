@@ -94,3 +94,10 @@ export function trackShare(contentType, contentId, platform) {
 export function trackAppLaunch(appId) {
     return trackEvent(CONTENT_TYPES.APP, appId, EVENT_TYPES.APP_LAUNCH);
 }
+
+/**
+ * Track blog post creation (published by admin)
+ */
+export function trackBlogCreated(blogPostId) {
+    return trackEvent(CONTENT_TYPES.BLOG_POST, blogPostId, EVENT_TYPES.POST_CREATED);
+}

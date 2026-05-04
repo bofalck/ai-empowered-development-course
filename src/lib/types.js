@@ -5,6 +5,7 @@ export const EVENT_TYPES = {
     REACTION: 'reaction',
     SHARE: 'share',
     APP_LAUNCH: 'app_launch',
+    POST_CREATED: 'post_created',
 };
 
 export const CONTENT_TYPES = {

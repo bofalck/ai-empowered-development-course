@@ -346,7 +346,8 @@ export const eventsApi = {
         try {
             const { data, error } = await supabase
                 .from('content_engagement_events')
-                .select('*');
+                .select('*')
+                .limit(10000);
 
             if (error) throw error;
             return { data, error: null };
