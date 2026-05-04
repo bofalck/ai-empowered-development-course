@@ -5,7 +5,7 @@
     import { blogApi, projectsApi, eventsApi, aboutApi } from '$lib/api.js';
     import { APP_IDS, APP_NAMES } from '$lib/types.js';
     import { extractPlainText } from '$lib/utils.js';
-    import { trackBlogCreated } from '$lib/events.js';
+    import { trackBlogCreated, trackProjectCreated } from '$lib/events.js';
 
     // --- Auth ---
     let authorized = $state(false);
@@ -335,16 +335,18 @@
                     .eq('id', editingProjectId);
                 if (error) throw error;
             } else {
-                const { error } = await supabase.from('projects').insert([{
+                const { data: newProjects, error } = await supabase.from('projects').insert([{
                     title: projectTitle, subtitle: projectSubtitle || null, logotype: projectLogotype || null,
                     description: description || null, link: projectLink || null,
                     tags: projectTags || null, created_at: new Date().toISOString()
-                }]);
+                }]).select();
                 if (error) throw error;
+                trackProjectCreated(newProjects[0].id);
             }
             showModal('Success', editingProjectId ? 'Project updated!' : 'Project saved!');
             cancelProject();
             await loadProjects();
+            await loadAnalytics();
         } catch (err) {
             showModal('Error', 'Failed to save: ' + err.message, 'error');
         }

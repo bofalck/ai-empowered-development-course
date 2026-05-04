@@ -101,3 +101,10 @@ export function trackAppLaunch(appId) {
 export function trackBlogCreated(blogPostId) {
     return trackEvent(CONTENT_TYPES.BLOG_POST, blogPostId, EVENT_TYPES.POST_CREATED);
 }
+
+/**
+ * Track project creation (published by admin)
+ */
+export function trackProjectCreated(projectId) {
+    return trackEvent(CONTENT_TYPES.PROJECT, projectId, EVENT_TYPES.POST_CREATED);
+}
