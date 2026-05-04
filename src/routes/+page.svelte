@@ -1,7 +1,7 @@
 <script>
     import { onMount } from 'svelte';
     import { formatDate, extractPlainText, getProjectEmoji } from '$lib/utils.js';
-    import { trackAppLaunch } from '$lib/events.js';
+    import { trackAppLaunch, trackOutboundLink, trackCvDownload } from '$lib/events.js';
     import { APP_IDS } from '$lib/types.js';
 
     let { data } = $props();
@@ -175,6 +175,7 @@
                                         class="social-link"
                                         title={link.label}
                                         aria-label="Visit {link.label} profile"
+                                        onclick={() => trackOutboundLink('profile', link.label.toLowerCase(), link.href)}
                                     >{@html link.icon}</a>
                                 {/each}
                             </div>
@@ -187,10 +188,10 @@
             <section id="cv" class="widget widget-cv">
                 <div class="widget-header">
                     <h2>CV</h2>
-                    <a href="/cv.pdf" target="_blank" rel="noopener noreferrer" class="widget-cv-open">Open PDF ↗</a>
+                    <a href="/cv.pdf" target="_blank" rel="noopener noreferrer" class="widget-cv-open" onclick={() => trackCvDownload()}>Open PDF ↗</a>
                 </div>
                 <div class="widget-content widget-cv-content">
-                    <a href="/cv.pdf" target="_blank" rel="noopener noreferrer" class="cv-preview-link" aria-label="Open CV as PDF">
+                    <a href="/cv.pdf" target="_blank" rel="noopener noreferrer" class="cv-preview-link" aria-label="Open CV as PDF" onclick={() => trackCvDownload()}>
                         <img src="/images/cv-thumbnail.png" alt="CV preview" class="cv-preview-img" />
                         <div class="cv-preview-overlay">
                             <span>View full CV →</span>

@@ -1,7 +1,7 @@
 <script>
     import { onMount } from 'svelte';
     import { formatDate, extractPlainText, getProjectEmoji } from '$lib/utils.js';
-    import { trackProjectDetailView } from '$lib/events.js';
+    import { trackProjectDetailView, trackOutboundLink } from '$lib/events.js';
 
     let { data } = $props();
     let project = $derived(data.project);
@@ -40,6 +40,7 @@
                         target="_blank"
                         rel="noopener noreferrer"
                         class="btn-view-project"
+                        onclick={() => trackOutboundLink('project', project.id, project.link)}
                     >↗ Visit Project</a>
                 {/if}
             </div>

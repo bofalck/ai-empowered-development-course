@@ -6,12 +6,15 @@ export const EVENT_TYPES = {
     SHARE: 'share',
     APP_LAUNCH: 'app_launch',
     POST_CREATED: 'post_created',
+    OUTBOUND_LINK: 'outbound_link',
+    CV_DOWNLOAD: 'cv_download',
 };
 
 export const CONTENT_TYPES = {
     BLOG_POST: 'blog_post',
     PROJECT: 'project',
     APP: 'app',
+    PROFILE: 'profile',
 };
 
 // Deterministic UUIDs for apps (stable identifiers since apps have no DB rows)

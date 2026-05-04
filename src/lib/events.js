@@ -108,3 +108,20 @@ export function trackBlogCreated(blogPostId) {
 export function trackProjectCreated(projectId) {
     return trackEvent(CONTENT_TYPES.PROJECT, projectId, EVENT_TYPES.POST_CREATED);
 }
+
+/**
+ * Track outbound link click (social profiles, project external links)
+ * @param {string} contentType - CONTENT_TYPES.PROFILE or CONTENT_TYPES.PROJECT
+ * @param {string} contentId - platform name or project ID
+ * @param {string} destination - the URL being navigated to
+ */
+export function trackOutboundLink(contentType, contentId, destination) {
+    return trackEvent(contentType, contentId, EVENT_TYPES.OUTBOUND_LINK, { destination });
+}
+
+/**
+ * Track CV PDF open
+ */
+export function trackCvDownload() {
+    return trackEvent(CONTENT_TYPES.PROFILE, 'cv', EVENT_TYPES.CV_DOWNLOAD);
+}
