@@ -6,19 +6,28 @@ import { eventsApi } from '$lib/api.js';
 import { getGuestId } from '$lib/utils.js';
 import { CONTENT_TYPES, EVENT_TYPES, USER_TYPES, APP_IDS } from '$lib/types.js';
 
-let _country = null;
+let _country = undefined; // undefined = not yet fetched; null = fetched, unavailable
 
 async function getCountry() {
-    if (_country !== null) return _country;
+    if (_country !== undefined) return _country;
+    _country = null; // prevent concurrent calls from each spawning a fetch
     try {
         const cached = sessionStorage.getItem('visitor_country');
         if (cached) { _country = cached; return _country; }
-        const res = await fetch('https://ipapi.co/country/');
-        const text = (await res.text()).trim();
-        _country = text.length === 2 ? text : null;
-        if (_country) sessionStorage.setItem('visitor_country', _country);
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 2000);
+        try {
+            const res = await fetch('https://ipapi.co/country/', { signal: controller.signal });
+            const text = (await res.text()).trim();
+            if (text.length === 2) {
+                _country = text;
+                sessionStorage.setItem('visitor_country', _country);
+            }
+        } finally {
+            clearTimeout(timeoutId);
+        }
     } catch {
-        _country = null;
+        // _country stays null
     }
     return _country;
 }

@@ -44,7 +44,9 @@
     let blogMetrics = $state([]);
     let projectMetrics = $state([]);
     let appMetrics = $state([]);
-    let profileMetrics = $state({ cvDownloads: 0, socialClicks: {} });
+    let profileMetrics = $state({ cvDownloads: 0, socialClicks: {}, profileUpdates: 0, themeChanges: 0 });
+    let adminMetrics = $state({ logins: 0, loginsFailed: 0, logouts: 0, contentOps: 0 });
+    let tagFilterStats = $state({ blog: {}, project: {} });
     let blogReaderStats = $state([]);
     let projectReaderStats = $state([]);
     let allRawEvents = $state([]);
@@ -468,13 +470,17 @@
                     const viewEvents = ev.filter(e => e.event_type === 'detail_view');
                     const shareEvents = ev.filter(e => e.event_type === 'share');
                     const reactionEvents = ev.filter(e => e.event_type === 'reaction');
+                    const editEvents = ev.filter(e => e.event_type === 'content_updated');
+                    const removedReactions = ev.filter(e => e.event_type === 'reaction_removed');
                     return {
                         ...post,
                         views: viewEvents.length,
                         uniqueReaders: new Set(viewEvents.map(e => e.user_identifier)).size,
                         reactions: reactionEvents.length,
+                        reactionsRemoved: removedReactions.length,
                         shares: shareEvents.length,
                         uniqueSharers: new Set(shareEvents.map(e => e.user_identifier)).size,
+                        edits: editEvents.length,
                     };
                 }).sort((a, b) => b.views - a.views);
 
@@ -497,6 +503,7 @@
                     const viewEvents = ev.filter(e => e.event_type === 'detail_view');
                     const shareEvents = ev.filter(e => e.event_type === 'share');
                     const outboundEvents = ev.filter(e => e.event_type === 'outbound_link');
+                    const editEvents = ev.filter(e => e.event_type === 'content_updated');
                     return {
                         ...proj,
                         views: viewEvents.length,
@@ -504,6 +511,7 @@
                         shares: shareEvents.length,
                         uniqueSharers: new Set(shareEvents.map(e => e.user_identifier)).size,
                         outboundClicks: outboundEvents.length,
+                        edits: editEvents.length,
                     };
                 }).sort((a, b) => b.views - a.views);
 
@@ -535,7 +543,25 @@
                 const platform = e.content_id ?? 'unknown';
                 socialMap[platform] = (socialMap[platform] || 0) + 1;
             });
-            profileMetrics = { cvDownloads, socialClicks: socialMap };
+            const profileUpdates = profileEvents.filter(e => e.event_type === 'profile_updated').length;
+            const themeChanges = profileEvents.filter(e => e.event_type === 'theme_changed').length;
+            profileMetrics = { cvDownloads, socialClicks: socialMap, profileUpdates, themeChanges };
+
+            const adminEvents = events.filter(e => e.content_type === 'profile' && e.content_id === 'admin');
+            adminMetrics = {
+                logins: adminEvents.filter(e => e.event_type === 'login').length,
+                loginsFailed: adminEvents.filter(e => e.event_type === 'login_failed').length,
+                logouts: adminEvents.filter(e => e.event_type === 'logout').length,
+                contentOps: events.filter(e => ['content_updated', 'content_deleted', 'feature_toggled', 'profile_updated'].includes(e.event_type)).length,
+            };
+
+            const tagEvents = events.filter(e => e.event_type === 'tag_filter');
+            const blogTagMap = {}, projectTagMap = {};
+            tagEvents.forEach(e => {
+                if (e.content_type === 'blog_post') blogTagMap[e.content_id] = (blogTagMap[e.content_id] || 0) + 1;
+                else if (e.content_type === 'project') projectTagMap[e.content_id] = (projectTagMap[e.content_id] || 0) + 1;
+            });
+            tagFilterStats = { blog: blogTagMap, project: projectTagMap };
 
             analyticsLoaded = true;
         } catch (err) {
@@ -559,17 +585,18 @@
         const buckets = {};
         filtered.forEach(e => {
             const key = getChartBucketKey(new Date(e.created_at), period);
-            if (!buckets[key]) buckets[key] = { views: 0, reactions: 0, shares: 0, launches: 0, outbound: 0, cv: 0 };
+            if (!buckets[key]) buckets[key] = { views: 0, reactions: 0, shares: 0, launches: 0, outbound: 0, cv: 0, other: 0 };
             if (e.event_type === 'detail_view') buckets[key].views++;
             else if (e.event_type === 'reaction') buckets[key].reactions++;
             else if (e.event_type === 'share') buckets[key].shares++;
             else if (e.event_type === 'app_launch') buckets[key].launches++;
             else if (e.event_type === 'outbound_link') buckets[key].outbound++;
             else if (e.event_type === 'cv_download') buckets[key].cv++;
+            else buckets[key].other++;
         });
         return Object.entries(buckets)
             .sort(([a], [b]) => a.localeCompare(b))
-            .map(([label, c]) => ({ label, ...c, total: c.views + c.reactions + c.shares + c.launches + c.outbound + c.cv }));
+            .map(([label, c]) => ({ label, ...c, total: c.views + c.reactions + c.shares + c.launches + c.outbound + c.cv + c.other }));
     }
 
     function getChartBucketKey(date, period) {
@@ -1036,7 +1063,7 @@
                 <div class="top-posts-section">
                     <h4>Posts</h4>
                     <table class="analytics-table">
-                        <thead><tr><th>Title</th><th>Views</th><th>Uniq. Readers</th><th>Reactions</th><th>Shares</th></tr></thead>
+                        <thead><tr><th>Title</th><th>Views</th><th>Uniq. Readers</th><th>Reactions</th><th>Shares</th><th>Edits</th></tr></thead>
                         <tbody>
                             {#each blogMetrics as post}
                                 <tr>
@@ -1045,6 +1072,7 @@
                                     <td>{post.uniqueReaders}</td>
                                     <td>{post.reactions}</td>
                                     <td>{post.shares}</td>
+                                    <td>{post.edits}</td>
                                 </tr>
                             {/each}
                         </tbody>
@@ -1096,7 +1124,7 @@
                 <div class="top-posts-section">
                     <h4>Projects</h4>
                     <table class="analytics-table">
-                        <thead><tr><th>Title</th><th>Views</th><th>Uniq. Visitors</th><th>Shares</th><th>Link Clicks</th></tr></thead>
+                        <thead><tr><th>Title</th><th>Views</th><th>Uniq. Visitors</th><th>Shares</th><th>Link Clicks</th><th>Edits</th></tr></thead>
                         <tbody>
                             {#each projectMetrics as proj}
                                 <tr>
@@ -1105,6 +1133,7 @@
                                     <td>{proj.uniqueReaders}</td>
                                     <td>{proj.shares}</td>
                                     <td>{proj.outboundClicks}</td>
+                                    <td>{proj.edits}</td>
                                 </tr>
                             {/each}
                         </tbody>
@@ -1146,6 +1175,14 @@
                         <div class="metric-value">{Object.values(profileMetrics.socialClicks).reduce((s, n) => s + n, 0)}</div>
                         <div class="metric-label">Social Clicks</div>
                     </div>
+                    <div class="metric-card">
+                        <div class="metric-value">{profileMetrics.profileUpdates}</div>
+                        <div class="metric-label">Profile Saves</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value">{profileMetrics.themeChanges}</div>
+                        <div class="metric-label">Theme Changes</div>
+                    </div>
                 </div>
                 {#if Object.keys(profileMetrics.socialClicks).length > 0}
                 <div class="top-posts-section">
@@ -1160,6 +1197,70 @@
                     </table>
                 </div>
                 {/if}
+            {/if}
+        </div>
+
+        <!-- Tag Filter Usage -->
+        <div class="analytics-section">
+            <h3>Content Discovery</h3>
+            {#if !analyticsLoaded}
+                <p class="cms-empty">Loading discovery analytics…</p>
+            {:else if Object.keys(tagFilterStats.blog).length === 0 && Object.keys(tagFilterStats.project).length === 0}
+                <p class="cms-empty">No tag filter events yet.</p>
+            {:else}
+                {#if Object.keys(tagFilterStats.blog).length > 0}
+                <div class="top-posts-section">
+                    <h4>Blog Tag Filters</h4>
+                    <table class="analytics-table">
+                        <thead><tr><th>Tag</th><th>Filter Clicks</th></tr></thead>
+                        <tbody>
+                            {#each Object.entries(tagFilterStats.blog).sort((a, b) => b[1] - a[1]) as [tag, count]}
+                                <tr><td>{tag === 'all' ? '(All)' : tag}</td><td>{count}</td></tr>
+                            {/each}
+                        </tbody>
+                    </table>
+                </div>
+                {/if}
+                {#if Object.keys(tagFilterStats.project).length > 0}
+                <div class="top-posts-section">
+                    <h4>Project Tag Filters</h4>
+                    <table class="analytics-table">
+                        <thead><tr><th>Tag</th><th>Filter Clicks</th></tr></thead>
+                        <tbody>
+                            {#each Object.entries(tagFilterStats.project).sort((a, b) => b[1] - a[1]) as [tag, count]}
+                                <tr><td>{tag === 'all' ? '(All)' : tag}</td><td>{count}</td></tr>
+                            {/each}
+                        </tbody>
+                    </table>
+                </div>
+                {/if}
+            {/if}
+        </div>
+
+        <!-- Admin Activity -->
+        <div class="analytics-section">
+            <h3>Admin Activity</h3>
+            {#if !analyticsLoaded}
+                <p class="cms-empty">Loading admin analytics…</p>
+            {:else}
+                <div class="analytics-grid">
+                    <div class="metric-card">
+                        <div class="metric-value">{adminMetrics.logins}</div>
+                        <div class="metric-label">Logins</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value">{adminMetrics.loginsFailed}</div>
+                        <div class="metric-label">Failed Logins</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value">{adminMetrics.logouts}</div>
+                        <div class="metric-label">Logouts</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value">{adminMetrics.contentOps}</div>
+                        <div class="metric-label">Content Operations</div>
+                    </div>
+                </div>
             {/if}
         </div>
     </section>
