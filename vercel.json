@@ -1,3 +1,13 @@
 {
-  "framework": "sveltekit"
+  "framework": "sveltekit",
+  "functions": {
+    "api/transcribe.py": {
+      "runtime": "python3.9",
+      "maxDuration": 300
+    },
+    "api/analyze.py": {
+      "runtime": "python3.9",
+      "maxDuration": 120
+    }
+  }
 }

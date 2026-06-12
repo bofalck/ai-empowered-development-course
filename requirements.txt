@@ -1,0 +1,2 @@
+# Python dependencies for Vercel serverless functions in /api/
+# No third-party packages needed — stdlib only (urllib, json, re, io)

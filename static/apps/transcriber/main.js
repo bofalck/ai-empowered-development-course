@@ -9,8 +9,8 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 // Check if in client-side only mode (not authenticated)
 let isClientSideOnly = false;
 
-// OpenAI API key (loaded at startup from server config endpoint)
-let openaiApiKey = '';
+// URL of the most recently uploaded audio blob (set during transcription, reused in saveMeetingToSupabase)
+let pendingAudioUrl = null;
 
 // Recording state
 let isRecording = false;
@@ -698,37 +698,22 @@ async function saveMeetingToSupabase(title, transcript, segments, duration, meta
 
         let audioUrl = null;
 
-        // Upload first segment or combined audio (for backward compatibility)
-        // If multiple segments, upload the first one as the primary audio file
-        try {
-            const audioToUpload = recordingSegments.length > 0 ? recordingSegments[0].audioBlob : new Blob(audioChunks, { type: 'audio/webm' });
-
-            if (audioToUpload && audioToUpload.size > 0) {
-                const fileName = `meeting-${Date.now()}.webm`;
-
-                console.log(`Uploading audio file: ${fileName}, size: ${(audioToUpload.size / (1024 * 1024)).toFixed(2)}MB`);
-
-                const { data: uploadData, error: uploadError } = await supabase
-                    .storage
-                    .from('meeting-audio')
-                    .upload(fileName, audioToUpload);
-
-                if (uploadError) {
-                    console.warn('Warning - audio upload failed (meeting will still be saved):', uploadError);
-                    // Don't fail the entire save if audio upload fails - continue without audio URL
-                } else {
-                    const { data: urlData } = supabase
-                        .storage
-                        .from('meeting-audio')
-                        .getPublicUrl(fileName);
-
-                    audioUrl = urlData.publicUrl;
+        // Reuse URL from transcription upload (sendAudioToWhisper uploads first)
+        if (pendingAudioUrl) {
+            audioUrl = pendingAudioUrl;
+            pendingAudioUrl = null;
+            console.log('Reusing audio URL from transcription:', audioUrl);
+        } else {
+            // Fallback: upload now (e.g. if meeting saved without recording a new segment)
+            try {
+                const audioToUpload = recordingSegments.length > 0 ? recordingSegments[0].audioBlob : new Blob(audioChunks, { type: 'audio/webm' });
+                audioUrl = await uploadAudioBlob(audioToUpload);
+                if (audioUrl) {
                     console.log('Audio uploaded successfully:', audioUrl);
                 }
+            } catch (err) {
+                console.warn('Warning - error uploading audio:', err);
             }
-        } catch (err) {
-            console.warn('Warning - error uploading audio:', err);
-            // Continue without audio URL
         }
 
         // Prepare meeting data with existing schema columns only
@@ -781,61 +766,24 @@ async function saveMeetingToSupabase(title, transcript, segments, duration, meta
     }
 }
 
-// Analyze meeting using GPT-5 via Netlight proxy
+// Analyze meeting using Python backend (server-side GPT call)
 async function analyzeMeeting(meetingId, transcript) {
     try {
         const status = document.getElementById('recordingStatus');
         status.textContent = 'Analyzing meeting...';
 
-        const apiKey = openaiApiKey;
-        if (!apiKey) {
-            throw new Error('API key not configured');
-        }
-
-        const response = await fetch(
-            'https://llm.netlight.ai/v1/chat/completions',
-            {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json',
-                    'Authorization': `Bearer ${apiKey}`,
-                },
-                body: JSON.stringify({
-                    model: 'gpt-5',
-                    messages: [
-                        {
-                            role: 'user',
-                            content: `Analyze this meeting transcript and provide:
-
-1. EXECUTIVE SUMMARY: 2-3 key points from the meeting
-2. ACTION ITEMS: List of specific tasks/decisions with owners if mentioned
-3. SENTIMENT: Overall tone (Positive/Neutral/Negative) with brief explanation
-4. SUGGESTED TAGS: 3-5 relevant tags that categorize this meeting (e.g., "Planning", "Product", "Decision", "Urgent", "Follow-up")
-
-Format your response as valid JSON with these keys: "summary" (string), "action_items" (array of strings), "sentiment" (string), "suggested_tags" (array of strings).
-
-Transcript:
-${transcript}`,
-                        },
-                    ],
-                    max_tokens: 4096,
-                }),
-            }
-        );
+        const response = await fetch('/api/analyze', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ transcript, language: transcriptionLanguage }),
+        });
 
         if (!response.ok) {
-            throw new Error(`Analysis failed: ${response.status} ${response.statusText}`);
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.error || `Analysis failed: ${response.status}`);
         }
 
-        const apiResponse = await response.json();
-        const responseText = apiResponse.choices[0].message.content;
-
-        // Parse JSON from response
-        const jsonMatch = responseText.match(/\{[\s\S]*\}/);
-        const analysis = jsonMatch
-            ? JSON.parse(jsonMatch[0])
-            : { error: 'Parse failed', rawResponse: responseText };
+        const analysis = await response.json();
 
         // Save analysis to Supabase
         const { data, error } = await supabase
@@ -927,63 +875,68 @@ function initRecordingControls() {
     }
 }
 
-// Send audio to Whisper API for transcription
+// Upload audio blob to Supabase storage and return its public URL (or null on failure)
+async function uploadAudioBlob(audioBlob) {
+    try {
+        if (!audioBlob || audioBlob.size === 0) return null;
+        const fileName = `meeting-${Date.now()}.webm`;
+        const { error: uploadError } = await supabase.storage.from('meeting-audio').upload(fileName, audioBlob);
+        if (uploadError) {
+            console.warn('Audio upload to storage failed:', uploadError);
+            return null;
+        }
+        const { data: urlData } = supabase.storage.from('meeting-audio').getPublicUrl(fileName);
+        return urlData.publicUrl;
+    } catch (err) {
+        console.warn('Error uploading audio blob:', err);
+        return null;
+    }
+}
+
+// Send audio to Python backend for server-side Whisper transcription
 async function sendAudioToWhisper(audioBlob, language = 'en') {
     try {
-        console.log('Starting Whisper transcription, blob size:', audioBlob.size, 'bytes');
+        console.log('Starting transcription, blob size:', audioBlob.size, 'bytes');
         isProcessingWithWhisper = true;
         const status = document.getElementById('recordingStatus');
         const loader = document.getElementById('transcriptionLoader');
-        status.textContent = 'Transcribing...';
         loader.classList.add('active');
 
         if (audioBlob.size < 10000) {
             throw new Error('Audio blob is too small — no audio was captured. Make sure "Share audio" is checked in the screen picker.');
         }
 
-        const apiKey = openaiApiKey;
-        console.log('API Key available:', !!apiKey, '| Blob size:', audioBlob.size);
-        if (!apiKey) {
-            throw new Error('OpenAI API key not configured. Check that OPENAI_API_KEY is set in your Vercel environment variables.');
+        // Upload audio to Supabase storage so the backend can fetch it
+        status.textContent = 'Uploading audio...';
+        const audioUrl = await uploadAudioBlob(audioBlob);
+        if (!audioUrl) {
+            throw new Error('Failed to upload audio. Check your connection and try again.');
         }
+        pendingAudioUrl = audioUrl; // Reused in saveMeetingToSupabase to skip re-upload
 
-        const formData = new FormData();
-        formData.append('file', audioBlob, 'audio.webm');
-        formData.append('model', 'whisper-1');
-        formData.append('language', language);
-        formData.append('temperature', '0');
+        status.textContent = 'Transcribing...';
+        console.log('Calling /api/transcribe...');
+        const response = await fetch('/api/transcribe', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ audio_url: audioUrl, language }),
+        });
 
-        console.log('Sending to Whisper API...');
-        const response = await fetch(
-            'https://llm.netlight.ai/v1/audio/transcriptions',
-            {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${apiKey}`,
-                },
-                body: formData,
-            }
-        );
-
-        console.log('Response status:', response.status);
+        console.log('Transcribe response status:', response.status);
 
         if (!response.ok) {
-            const errorText = await response.text();
-            console.error('API error response:', errorText);
-
+            const errorData = await response.json().catch(() => ({}));
             if (response.status === 413) {
                 throw new Error('Recording too large. Please record a shorter clip (maximum ~2 hours at 64kbps).');
-            } else if (response.status === 401) {
-                throw new Error('API key invalid. Please check your configuration.');
             } else if (response.status === 429) {
                 throw new Error('API rate limit reached. Please try again later.');
             } else {
-                throw new Error(`Transcription failed: ${response.status} ${response.statusText}`);
+                throw new Error(errorData.error || `Transcription failed: ${response.status}`);
             }
         }
 
         const result = await response.json();
-        console.log('Transcription result:', result);
+        console.log('Transcription complete, length:', result.text?.length);
 
         isProcessingWithWhisper = false;
 
@@ -1001,7 +954,7 @@ async function sendAudioToWhisper(audioBlob, language = 'en') {
         }
         loader.classList.remove('active');
 
-        return { text: result.text, segments: result.segments };
+        return { text: result.text, segments: result.segments || [] };
     } catch (error) {
         console.error('Error transcribing audio:', error);
         isProcessingWithWhisper = false;
@@ -2728,15 +2681,6 @@ function escapeHtml(text) {
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
-    // Load OpenAI API key from server config
-    try {
-        const res = await fetch('/api/transcriber-config');
-        if (res.ok) {
-            const cfg = await res.json();
-            openaiApiKey = cfg.key || '';
-        }
-    } catch { /* key stays empty — transcription will show "API key not configured" */ }
-
     // Check if user is logged in
     await checkAuth();
 
